@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Devolución{% endblock %}
+{% block header %}Editar Devolución{% endblock %}
+{% block breadcrumb %}Logística > Devoluciones > Editar{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+
+  <form method="post" action="/logistica/devoluciones/{{ d.id }}/editar" class="space-y-4">
+
+    <div>
+      <label class="block text-sm font-medium text-slate-700">Fecha de Devolución</label>
+      <input type="date" name="fecha_devolucion" value="{{ d.fecha_devolucion }}" class="mt-1 w-full rounded border px-3 py-2 text-sm" required>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-700">Courier</label>
+      <input type="text" name="courier" value="{{ d.courier }}" class="mt-1 w-full rounded border px-3 py-2 text-sm" required>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-700">Observaciones</label>
+      <textarea name="observaciones" rows="3" class="mt-1 w-full rounded border px-3 py-2 text-sm">{{ d.observaciones }}</textarea>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-700">Monto Indemnización</label>
+      <input type="number" name="monto_indemnizacion" step="0.01" value="{{ d.monto_indemnizacion or '' }}" class="mt-1 w-full rounded border px-3 py-2 text-sm">
+    </div>
+
+    <div class="flex justify-between">
+      <a href="/logistica/devoluciones" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
+        Cancelar
+      </a>
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">
+        Guardar Cambios
+      </button>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}

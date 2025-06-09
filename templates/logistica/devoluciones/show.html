@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Ver Devolución{% endblock %}
+{% block header %}Detalle Devolución{% endblock %}
+{% block breadcrumb %}Logística > Devoluciones > Ver{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+
+  <div class="text-sm space-y-4">
+    <p><strong>Cliente:</strong> {{ d.cliente_nombre }}</p>
+    <p><strong>Número de Orden:</strong> {{ d.numero_orden }}</p>
+    <p><strong>Producto:</strong> {{ d.producto }}</p>
+    <p><strong>Fecha de Devolución:</strong> {{ d.fecha_devolucion }}</p>
+    <p><strong>Courier:</strong> {{ d.courier }}</p>
+    <p><strong>Detalles:</strong><br>{{ d.detalles }}</p>
+    <p><strong>Observaciones:</strong><br>{{ d.observaciones }}</p>
+    <p><strong>Monto Venta:</strong> ${{ '%.0f'|format(d.precio or 0) }}</p>
+    <p><strong>Indemnización:</strong> 
+      {% if d.monto_indemnizacion %}
+        ${{ '%.0f'|format(d.monto_indemnizacion) }}
+      {% else %}
+        <span class="text-slate-400 italic">Pendiente</span>
+      {% endif %}
+    </p>
+    {% if d.fotos %}
+    <div>
+      <strong>Foto:</strong><br>
+      <img src="/{{ d.fotos }}" alt="Foto devolución" class="max-w-xs rounded shadow">
+    </div>
+    {% endif %}
+  </div>
+
+  <a href="/logistica/devoluciones" class="inline-block mt-4 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded text-sm">
+    ← Volver
+  </a>
+
+</div>
+{% endblock %}

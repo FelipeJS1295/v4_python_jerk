@@ -27,6 +27,8 @@ from routers import (
     configuracion,
 )
 
+from routers.logistica import devoluciones
+
 # Routers de configuración
 from routers.config import (
     clientes as config_clientes,
@@ -169,3 +171,6 @@ app.include_router(config_clientes.router)
 app.include_router(config_insumos.router)
 app.include_router(config_proveedores.router)
 app.include_router(config_productos.router)
+
+# Routers de logistica
+app.include_router(devoluciones.router)

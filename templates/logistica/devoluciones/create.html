@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Devolución{% endblock %}
+{% block header %}Registrar Devolución{% endblock %}
+{% block breadcrumb %}Logística > Devoluciones > Nueva{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+
+  <form action="/logistica/devoluciones/crear" method="post" enctype="multipart/form-data" class="space-y-4">
+    
+    <!-- Número de Orden -->
+    <div>
+      <label class="block text-sm font-medium text-slate-700">Número de Orden de Compra</label>
+      <input type="text" id="numero_orden" name="numero_orden" class="mt-1 w-full rounded border px-3 py-2 text-sm" required>
+      <p id="orden-ok" class="text-green-600 mt-1 hidden text-sm font-medium">✅ Orden encontrada</p>
+      <p id="orden-error" class="text-red-600 mt-1 hidden text-sm font-medium">❌ Orden no encontrada</p>
+    </div>
+
+    <input type="hidden" id="venta_id" name="venta_id" required>
+
+    <!-- Campos que se habilitan si se encuentra la orden -->
+    <div id="campos-adicionales" class="space-y-4 hidden">
+
+      <!-- Fecha de devolución -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Fecha de Devolución</label>
+        <input type="date" name="fecha_devolucion" class="mt-1 w-full rounded border px-3 py-2 text-sm" required>
+      </div>
+
+      <!-- Detalles -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Detalles de la Devolución</label>
+        <textarea name="detalles" rows="4" class="mt-1 w-full rounded border px-3 py-2 text-sm"></textarea>
+      </div>
+
+      <!-- Foto -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Foto (opcional)</label>
+        <input type="file" name="fotos" class="mt-1 text-sm">
+      </div>
+
+      <!-- Courier -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Courier</label>
+        <input type="text" name="courier" class="mt-1 w-full rounded border px-3 py-2 text-sm" required>
+      </div>
+
+      <!-- Observaciones -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Observaciones</label>
+        <textarea name="observaciones" rows="3" class="mt-1 w-full rounded border px-3 py-2 text-sm"></textarea>
+      </div>
+
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">Guardar Devolución</button>
+    </div>
+  </form>
+
+</div>
+
+<script>
+document.getElementById('numero_orden').addEventListener('blur', function () {
+  const orden = this.value.trim();
+  if (!orden) return;
+
+  fetch(`/logistica/devoluciones/buscar-orden?numero_orden=${orden}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.existe) {
+        document.getElementById('orden-ok').classList.remove('hidden');
+        document.getElementById('orden-error').classList.add('hidden');
+        document.getElementById('campos-adicionales').classList.remove('hidden');
+        document.getElementById('venta_id').value = data.venta_id;
+      } else {
+        document.getElementById('orden-ok').classList.add('hidden');
+        document.getElementById('orden-error').classList.remove('hidden');
+        document.getElementById('campos-adicionales').classList.add('hidden');
+      }
+    });
+});
+</script>
+{% endblock %}
