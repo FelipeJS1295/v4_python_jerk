@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}Cargar Ventas - Hites{% endblock %}
+{% block header %}Cargar Ventas - Hites{% endblock %}
+{% block breadcrumb %}Ventas > Cargar > Hites{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Panel de Instrucciones -->
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+    <div class="flex items-start space-x-3">
+      <i class="fas fa-info-circle text-blue-600 text-xl mt-1"></i>
+      <div>
+        <h3 class="text-lg font-semibold text-blue-800 mb-2">Instrucciones de Carga - Hites</h3>
+        <ul class="text-sm text-blue-700 space-y-1">
+          <li>• Seleccione <strong>dos archivos</strong>: archivo de órdenes y archivo de detalles</li>
+          <li>• Ambos archivos deben ser CSV (.csv) o TXT (.txt)</li>
+          <li>• El sistema procesará automáticamente ambos archivos</li>
+          <li>• Revise la vista preliminar antes de guardar</li>
+          <li>• Los registros duplicados serán marcados automáticamente</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de Carga de Archivos -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Subir Archivos</h3>
+    
+    <!-- Archivo de Órdenes -->
+    <div class="mb-6">
+      <label class="block text-sm font-medium text-slate-700 mb-2">Archivo de Órdenes</label>
+      <div id="zona-ordenes" class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-slate-400 transition-colors cursor-pointer">
+        <div id="contenido-ordenes">
+          <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-3"></i>
+          <p class="text-slate-600 mb-1">Seleccionar archivo de órdenes</p>
+          <p class="text-xs text-slate-500">CSV o TXT</p>
+          <input type="file" id="archivo-ordenes" accept=".csv,.txt" class="hidden">
+        </div>
+        
+        <div id="ordenes-seleccionado" class="hidden">
+          <i class="fas fa-file-alt text-3xl text-green-600 mb-3"></i>
+          <p class="text-slate-800 mb-1">Archivo seleccionado:</p>
+          <p id="nombre-ordenes" class="text-xs text-slate-600 font-medium"></p>
+          <button id="btn-cambiar-ordenes" class="mt-2 text-xs text-blue-600 hover:text-blue-800">
+            <i class="fas fa-edit mr-1"></i>Cambiar archivo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archivo de Detalles -->
+    <div class="mb-6">
+      <label class="block text-sm font-medium text-slate-700 mb-2">Archivo de Detalles</label>
+      <div id="zona-detalles" class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-slate-400 transition-colors cursor-pointer">
+        <div id="contenido-detalles">
+          <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-3"></i>
+          <p class="text-slate-600 mb-1">Seleccionar archivo de detalles</p>
+          <p class="text-xs text-slate-500">CSV o TXT</p>
+          <input type="file" id="archivo-detalles" accept=".csv,.txt" class="hidden">
+        </div>
+        
+        <div id="detalles-seleccionado" class="hidden">
+          <i class="fas fa-file-alt text-3xl text-green-600 mb-3"></i>
+          <p class="text-slate-800 mb-1">Archivo seleccionado:</p>
+          <p id="nombre-detalles" class="text-xs text-slate-600 font-medium"></p>
+          <button id="btn-cambiar-detalles" class="mt-2 text-xs text-blue-600 hover:text-blue-800">
+            <i class="fas fa-edit mr-1"></i>Cambiar archivo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado de Procesamiento -->
+    <div id="procesando-archivos" class="hidden text-center py-6">
+      <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+      <p class="text-lg text-slate-800 mb-2">Procesando archivos...</p>
+      <p class="text-sm text-slate-500">Por favor espere</p>
+    </div>
+
+    <div class="flex justify-end space-x-3">
+      <a href="/ventas/vista" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>Volver</span>
+      </a>
+      <button id="btn-procesar" class="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors" disabled>
+        <i class="fas fa-cogs text-sm"></i>
+        <span>Procesar Archivos</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel de Vista Preliminar -->
+  <div id="panel-preliminar" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hidden">
+    <div class="p-6 border-b border-slate-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-800">Vista Preliminar</h3>
+          <p class="text-sm text-slate-600 mt-1">Revise los datos antes de guardar en la base de datos</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="text-sm">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <i class="fas fa-check-circle mr-1"></i>
+              <span id="contador-nuevos">0</span> Nuevos
+            </span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 ml-2">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              <span id="contador-duplicados">0</span> Duplicados
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">N° Orden</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Cliente</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Productos</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-preliminar" class="bg-white divide-y divide-slate-200">
+          <!-- Contenido generado dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="p-6 border-t border-slate-200 bg-slate-50">
+      <div class="flex justify-between items-center">
+        <div class="text-sm text-slate-600">
+          <span id="total-registros">0</span> registros procesados
+        </div>
+        <div class="flex space-x-3">
+          <button id="btn-cancelar" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+            <i class="fas fa-times text-sm"></i>
+            <span>Cancelar</span>
+          </button>
+          <button id="btn-guardar" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors">
+            <i class="fas fa-save text-sm"></i>
+            <span>Guardar Ventas</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmación -->
+  <div id="modal-confirmacion" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <div class="flex items-center mb-4">
+          <i class="fas fa-question-circle text-blue-600 text-2xl mr-3"></i>
+          <h3 class="text-lg font-semibold text-slate-800">Confirmar Guardado</h3>
+        </div>
+        <p class="text-slate-600 mb-6">
+          ¿Está seguro que desea guardar <span id="registros-guardar" class="font-semibold">0</span> registros nuevos en la base de datos?
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button id="btn-modal-cancelar" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+            Cancelar
+          </button>
+          <button id="btn-modal-confirmar" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <i class="fas fa-save mr-2"></i>
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Resultado -->
+  <div id="modal-resultado" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <div id="contenido-resultado">
+          <!-- Contenido dinámico -->
+        </div>
+        <div class="flex justify-end mt-6">
+          <button id="btn-modal-cerrar" class="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ventasPreliminar = [];
+
+// Elementos del DOM
+const zonaOrdenes = document.getElementById('zona-ordenes');
+const zonaDetalles = document.getElementById('zona-detalles');
+const inputOrdenes = document.getElementById('archivo-ordenes');
+const inputDetalles = document.getElementById('archivo-detalles');
+const contenidoOrdenes = document.getElementById('contenido-ordenes');
+const contenidoDetalles = document.getElementById('contenido-detalles');
+const ordenesSeleccionado = document.getElementById('ordenes-seleccionado');
+const detallesSeleccionado = document.getElementById('detalles-seleccionado');
+const procesandoArchivos = document.getElementById('procesando-archivos');
+const nombreOrdenes = document.getElementById('nombre-ordenes');
+const nombreDetalles = document.getElementById('nombre-detalles');
+const btnCambiarOrdenes = document.getElementById('btn-cambiar-ordenes');
+const btnCambiarDetalles = document.getElementById('btn-cambiar-detalles');
+const btnProcesar = document.getElementById('btn-procesar');
+
+const panelPreliminar = document.getElementById('panel-preliminar');
+const tablaPreliminar = document.getElementById('tabla-preliminar');
+const contadorNuevos = document.getElementById('contador-nuevos');
+const contadorDuplicados = document.getElementById('contador-duplicados');
+const totalRegistros = document.getElementById('total-registros');
+const btnGuardar = document.getElementById('btn-guardar');
+const btnCancelar = document.getElementById('btn-cancelar');
+
+// Modales
+const modalConfirmacion = document.getElementById('modal-confirmacion');
+const modalResultado = document.getElementById('modal-resultado');
+const btnModalCancelar = document.getElementById('btn-modal-cancelar');
+const btnModalConfirmar = document.getElementById('btn-modal-confirmar');
+const btnModalCerrar = document.getElementById('btn-modal-cerrar');
+const registrosGuardar = document.getElementById('registros-guardar');
+const contenidoResultado = document.getElementById('contenido-resultado');
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Zonas de drag & drop
+  zonaOrdenes.addEventListener('click', () => inputOrdenes.click());
+  zonaDetalles.addEventListener('click', () => inputDetalles.click());
+  zonaOrdenes.addEventListener('dragover', (e) => handleDragOver(e, zonaOrdenes));
+  zonaOrdenes.addEventListener('drop', (e) => handleDrop(e, inputOrdenes, 'ordenes'));
+  zonaDetalles.addEventListener('dragover', (e) => handleDragOver(e, zonaDetalles));
+  zonaDetalles.addEventListener('drop', (e) => handleDrop(e, inputDetalles, 'detalles'));
+  
+  // Input files
+  inputOrdenes.addEventListener('change', (e) => handleFileSelect(e, 'ordenes'));
+  inputDetalles.addEventListener('change', (e) => handleFileSelect(e, 'detalles'));
+  
+  // Botones
+  btnCambiarOrdenes.addEventListener('click', () => inputOrdenes.click());
+  btnCambiarDetalles.addEventListener('click', () => inputDetalles.click());
+  btnProcesar.addEventListener('click', procesarArchivos);
+  btnGuardar.addEventListener('click', mostrarModalConfirmacion);
+  btnCancelar.addEventListener('click', cancelarProceso);
+  
+  // Modales
+  btnModalCancelar.addEventListener('click', () => modalConfirmacion.classList.add('hidden'));
+  btnModalConfirmar.addEventListener('click', guardarVentas);
+  btnModalCerrar.addEventListener('click', () => modalResultado.classList.add('hidden'));
+});
+
+function handleDragOver(e, zona) {
+  e.preventDefault();
+  zona.classList.add('border-blue-400', 'bg-blue-50');
+}
+
+function handleDrop(e, input, tipo) {
+  e.preventDefault();
+  const zona = tipo === 'ordenes' ? zonaOrdenes : zonaDetalles;
+  zona.classList.remove('border-blue-400', 'bg-blue-50');
+  
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    const file = files[0];
+    if (validarArchivo(file)) {
+      // Simular selección de archivo
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      input.files = dataTransfer.files;
+      mostrarArchivoSeleccionado(file, tipo);
+    }
+  }
+}
+
+function handleFileSelect(e, tipo) {
+  const file = e.target.files[0];
+  if (file && validarArchivo(file)) {
+    mostrarArchivoSeleccionado(file, tipo);
+  }
+}
+
+function validarArchivo(file) {
+  const extensiones = ['.csv', '.txt'];
+  const extension = '.' + file.name.split('.').pop().toLowerCase();
+  
+  if (!extensiones.includes(extension)) {
+    alert('Por favor seleccione un archivo CSV (.csv) o TXT (.txt)');
+    return false;
+  }
+  
+  if (file.size > 10 * 1024 * 1024) { // 10MB
+    alert('El archivo es demasiado grande. Máximo 10MB.');
+    return false;
+  }
+  
+  return true;
+}
+
+function mostrarArchivoSeleccionado(file, tipo) {
+  if (tipo === 'ordenes') {
+    nombreOrdenes.textContent = file.name;
+    contenidoOrdenes.classList.add('hidden');
+    ordenesSeleccionado.classList.remove('hidden');
+  } else {
+    nombreDetalles.textContent = file.name;
+    contenidoDetalles.classList.add('hidden');
+    detallesSeleccionado.classList.remove('hidden');
+  }
+  
+  verificarArchivos();
+}
+
+function verificarArchivos() {
+  const archivoOrdenes = inputOrdenes.files[0];
+  const archivoDetalles = inputDetalles.files[0];
+  
+  btnProcesar.disabled = !(archivoOrdenes && archivoDetalles);
+}
+
+async function procesarArchivos() {
+  const archivoOrdenes = inputOrdenes.files[0];
+  const archivoDetalles = inputDetalles.files[0];
+  
+  if (!archivoOrdenes || !archivoDetalles) {
+    alert('Debe seleccionar ambos archivos');
+    return;
+  }
+  
+  // Mostrar estado de procesamiento
+  ordenesSeleccionado.classList.add('hidden');
+  detallesSeleccionado.classList.add('hidden');
+  procesandoArchivos.classList.remove('hidden');
+  btnProcesar.disabled = true;
+  
+  const formData = new FormData();
+  formData.append('archivo_ordenes', archivoOrdenes);
+  formData.append('archivo_detalles', archivoDetalles);
+  
+  try {
+    const response = await fetch('/ventas/importar-hites/', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Error al procesar los archivos');
+    }
+    
+    ventasPreliminar = await response.json();
+    mostrarVistaPreliminar();
+    
+  } catch (error) {
+    mostrarError('Error al procesar los archivos: ' + error.message);
+    resetearEstado();
+  }
+}
+
+function mostrarVistaPreliminar() {
+  panelPreliminar.classList.remove('hidden');
+  
+  let nuevos = 0;
+  let duplicados = 0;
+  
+  tablaPreliminar.innerHTML = '';
+  
+  ventasPreliminar.forEach((venta, index) => {
+    if (venta.ya_existe) {
+      duplicados++;
+    } else {
+      nuevos++;
+    }
+    
+    const fila = document.createElement('tr');
+    fila.className = venta.ya_existe ? 'bg-yellow-50' : 'bg-white';
+    
+    fila.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap">
+        ${venta.ya_existe ? 
+          '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-exclamation-triangle mr-1"></i>Duplicado</span>' :
+          '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>Nuevo</span>'
+        }
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+        ${venta.numero_orden || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${venta.cliente_final || venta.cliente || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${venta.fecha_entrega || venta.fecha_venta || venta.fecha_cliente || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+        $${formatearNumero(venta.precio || venta.total || 0)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${venta.producto ? (venta.producto.length > 50 ? venta.producto.substring(0, 50) + '...' : venta.producto) : '-'}
+      </td>
+    `;
+    
+    tablaPreliminar.appendChild(fila);
+  });
+  
+  // Actualizar contadores
+  contadorNuevos.textContent = nuevos;
+  contadorDuplicados.textContent = duplicados;
+  totalRegistros.textContent = ventasPreliminar.length;
+  
+  // Habilitar botón guardar solo si hay registros nuevos
+  btnGuardar.disabled = nuevos === 0;
+  
+  // Resetear estado de carga
+  resetearEstado();
+}
+
+function mostrarModalConfirmacion() {
+  const nuevos = ventasPreliminar.filter(v => !v.ya_existe).length;
+  registrosGuardar.textContent = nuevos;
+  modalConfirmacion.classList.remove('hidden');
+}
+
+async function guardarVentas() {
+  modalConfirmacion.classList.add('hidden');
+  
+  const ventasNuevas = ventasPreliminar.filter(v => !v.ya_existe);
+  
+  try {
+    const response = await fetch('/ventas/importar-hites/guardar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(ventasNuevas)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Error al guardar las ventas');
+    }
+    
+    const resultado = await response.json();
+    mostrarResultadoExito(resultado.mensaje);
+    
+  } catch (error) {
+    mostrarResultadoError('Error al guardar: ' + error.message);
+  }
+}
+
+function mostrarResultadoExito(mensaje) {
+  contenidoResultado.innerHTML = `
+    <div class="flex items-center mb-4">
+      <i class="fas fa-check-circle text-green-600 text-2xl mr-3"></i>
+      <h3 class="text-lg font-semibold text-slate-800">¡Éxito!</h3>
+    </div>
+    <p class="text-slate-600">${mensaje}</p>
+  `;
+  modalResultado.classList.remove('hidden');
+  
+  // Limpiar formulario después del éxito
+  setTimeout(() => {
+    window.location.href = '/ventas/vista';
+  }, 2000);
+}
+
+function mostrarResultadoError(mensaje) {
+  contenidoResultado.innerHTML = `
+    <div class="flex items-center mb-4">
+      <i class="fas fa-exclamation-circle text-red-600 text-2xl mr-3"></i>
+      <h3 class="text-lg font-semibold text-slate-800">Error</h3>
+    </div>
+    <p class="text-slate-600">${mensaje}</p>
+  `;
+  modalResultado.classList.remove('hidden');
+}
+
+function mostrarError(mensaje) {
+  alert(mensaje);
+}
+
+function cancelarProceso() {
+  panelPreliminar.classList.add('hidden');
+  ventasPreliminar = [];
+  resetearEstado();
+}
+
+function resetearEstado() {
+  procesandoArchivos.classList.add('hidden');
+  ordenesSeleccionado.classList.remove('hidden');
+  detallesSeleccionado.classList.remove('hidden');
+  verificarArchivos();
+}
+
+function formatearNumero(numero) {
+  return new Intl.NumberFormat('es-CL').format(numero);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% if tabla_datos %}
+<table class="tabla-maestra min-w-full divide-y divide-slate-200">
+  <thead class="bg-slate-50">
+    <tr>
+      <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50">
+        Producto
+      </th>
+      {% for fecha in tabla_datos.fechas %}
+      <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
+        {{ fecha }}
+      </th>
+      {% endfor %}
+      <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-100">
+        Total
+      </th>
+    </tr>
+  </thead>
+  <tbody class="bg-white divide-y divide-slate-200">
+    {% for cliente, data_cliente in tabla_datos.clientes.items() %}
+      <!-- Encabezado del cliente -->
+      <tr class="bg-slate-100">
+        <td colspan="{{ tabla_datos.fechas|length + 2 }}" class="px-6 py-2 text-sm font-bold text-slate-800">
+          {{ cliente }}
+        </td>
+      </tr>
+      
+      <!-- Productos del cliente -->
+      {% for producto, data_producto in data_cliente.productos.items() %}
+      <tr class="hover:bg-slate-50">
+        <td class="cliente-nombre px-6 py-4 sticky left-0 bg-white">
+          {{ producto }}
+        </td>
+        
+        <!-- Celdas de fechas para este producto -->
+        {% for fecha in tabla_datos.fechas %}
+          {% set cantidad = data_producto.fechas.get(fecha, 0) %}
+          <td class="celda-cantidad px-6 py-4 text-center">
+            {% if cantidad > 0 %}{{ cantidad }}{% else %}-{% endif %}
+          </td>
+        {% endfor %}
+        
+        <!-- Total por producto -->
+        <td class="celda-cantidad total px-6 py-4 text-center fila-total">
+          {{ data_producto.total }}
+        </td>
+      </tr>
+      {% endfor %}
+      
+      <!-- Total por cliente -->
+      <tr class="bg-slate-200">
+        <td class="px-6 py-2 font-semibold text-slate-800">
+          Total {{ cliente }}
+        </td>
+        
+        <!-- Totales por fecha para este cliente -->
+        {% for fecha in tabla_datos.fechas %}
+          <td class="celda-cantidad columna-total px-6 py-2 text-center font-semibold">
+            {% set total_fecha = data_cliente.totales_por_fecha.get(fecha, 0) %}
+            {% if total_fecha > 0 %}{{ total_fecha }}{% else %}-{% endif %}
+          </td>
+        {% endfor %}
+        
+        <!-- Total del cliente -->
+        <td class="gran-total px-6 py-2 text-center font-bold">
+          {{ data_cliente.total_cliente }}
+        </td>
+      </tr>
+    {% endfor %}
+    
+    <!-- Fila de totales generales -->
+    <tr class="bg-slate-300">
+      <td class="px-6 py-3 font-bold text-slate-900">
+        TOTAL GENERAL
+      </td>
+      
+      <!-- Totales por fecha -->
+      {% for fecha in tabla_datos.fechas %}
+        <td class="celda-cantidad columna-total px-6 py-3 text-center font-bold">
+          {% set total_fecha = tabla_datos.totales_por_fecha.get(fecha, 0) %}
+          {% if total_fecha > 0 %}{{ total_fecha }}{% else %}0{% endif %}
+        </td>
+      {% endfor %}
+      
+      <!-- Gran total -->
+      <td class="gran-total px-6 py-3 text-center font-black text-lg">
+        {{ tabla_datos.gran_total }}
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Actualizar estadísticas -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const totalVentas = {{ tabla_datos.gran_total }};
+  const totalClientes = {{ tabla_datos.clientes|length }};
+  
+  // Contar productos únicos
+  let productosUnicos = new Set();
+  {% for cliente, data_cliente in tabla_datos.clientes.items() %}
+    {% for producto in data_cliente.productos.keys() %}
+      productosUnicos.add('{{ producto }}');
+    {% endfor %}
+  {% endfor %}
+  
+  // Actualizar panel de estadísticas
+  const panelEstadisticas = document.getElementById('panel-estadisticas');
+  if (panelEstadisticas) {
+    panelEstadisticas.classList.remove('hidden');
+    
+    document.getElementById('total-ventas').textContent = totalVentas.toLocaleString();
+    document.getElementById('total-clientes').textContent = totalClientes;
+    document.getElementById('total-productos').textContent = productosUnicos.size;
+    
+    // Calcular promedio diario
+    const fechaDesde = document.querySelector('input[name="fecha_desde"]').value;
+    const fechaHasta = document.querySelector('input[name="fecha_hasta"]').value;
+    
+    if (fechaDesde && fechaHasta) {
+      const diasDiferencia = Math.ceil((new Date(fechaHasta) - new Date(fechaDesde)) / (1000 * 60 * 60 * 24)) + 1;
+      const promedioDiario = Math.round(totalVentas / diasDiferencia);
+      document.getElementById('promedio-diario').textContent = promedioDiario.toLocaleString();
+    }
+  }
+});
+</script>
+
+{% else %}
+<div class="p-12 text-center text-slate-500">
+  <i class="fas fa-chart-bar text-4xl mb-4"></i>
+  <p class="text-lg mb-2">No se encontraron datos</p>
+  <p class="text-sm">Ajuste los filtros para ver resultados</p>
+</div>
+{% endif %}

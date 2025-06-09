@@ -1,0 +1,38 @@
+# Carpetas de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Entornos virtuales
+env/
+venv/
+.venv/
+
+# Configuración de VS Code (opcional)
+.vscode/
+
+# Archivos de entorno
+.env
+.env.*
+
+# Archivos temporales
+*.log
+*.sqlite3
+*.db
+.DS_Store
+
+# Compilados / paquetes
+build/
+dist/
+*.egg-info/
+
+# Archivos de sistema
+Thumbs.db
+desktop.ini
+
+# Archivos de Node (si tienes npm en frontend)
+node_modules/
+
+# Archivos estáticos generados
+/static/css/output.css

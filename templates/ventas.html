@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Ventas{% endblock %}
+{% block header %}Gestión de Ventas{% endblock %}
+{% block breadcrumb %}Ventas > Lista{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Panel de Filtros -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Filtros de Búsqueda</h3>
+    <form id="filtros-form" hx-get="/ventas/vista" hx-target="#contenido-tabla" hx-trigger="submit" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Cliente</label>
+          <input name="cliente" type="text" placeholder="Buscar cliente..." 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">N° Orden</label>
+          <input name="orden" type="text" placeholder="Buscar orden..." 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Desde</label>
+          <input name="desde" type="date" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Hasta</label>
+          <input name="hasta" type="date" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Estado</label>
+          <select name="estado" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+            <option value="">Todos los estados</option>
+            <option value="nueva">Nueva</option>
+            <option value="despachada">Despachada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-3">
+        <button type="button" id="btn-limpiar" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+          <i class="fas fa-eraser text-sm"></i>
+          <span>Limpiar</span>
+        </button>
+        <button type="submit" class="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 flex items-center space-x-2 transition-colors">
+          <i class="fas fa-search text-sm"></i>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Panel de Acciones -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+    <div class="flex items-center justify-between">
+      <span id="contador-seleccionados" class="text-sm text-slate-600">0 órdenes seleccionadas</span>
+
+      <div class="flex items-center space-x-2">
+        <select id="nuevo-estado" class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+          <option value="">Cambiar estado a...</option>
+          <option value="nueva">Nueva</option>
+          <option value="despachada">Despachada</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+        <button id="btn-cambiar-estado" class="px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+          <i class="fas fa-sync-alt mr-1"></i>
+          Actualizar
+        </button>
+        <button id="btn-eliminar-ventas" class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+          <i class="fas fa-trash mr-1"></i>
+          Eliminar
+        </button>
+        
+        <!-- Dropdown para cargar ventas -->
+        <div class="relative inline-block text-left">
+          <button type="button" class="inline-flex justify-center px-4 py-2 bg-white text-sm font-medium text-slate-700 border border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 transition-colors" id="menu-button">
+            <i class="fas fa-upload mr-2"></i>
+            Cargar Ventas
+            <i class="fas fa-chevron-down ml-2"></i>
+          </button>
+          <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10" id="submenu">
+            <div class="py-1">
+              <a href="/ventas/cargar/falabella" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                <i class="fas fa-store mr-2"></i>Falabella
+              </a>
+              <a href="/ventas/cargar/walmart" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                <i class="fas fa-store mr-2"></i>Walmart
+              </a>
+              <a href="/ventas/cargar/cencosud" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                <i class="fas fa-store mr-2"></i>Cencosud
+              </a>
+              <a href="/ventas/cargar/ripley" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                <i class="fas fa-store mr-2"></i>Ripley
+              </a>
+              <a href="/ventas/cargar/hites" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                <i class="fas fa-store mr-2"></i>Hites
+              </a>
+              <a href="/ventas/cargar/manual" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                <i class="fas fa-keyboard mr-2"></i>Manual
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div id="contenido-tabla">
+      {% include "partials/tabla_ventas.html" %}
+    </div>
+  </div>
+</div>
+
+<script>
+// Variables globales para ordenamiento
+let campoOrden = "";
+let direccionOrden = "asc";
+
+// Función para limpiar filtros
+function limpiarFiltros() {
+  const form = document.getElementById('filtros-form');
+  if (form) {
+    form.reset();
+    htmx.trigger(form, 'submit');
+  }
+}
+
+// Función para actualizar contador de selección
+function updateSelectionCounter() {
+  const checkboxes = document.querySelectorAll('input[name="venta-select"]:checked');
+  const contador = document.getElementById('contador-seleccionados');
+  const btnCambiarEstado = document.getElementById('btn-cambiar-estado');
+  const btnEliminar = document.getElementById('btn-eliminar-ventas');
+  
+  if (contador) {
+    contador.textContent = `${checkboxes.length} órdenes seleccionadas`;
+  }
+  
+  if (btnCambiarEstado) {
+    btnCambiarEstado.disabled = checkboxes.length === 0;
+  }
+  
+  if (btnEliminar) {
+    btnEliminar.disabled = checkboxes.length === 0;
+  }
+}
+
+// Función para seleccionar/deseleccionar todos
+function toggleSelectAll(selectAllCheckbox) {
+  const checkboxes = document.querySelectorAll('input[name="venta-select"]');
+  checkboxes.forEach(cb => {
+    cb.checked = selectAllCheckbox.checked;
+  });
+  updateSelectionCounter();
+}
+
+// Función para obtener IDs seleccionados
+function getSelectedIds() {
+  return Array.from(document.querySelectorAll('input[name="venta-select"]:checked'))
+    .map(cb => parseInt(cb.value));
+}
+
+// Función para cambiar estado masivo
+async function cambiarEstadoMasivo() {
+  const ids = getSelectedIds();
+  const nuevoEstado = document.getElementById('nuevo-estado').value;
+  
+  if (!ids.length || !nuevoEstado) {
+    return;
+  }
+  
+  if (!confirm(`¿Cambiar estado de ${ids.length} ventas a "${nuevoEstado}"?`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/ventas/cambiar-estado', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ids: ids,
+        estado: nuevoEstado
+      })
+    });
+    
+    if (response.ok) {
+      const form = document.getElementById('filtros-form');
+      if (form) {
+        htmx.trigger(form, 'submit');
+      }
+      
+      document.getElementById('nuevo-estado').value = '';
+      const selectAll = document.getElementById('select-all');
+      if (selectAll) {
+        selectAll.checked = false;
+      }
+      updateSelectionCounter();
+      alert('Estados actualizados correctamente');
+    } else {
+      const error = await response.json();
+      alert('Error: ' + (error.detail || 'Error desconocido'));
+    }
+  } catch (error) {
+    alert('Error de conexión: ' + error.message);
+  }
+}
+
+// Función para eliminar ventas masivo
+async function eliminarVentasMasivo() {
+  const ids = getSelectedIds();
+  
+  if (!ids.length) {
+    return;
+  }
+  
+  if (!confirm(`¿Eliminar ${ids.length} ventas? Esta acción no se puede deshacer.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/ventas/eliminar-varias', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ids: ids
+      })
+    });
+    
+    if (response.ok) {
+      const form = document.getElementById('filtros-form');
+      if (form) {
+        htmx.trigger(form, 'submit');
+      }
+      
+      const selectAll = document.getElementById('select-all');
+      if (selectAll) {
+        selectAll.checked = false;
+      }
+      updateSelectionCounter();
+      alert('Ventas eliminadas correctamente');
+    } else {
+      const error = await response.json();
+      alert('Error: ' + (error.detail || 'Error desconocido'));
+    }
+  } catch (error) {
+    alert('Error de conexión: ' + error.message);
+  }
+}
+
+// Función para ordenar tabla
+function ordenarTabla(campo) {
+  if (campoOrden === campo) {
+    direccionOrden = direccionOrden === "asc" ? "desc" : "asc";
+  } else {
+    campoOrden = campo;
+    direccionOrden = "asc";
+  }
+
+  const form = document.getElementById('filtros-form');
+  if (!form) return;
+
+  // Eliminar inputs previos si existen
+  form.querySelectorAll('input[name="ordenarPor"], input[name="direccion"]').forEach(el => el.remove());
+
+  // Crear nuevos inputs ocultos
+  const inputCampo = document.createElement("input");
+  inputCampo.type = "hidden";
+  inputCampo.name = "ordenarPor";
+  inputCampo.value = campoOrden;
+
+  const inputDir = document.createElement("input");
+  inputDir.type = "hidden";
+  inputDir.name = "direccion";
+  inputDir.value = direccionOrden;
+
+  form.appendChild(inputCampo);
+  form.appendChild(inputDir);
+
+  htmx.trigger(form, 'submit');
+}
+
+// Función para inicializar menú desplegable
+function initMenuButton() {
+  const botonMenu = document.getElementById('menu-button');
+  const submenu = document.getElementById('submenu');
+  
+  if (botonMenu && submenu) {
+    // Limpiar event listeners previos
+    const nuevoBotonMenu = botonMenu.cloneNode(true);
+    botonMenu.parentNode.replaceChild(nuevoBotonMenu, botonMenu);
+    
+    // Agregar event listener para abrir/cerrar menú
+    nuevoBotonMenu.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      submenu.classList.toggle('hidden');
+    });
+  }
+}
+
+// Función para cerrar menú al hacer clic fuera
+function setupClickOutside() {
+  document.addEventListener('click', function(e) {
+    const submenu = document.getElementById('submenu');
+    const botonMenu = document.getElementById('menu-button');
+    
+    if (submenu && botonMenu) {
+      if (!botonMenu.contains(e.target) && !submenu.contains(e.target)) {
+        submenu.classList.add('hidden');
+      }
+    }
+  });
+}
+
+// Event listeners principales
+function initEventListeners() {
+  // Event listener para limpiar filtros
+  const btnLimpiar = document.getElementById('btn-limpiar');
+  if (btnLimpiar) {
+    btnLimpiar.addEventListener('click', limpiarFiltros);
+  }
+  
+  // Event listener para cambiar estado
+  const btnCambiarEstado = document.getElementById('btn-cambiar-estado');
+  if (btnCambiarEstado) {
+    btnCambiarEstado.addEventListener('click', cambiarEstadoMasivo);
+  }
+  
+  // Event listener para eliminar ventas
+  const btnEliminarVentas = document.getElementById('btn-eliminar-ventas');
+  if (btnEliminarVentas) {
+    btnEliminarVentas.addEventListener('click', eliminarVentasMasivo);
+  }
+  
+  // Event listener para select all
+  const selectAll = document.getElementById('select-all');
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      toggleSelectAll(this);
+    });
+  }
+  
+  // Event listeners para ordenamiento de columnas
+  document.querySelectorAll('th[data-campo]').forEach(th => {
+    th.addEventListener('click', function() {
+      const campo = this.getAttribute('data-campo');
+      ordenarTabla(campo);
+    });
+  });
+}
+
+// Inicialización al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+  updateSelectionCounter();
+  initMenuButton();
+  setupClickOutside();
+  initEventListeners();
+  
+  // Cargar datos iniciales
+  const form = document.getElementById('filtros-form');
+  if (form) {
+    htmx.trigger(form, 'submit');
+  }
+});
+
+// Re-inicializar después de actualizaciones HTMX
+document.body.addEventListener('htmx:afterSwap', function() {
+  initMenuButton();
+  updateSelectionCounter();
+  
+  // Re-enlazar event listeners para checkboxes individuales
+  document.querySelectorAll('input[name="venta-select"]').forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectionCounter);
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,509 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes{% endblock %}
+{% block header %}Gestión de Clientes{% endblock %}
+{% block breadcrumb %}Configuración > Clientes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Header con botón crear -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-800">Gestión de Clientes</h1>
+      <p class="text-slate-600 mt-1">Administra la base de datos de clientes</p>
+    </div>
+    <button onclick="mostrarModal('modal-crear-cliente')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      <span>Nuevo Cliente</span>
+    </button>
+  </div>
+
+  <!-- Filtros de búsqueda -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Filtros de Búsqueda</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Buscar por nombre</label>
+        <input type="text" id="filtro-nombre" placeholder="Nombre del cliente..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Buscar por RUT</label>
+        <input type="text" id="filtro-rut" placeholder="RUT del cliente..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="flex items-end space-x-2">
+        <button type="button" id="btn-limpiar-filtros" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Limpiar</span>
+        </button>
+        <button type="button" id="btn-aplicar-filtros" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de clientes -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-6 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-800">Lista de Clientes</h3>
+      <p class="text-sm text-slate-600 mt-1">Total de clientes registrados: <span id="total-clientes">0</span></p>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">RUT</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Dirección</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contacto</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Días Pago</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">% Comisión</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-clientes" class="bg-white divide-y divide-slate-200">
+          <!-- Contenido se carga dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Cliente -->
+<div id="modal-crear-cliente" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200">
+        <h3 id="modal-titulo" class="text-lg font-semibold text-slate-800">Crear Nuevo Cliente</h3>
+      </div>
+      
+      <div class="p-6">
+        <form id="form-cliente" class="space-y-4">
+          <input type="hidden" id="cliente-id" name="id">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">RUT *</label>
+              <input type="text" id="cliente-rut" name="rut" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="12.345.678-9">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Nombre *</label>
+              <input type="text" id="cliente-nombre" name="nombre" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Nombre del cliente">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Dirección</label>
+            <input type="text" id="cliente-direccion" name="direccion" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Dirección del cliente">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Contacto</label>
+            <input type="text" id="cliente-contacto" name="contacto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Teléfono o email de contacto">
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Días de Pago</label>
+              <input type="number" id="cliente-dias-pago" name="dias_pago" min="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="30">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">% Comisión</label>
+              <input type="number" id="cliente-porcentaje-comision" name="porcentaje_comision" min="0" max="100" step="0.01" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0.00">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Cobro Logístico</label>
+              <input type="number" id="cliente-cobro-logistico" name="cobro_logistico" min="0" step="0.01" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0.00">
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-crear-cliente')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-guardar-cliente" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>Guardar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div id="modal-confirmar-eliminar" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div class="p-6">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800">Confirmar Eliminación</h3>
+            <p class="text-sm text-slate-600 mt-1">¿Está seguro de que desea eliminar este cliente?</p>
+          </div>
+        </div>
+        
+        <div id="cliente-eliminar-info" class="mt-4 p-4 bg-slate-50 rounded-lg">
+          <!-- Info del cliente a eliminar -->
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-confirmar-eliminar')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-confirmar-eliminar" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Eliminar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let clientes = [];
+let clienteEditando = null;
+let clienteEliminar = null;
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  cargarClientes();
+  
+  // Event listeners
+  document.getElementById('btn-guardar-cliente').addEventListener('click', guardarCliente);
+  document.getElementById('btn-confirmar-eliminar').addEventListener('click', confirmarEliminarCliente);
+  document.getElementById('btn-limpiar-filtros').addEventListener('click', limpiarFiltros);
+  document.getElementById('btn-aplicar-filtros').addEventListener('click', aplicarFiltros);
+  
+  // Filtros en tiempo real
+  document.getElementById('filtro-nombre').addEventListener('input', aplicarFiltros);
+  document.getElementById('filtro-rut').addEventListener('input', aplicarFiltros);
+});
+
+async function cargarClientes() {
+  try {
+    const response = await fetch('/configuracion/clientes/api');
+    if (response.ok) {
+      clientes = await response.json();
+      mostrarClientes(clientes);
+      document.getElementById('total-clientes').textContent = clientes.length;
+    } else {
+      console.error('Error cargando clientes');
+      mostrarMensaje('Error al cargar los clientes', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarMensaje('Error de conexión', 'error');
+  }
+}
+
+function mostrarClientes(clientesFiltrados) {
+  const tbody = document.getElementById('tabla-clientes');
+  tbody.innerHTML = '';
+  
+  if (clientesFiltrados.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+          <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <p>No hay clientes registrados</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  clientesFiltrados.forEach(cliente => {
+    const fila = document.createElement('tr');
+    fila.className = 'hover:bg-slate-50';
+    
+    fila.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+        ${cliente.rut || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${cliente.nombre || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${cliente.direccion || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${cliente.contacto || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${cliente.dias_pago || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${cliente.porcentaje_comision ? cliente.porcentaje_comision + '%' : '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="editarCliente(${cliente.id})" class="text-blue-600 hover:text-blue-900 mr-3" title="Editar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </button>
+        <button onclick="eliminarCliente(${cliente.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </td>
+    `;
+    
+    tbody.appendChild(fila);
+  });
+}
+
+function mostrarModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+  
+  if (modalId === 'modal-crear-cliente') {
+    if (!clienteEditando) {
+      document.getElementById('modal-titulo').textContent = 'Crear Nuevo Cliente';
+      document.getElementById('form-cliente').reset();
+      document.getElementById('cliente-id').value = '';
+    }
+  }
+}
+
+function cerrarModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+  
+  if (modalId === 'modal-crear-cliente') {
+    clienteEditando = null;
+    document.getElementById('form-cliente').reset();
+  }
+  
+  if (modalId === 'modal-confirmar-eliminar') {
+    clienteEliminar = null;
+  }
+}
+
+function editarCliente(id) {
+  const cliente = clientes.find(c => c.id === id);
+  if (!cliente) return;
+  
+  clienteEditando = cliente;
+  
+  // Llenar el formulario
+  document.getElementById('cliente-id').value = cliente.id;
+  document.getElementById('cliente-rut').value = cliente.rut || '';
+  document.getElementById('cliente-nombre').value = cliente.nombre || '';
+  document.getElementById('cliente-direccion').value = cliente.direccion || '';
+  document.getElementById('cliente-contacto').value = cliente.contacto || '';
+  document.getElementById('cliente-dias-pago').value = cliente.dias_pago || '';
+  document.getElementById('cliente-porcentaje-comision').value = cliente.porcentaje_comision || '';
+  document.getElementById('cliente-cobro-logistico').value = cliente.cobro_logistico || '';
+  
+  document.getElementById('modal-titulo').textContent = 'Editar Cliente';
+  mostrarModal('modal-crear-cliente');
+}
+
+function eliminarCliente(id) {
+  const cliente = clientes.find(c => c.id === id);
+  if (!cliente) return;
+  
+  clienteEliminar = cliente;
+  
+  document.getElementById('cliente-eliminar-info').innerHTML = `
+    <div class="text-sm">
+      <p><strong>RUT:</strong> ${cliente.rut}</p>
+      <p><strong>Nombre:</strong> ${cliente.nombre}</p>
+      <p><strong>Dirección:</strong> ${cliente.direccion || 'No especificada'}</p>
+    </div>
+  `;
+  
+  mostrarModal('modal-confirmar-eliminar');
+}
+
+async function guardarCliente() {
+  const formData = new FormData(document.getElementById('form-cliente'));
+  const clienteData = {};
+  
+  // Procesar cada campo del formulario
+  for (let [key, value] of formData.entries()) {
+    if (value.trim() !== '') {
+      if (key === 'id' || key === 'dias_pago') {
+        const numValue = parseInt(value);
+        if (!isNaN(numValue)) {
+          clienteData[key] = numValue;
+        }
+      } else if (key === 'porcentaje_comision' || key === 'cobro_logistico') {
+        const floatValue = parseFloat(value);
+        if (!isNaN(floatValue)) {
+          clienteData[key] = floatValue;
+        }
+      } else {
+        clienteData[key] = value;
+      }
+    } else {
+      // Si el campo está vacío, enviarlo como null para campos opcionales
+      if (key !== 'rut' && key !== 'nombre') {
+        clienteData[key] = null;
+      }
+    }
+  }
+  
+  // Validaciones
+  if (!clienteData.rut || !clienteData.nombre) {
+    mostrarMensaje('RUT y nombre son obligatorios', 'error');
+    return;
+  }
+  
+  console.log('Datos a enviar:', clienteData); // Para debugging
+  
+  try {
+    let response;
+    if (clienteEditando) {
+      // Actualizar - asegurarse de que tenga ID
+      if (!clienteData.id) {
+        clienteData.id = clienteEditando.id;
+      }
+      response = await fetch('/configuracion/clientes/api', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clienteData)
+      });
+    } else {
+      // Crear - remover ID si existe
+      delete clienteData.id;
+      response = await fetch('/configuracion/clientes/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clienteData)
+      });
+    }
+    
+    console.log('Response status:', response.status); // Para debugging
+    
+    if (response.ok) {
+      const mensaje = clienteEditando ? 'Cliente actualizado correctamente' : 'Cliente creado correctamente';
+      mostrarMensaje(mensaje, 'success');
+      cerrarModal('modal-crear-cliente');
+      cargarClientes();
+    } else {
+      const error = await response.json();
+      console.error('Error del servidor:', error); // Para debugging
+      mostrarMensaje('Error: ' + (error.detail || 'Error desconocido'), 'error');
+    }
+  } catch (error) {
+    console.error('Error completo:', error); // Para debugging
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+async function confirmarEliminarCliente() {
+  if (!clienteEliminar) return;
+  
+  try {
+    const response = await fetch(`/configuracion/clientes/api/${clienteEliminar.id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      mostrarMensaje('Cliente eliminado correctamente', 'success');
+      cerrarModal('modal-confirmar-eliminar');
+      cargarClientes();
+    } else {
+      const error = await response.json();
+      mostrarMensaje('Error: ' + error.detail, 'error');
+    }
+  } catch (error) {
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+function aplicarFiltros() {
+  const filtroNombre = document.getElementById('filtro-nombre').value.toLowerCase();
+  const filtroRut = document.getElementById('filtro-rut').value.toLowerCase();
+  
+  const clientesFiltrados = clientes.filter(cliente => {
+    const coincideNombre = !filtroNombre || (cliente.nombre && cliente.nombre.toLowerCase().includes(filtroNombre));
+    const coincideRut = !filtroRut || (cliente.rut && cliente.rut.toLowerCase().includes(filtroRut));
+    
+    return coincideNombre && coincideRut;
+  });
+  
+  mostrarClientes(clientesFiltrados);
+}
+
+function limpiarFiltros() {
+  document.getElementById('filtro-nombre').value = '';
+  document.getElementById('filtro-rut').value = '';
+  mostrarClientes(clientes);
+}
+
+function mostrarMensaje(mensaje, tipo) {
+  // Crear elemento de notificación
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+    tipo === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+  }`;
+  notificacion.textContent = mensaje;
+  
+  document.body.appendChild(notificacion);
+  
+  // Remover después de 3 segundos
+  setTimeout(() => {
+    notificacion.remove();
+  }, 3000);
+}
+</script>
+
+<style>
+/* Estilos específicos para gestión de clientes */
+.modal {
+  backdrop-filter: blur(4px);
+}
+
+/* Animaciones para notificaciones */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Maestra de Ventas{% endblock %}
+{% block header %}Maestra de Ventas{% endblock %}
+{% block breadcrumb %}Ventas > Maestra{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Panel de Filtros -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Filtros de Consulta</h3>
+    <form id="filtros-form" hx-get="/ventas/maestra/datos" hx-target="#tabla-maestra" hx-trigger="submit" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Desde</label>
+          <input name="fecha_desde" type="date" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500" 
+                 value="{{ fecha_desde or '' }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Hasta</label>
+          <input name="fecha_hasta" type="date" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500" 
+                 value="{{ fecha_hasta or '' }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Cliente</label>
+          <select name="cliente" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+            <option value="">Todos los clientes</option>
+            <!-- Opciones se cargan dinámicamente -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Producto</label>
+          <input name="producto" type="text" placeholder="Buscar producto..." 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500" />
+        </div>
+      </div>
+      
+      <!-- Campo oculto para filtrar solo productos nuevos -->
+      <input type="hidden" name="estado_producto" value="nueva" />
+      
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg">
+          <i class="fas fa-info-circle text-blue-500"></i>
+          <span class="text-sm text-blue-700 font-medium">Mostrando solo productos con estado: Nueva</span>
+        </div>
+        <div class="flex space-x-3">
+          <button type="button" id="btn-limpiar" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+            <i class="fas fa-eraser text-sm"></i>
+            <span>Limpiar</span>
+          </button>
+          <button type="submit" class="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 flex items-center space-x-2 transition-colors">
+            <i class="fas fa-search text-sm"></i>
+            <span>Consultar</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Panel de Acciones -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-slate-600">Acciones:</span>
+        <div class="flex items-center space-x-2 bg-green-50 px-3 py-1 rounded-full">
+          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span class="text-xs text-green-700 font-medium">Solo productos nuevos</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="btn-exportar-excel" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors">
+          <i class="fas fa-file-excel text-sm"></i>
+          <span>Exportar Excel</span>
+        </button>
+        <button id="btn-exportar-pdf" class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 flex items-center space-x-2 transition-colors">
+          <i class="fas fa-file-pdf text-sm"></i>
+          <span>Exportar PDF</span>
+        </button>
+        <button id="btn-imprimir" class="px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 flex items-center space-x-2 transition-colors">
+          <i class="fas fa-print text-sm"></i>
+          <span>Imprimir</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla Maestra -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-4 border-b border-slate-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-800">Maestra de Ventas por Cliente</h3>
+          <p class="text-sm text-slate-600 mt-1">Ventas agrupadas por cliente y fecha - Solo productos nuevos</p>
+        </div>
+        <div class="flex items-center space-x-2 bg-green-100 px-3 py-2 rounded-lg">
+          <i class="fas fa-star text-green-600"></i>
+          <span class="text-sm text-green-800 font-medium">Productos Nuevos</span>
+        </div>
+      </div>
+    </div>
+    
+    <div id="tabla-maestra" class="overflow-x-auto">
+      <!-- Tabla se carga dinámicamente -->
+      <div class="p-12 text-center text-slate-500">
+        <i class="fas fa-star text-4xl mb-4 text-green-500"></i>
+        <p class="text-lg mb-2">Seleccione un rango de fechas para consultar</p>
+        <p class="text-sm">Use los filtros superiores para generar el reporte de productos nuevos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen Estadísticas -->
+  <div id="panel-estadisticas" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hidden">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Resumen del Período - Productos Nuevos</h3>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-blue-600" id="total-ventas">0</div>
+        <div class="text-sm text-slate-600">Total Ventas</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-green-600" id="total-clientes">0</div>
+        <div class="text-sm text-slate-600">Clientes Activos</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-purple-600" id="total-productos">0</div>
+        <div class="text-sm text-slate-600">Productos Nuevos Vendidos</div>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl font-bold text-orange-600" id="promedio-diario">0</div>
+        <div class="text-sm text-slate-600">Promedio Diario</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Establecer fechas por defecto (últimos 7 días)
+  const hoy = new Date();
+  const hace7dias = new Date();
+  hace7dias.setDate(hace7dias.getDate() - 7);
+  
+  document.querySelector('input[name="fecha_desde"]').value = hace7dias.toISOString().split('T')[0];
+  document.querySelector('input[name="fecha_hasta"]').value = hoy.toISOString().split('T')[0];
+  
+  // Cargar clientes en el select
+  cargarClientes();
+  
+  // Event listeners
+  document.getElementById('btn-limpiar').addEventListener('click', limpiarFiltros);
+  document.getElementById('btn-exportar-excel').addEventListener('click', exportarExcel);
+  document.getElementById('btn-exportar-pdf').addEventListener('click', exportarPDF);
+  document.getElementById('btn-imprimir').addEventListener('click', function() {
+    imprimirTabla();
+  });
+  
+  // Cargar datos iniciales
+  const form = document.getElementById('filtros-form');
+  htmx.trigger(form, 'submit');
+});
+
+// Funciones globales
+function limpiarFiltros() {
+  const form = document.getElementById('filtros-form');
+  form.reset();
+  
+  // Restablecer fechas por defecto
+  const hoy = new Date();
+  const hace7dias = new Date();
+  hace7dias.setDate(hace7dias.getDate() - 7);
+  
+  document.querySelector('input[name="fecha_desde"]').value = hace7dias.toISOString().split('T')[0];
+  document.querySelector('input[name="fecha_hasta"]').value = hoy.toISOString().split('T')[0];
+  
+  // IMPORTANTE: Mantener el filtro de estado como "nueva"
+  document.querySelector('input[name="estado_producto"]').value = 'nueva';
+  
+  htmx.trigger(form, 'submit');
+}
+
+async function cargarClientes() {
+  try {
+    const response = await fetch('/clientes/');
+    if (response.ok) {
+      const clientes = await response.json();
+      const select = document.querySelector('select[name="cliente"]');
+      
+      clientes.forEach(cliente => {
+        const option = document.createElement('option');
+        option.value = cliente.id;
+        option.textContent = cliente.nombre;
+        select.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error cargando clientes:', error);
+  }
+}
+
+async function exportarExcel() {
+  const form = document.getElementById('filtros-form');
+  const formData = new FormData(form);
+  const params = new URLSearchParams(formData);
+  
+  try {
+    const response = await fetch(`/ventas/maestra/exportar/excel?${params}`);
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `maestra_ventas_productos_nuevos_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } else {
+      alert('Error al exportar Excel');
+    }
+  } catch (error) {
+    alert('Error al exportar: ' + error.message);
+  }
+}
+
+async function exportarPDF() {
+  const form = document.getElementById('filtros-form');
+  const formData = new FormData(form);
+  const params = new URLSearchParams(formData);
+  
+  try {
+    const response = await fetch(`/ventas/maestra/exportar/pdf?${params}`);
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `maestra_ventas_productos_nuevos_${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } else {
+      alert('Error al exportar PDF');
+    }
+  } catch (error) {
+    alert('Error al exportar: ' + error.message);
+  }
+}
+
+// Actualizar estadísticas después de cargar datos
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+  if (evt.detail.target.id === 'tabla-maestra') {
+    actualizarEstadisticas();
+  }
+});
+
+function actualizarEstadisticas() {
+  // Buscar elementos en la tabla para calcular estadísticas
+  const filasTotales = document.querySelectorAll('.fila-total');
+  const columnasTotales = document.querySelectorAll('.columna-total');
+  
+  if (filasTotales.length > 0) {
+    // Calcular estadísticas basadas en los datos de la tabla
+    let totalVentas = 0;
+    let totalClientes = filasTotales.length;
+    
+    filasTotales.forEach(fila => {
+      const total = parseInt(fila.textContent) || 0;
+      totalVentas += total;
+    });
+    
+    // Contar productos únicos nuevos
+    const productosNuevos = document.querySelectorAll('.producto-nuevo');
+    const totalProductosNuevos = productosNuevos.length;
+    
+    // Actualizar elementos estadísticos
+    const panelEstadisticas = document.getElementById('panel-estadisticas');
+    if (panelEstadisticas) {
+      panelEstadisticas.classList.remove('hidden');
+      
+      document.getElementById('total-ventas').textContent = totalVentas.toLocaleString();
+      document.getElementById('total-clientes').textContent = totalClientes;
+      document.getElementById('total-productos').textContent = totalProductosNuevos;
+      
+      // Calcular promedio diario
+      const fechaDesde = document.querySelector('input[name="fecha_desde"]').value;
+      const fechaHasta = document.querySelector('input[name="fecha_hasta"]').value;
+      
+      if (fechaDesde && fechaHasta) {
+        const diasDiferencia = Math.ceil((new Date(fechaHasta) - new Date(fechaDesde)) / (1000 * 60 * 60 * 24)) + 1;
+        const promedioDiario = Math.round(totalVentas / diasDiferencia);
+        document.getElementById('promedio-diario').textContent = promedioDiario.toLocaleString();
+      }
+    }
+  }
+}
+
+// Funciones para manejo de tabla dinámica
+function ordenarTabla(columna) {
+  // Implementar ordenamiento si es necesario
+  console.log('Ordenar por columna:', columna);
+}
+
+function imprimirTabla() {
+  // Obtener datos de la tabla actual
+  const tabla = document.querySelector('#tabla-maestra table');
+  if (!tabla) {
+    alert('No hay datos para imprimir');
+    return;
+  }
+  
+  // Obtener información de los filtros
+  const fechaDesde = document.querySelector('input[name="fecha_desde"]').value;
+  const fechaHasta = document.querySelector('input[name="fecha_hasta"]').value;
+  const cliente = document.querySelector('select[name="cliente"]').selectedOptions[0]?.text || 'Todos';
+  const producto = document.querySelector('input[name="producto"]').value || 'Todos';
+  
+  // Crear ventana de impresión
+  const ventanaImpresion = window.open('', '_blank');
+  
+  // Generar HTML para impresión
+  const htmlImpresion = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Maestra de Ventas - Productos Nuevos</title>
+      <style>
+        @page {
+          size: letter;
+          margin: 0.5in;
+        }
+        
+        body {
+          font-family: Arial, sans-serif;
+          font-size: 10px;
+          line-height: 1.2;
+          color: #000;
+          margin: 0;
+          padding: 0;
+        }
+        
+        .header {
+          text-align: center;
+          margin-bottom: 15px;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+        }
+        
+        .header h1 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: bold;
+        }
+        
+        .header h2 {
+          margin: 5px 0 0 0;
+          font-size: 12px;
+          font-weight: normal;
+        }
+        
+        .header .estado-filtro {
+          margin: 5px 0 0 0;
+          font-size: 10px;
+          color: #059669;
+          font-weight: bold;
+        }
+        
+        .filtros {
+          margin-bottom: 15px;
+          font-size: 9px;
+        }
+        
+        .filtros-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 8px;
+        }
+        
+        th, td {
+          border: 1px solid #000;
+          padding: 3px 4px;
+          text-align: center;
+          vertical-align: middle;
+        }
+        
+        th {
+          background-color: #f0f0f0;
+          font-weight: bold;
+          font-size: 7px;
+        }
+        
+        .cliente-header {
+          background-color: #e0e0e0;
+          font-weight: bold;
+          text-align: left;
+          font-size: 9px;
+        }
+        
+        .producto-name {
+          text-align: left;
+          font-size: 8px;
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .producto-nuevo {
+          background-color: #ecfdf5;
+        }
+        
+        .total-row {
+          background-color: #f5f5f5;
+          font-weight: bold;
+        }
+        
+        .total-general {
+          background-color: #d0d0d0;
+          font-weight: bold;
+          font-size: 9px;
+        }
+        
+        .footer {
+          margin-top: 15px;
+          text-align: center;
+          font-size: 8px;
+          border-top: 1px solid #000;
+          padding-top: 5px;
+        }
+        
+        @media print {
+          body { -webkit-print-color-adjust: exact; }
+          .no-print { display: none !important; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>MAESTRA DE VENTAS POR CLIENTE</h1>
+        <h2>Reporte de Ventas Agrupadas por Cliente y Fecha</h2>
+        <div class="estado-filtro">★ SOLO PRODUCTOS NUEVOS ★</div>
+      </div>
+      
+      <div class="filtros">
+        <div class="filtros-grid">
+          <div><strong>Período:</strong> ${fechaDesde || 'No especificado'} al ${fechaHasta || 'No especificado'}</div>
+          <div><strong>Cliente:</strong> ${cliente}</div>
+          <div><strong>Producto:</strong> ${producto}</div>
+          <div><strong>Estado:</strong> Solo productos nuevos</div>
+          <div><strong>Fecha de impresión:</strong> ${new Date().toLocaleDateString('es-CL')}</div>
+        </div>
+      </div>
+      
+      ${generarTablaImpresion(tabla)}
+      
+      <div class="footer">
+        <p>Sistema de Gestión de Ventas - JerkHome | Filtro: Solo productos con estado NUEVA</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  // Escribir contenido y configurar impresión
+  ventanaImpresion.document.write(htmlImpresion);
+  ventanaImpresion.document.close();
+  
+  // Esperar a que cargue y luego imprimir
+  ventanaImpresion.onload = function() {
+    setTimeout(function() {
+      ventanaImpresion.print();
+      ventanaImpresion.close();
+    }, 500);
+  };
+}
+
+function generarTablaImpresion(tablaOriginal) {
+  const filas = tablaOriginal.querySelectorAll('tr');
+  let htmlTabla = '<table>';
+  
+  filas.forEach((fila, index) => {
+    // Clonar la fila
+    const filaClonada = fila.cloneNode(true);
+    
+    // Limpiar clases y estilos
+    filaClonada.removeAttribute('class');
+    filaClonada.removeAttribute('style');
+    
+    // Procesar celdas
+    const celdas = filaClonada.querySelectorAll('td, th');
+    celdas.forEach(celda => {
+      celda.removeAttribute('class');
+      celda.removeAttribute('style');
+      
+      // Aplicar clases específicas para impresión
+      if (celda.tagName === 'TH') {
+        // Headers
+      } else if (celda.hasAttribute('colspan')) {
+        // Headers de cliente
+        celda.className = 'cliente-header';
+      } else if (fila.querySelector('.cliente-nombre') === celda) {
+        // Nombres de productos
+        celda.className = 'producto-name';
+      } else if (fila.classList.contains('producto-nuevo')) {
+        // Productos nuevos
+        celda.className = 'producto-nuevo';
+      } else if (fila.classList.contains('bg-slate-200') || celda.classList.contains('columna-total')) {
+        // Filas de totales por cliente
+        celda.className = 'total-row';
+      } else if (fila.classList.contains('bg-slate-300') || celda.classList.contains('gran-total')) {
+        // Fila de total general
+        celda.className = 'total-general';
+      }
+      
+      // Limpiar contenido de iconos
+      const iconos = celda.querySelectorAll('i');
+      iconos.forEach(icono => icono.remove());
+      
+      // Convertir guiones en ceros para mejor lectura
+      if (celda.textContent.trim() === '-') {
+        celda.textContent = '0';
+      }
+    });
+    
+    htmlTabla += filaClonada.outerHTML;
+  });
+  
+  htmlTabla += '</table>';
+  return htmlTabla;
+}
+</script>
+
+<style>
+/* Estilos para la tabla maestra */
+.tabla-maestra {
+  font-size: 0.875rem;
+}
+
+.tabla-maestra th,
+.tabla-maestra td {
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem;
+}
+
+.tabla-maestra .cliente-nombre {
+  font-weight: 600;
+  color: #374151;
+  min-width: 200px;
+  text-align: left;
+}
+
+.tabla-maestra .celda-cantidad {
+  text-align: center;
+  font-weight: 500;
+}
+
+.tabla-maestra .celda-cantidad:not(.total) {
+  color: #1f2937;
+}
+
+.tabla-maestra .total {
+  background-color: #f8fafc;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tabla-maestra .fila-total {
+  background-color: #e2e8f0;
+  font-weight: 700;
+}
+
+.tabla-maestra .columna-total {
+  background-color: #e2e8f0;
+  font-weight: 700;
+}
+
+.tabla-maestra .gran-total {
+  background-color: #cbd5e1;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Estilos específicos para productos nuevos */
+.tabla-maestra .producto-nuevo {
+  background-color: #ecfdf5;
+  border-left: 3px solid #10b981;
+}
+
+.tabla-maestra .producto-nuevo .cliente-nombre {
+  color: #065f46;
+  font-weight: 700;
+}
+
+.tabla-maestra .producto-nuevo .cliente-nombre::before {
+  content: "★ ";
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Sticky headers */
+.tabla-maestra thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f1f5f9;
+  z-index: 10;
+}
+
+.tabla-maestra tbody tr:first-child td {
+  border-top: 2px solid #e2e8f0;
+}
+
+/* Hover effects */
+.tabla-maestra tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.tabla-maestra .producto-nuevo:hover {
+  background-color: #d1fae5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tabla-maestra {
+    font-size: 0.75rem;
+  }
+  
+  .tabla-maestra th,
+  .tabla-maestra td {
+    padding: 0.375rem 0.5rem;
+  }
+}
+</style>
+{% endblock %}

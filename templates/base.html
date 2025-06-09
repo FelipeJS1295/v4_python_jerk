@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Panel{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="/static/css/styles.css" rel="stylesheet">
+  <style>
+    .nav-item:hover { transform: translateX(4px); transition: all 0.2s ease; }
+    .btn-icon { transition: all 0.15s ease; }
+    .btn-icon:hover { transform: scale(1.05); }
+    
+    /* Estilos para submenú */
+    .submenu-item {
+      border-left: 2px solid #e2e8f0;
+      margin-left: 1rem;
+    }
+    .submenu-item:hover {
+      border-left-color: #94a3b8;
+    }
+    .nav-item button,
+    .submenu-item button,
+    .submenu-item a {
+      transition: all 0.2s ease;
+    }
+    .nav-item a.active,
+    .submenu-item a.active {
+      background-color: #e2e8f0;
+      color: #1e293b;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body class="flex h-screen bg-slate-50 text-slate-700 font-medium">
+
+  <!-- Sidebar -->
+  <aside class="w-72 bg-white border-r border-slate-200 flex flex-col hidden md:flex">
+    <!-- Logo Area -->
+    <div class="p-6 border-b border-slate-100">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-lg">JH</span>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800">JerkHome</h2>
+      </div>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="flex-1 p-4 space-y-1">
+      <a href="/" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8 7l4-4l4 4"/>
+        </svg>
+        <span>Dashboard</span>
+      </a>
+      
+      <!-- Menú de Ventas con submenú -->
+      <div class="nav-item">
+        <button class="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors" 
+                onclick="toggleSubmenu('ventas-submenu')">
+          <div class="flex items-center space-x-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <span>Ventas</span>
+          </div>
+          <svg class="w-4 h-4 transition-transform duration-200" id="ventas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        
+        <!-- Submenú -->
+        <div id="ventas-submenu" class="hidden ml-8 mt-2 space-y-1">
+          <a href="/ventas/vista" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
+            <i class="fas fa-list w-4 h-4 text-center"></i>
+            <span>Lista de Ventas</span>
+          </a>
+          
+          <a href="/ventas/maestra" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
+            <i class="fas fa-table w-4 h-4 text-center"></i>
+            <span>Maestra</span>
+          </a>
+        </div>
+      </div>
+      
+      <a href="/produccion" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+        <span>Producción</span>
+      </a>
+      
+      <a href="/configuracion" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span>Configuración</span>
+      </a>
+    </nav>
+    
+    <!-- User Section -->
+    <div class="p-4 border-t border-slate-100">
+      <div class="flex items-center justify-between px-4 py-3">
+        <div class="flex items-center space-x-3 flex-1 min-w-0">
+          <div class="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-700 truncate" id="usuario-nombre">Admin</p>
+            <p class="text-xs text-slate-500 truncate" id="usuario-email">admin@jerkhome.com</p>
+          </div>
+        </div>
+        
+        <!-- Botón de Logout -->
+        <button 
+          onclick="logout()" 
+          class="ml-2 p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+          title="Cerrar Sesión"
+        >
+          <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile Menu Button -->
+  <div class="md:hidden fixed top-4 left-4 z-50">
+    <button class="btn-icon p-2 bg-white rounded-lg shadow-md border border-slate-200">
+      <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Main Container -->
+  <div class="flex-1 flex flex-col min-w-0">
+    
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <h1 class="text-2xl font-bold text-slate-800">{% block header %}Panel Administrativo{% endblock %}</h1>
+          <div class="hidden sm:block w-px h-6 bg-slate-300"></div>
+          <span class="hidden sm:inline-block text-sm text-slate-500">{% block breadcrumb %}Inicio{% endblock %}</span>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- Search -->
+          <div class="relative hidden sm:block">
+            <input 
+              type="text" 
+              placeholder="Buscar..." 
+              class="w-64 pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+            />
+            <svg class="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          
+          <!-- User Info in Header (Mobile) -->
+          <div class="md:hidden flex items-center space-x-2">
+            <span class="text-sm text-slate-600" id="usuario-nombre-mobile">Admin</span>
+            <button 
+              onclick="logout()" 
+              class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Cerrar Sesión"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Action Buttons (Hidden on mobile) -->
+          <div class="hidden md:flex items-center space-x-2">
+            <button class="btn-icon p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5l-5-5h5z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17V7a4 4 0 00-8 0v10"/>
+              </svg>
+            </button>
+            
+            <button class="btn-icon p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5l-5-5h5z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17V7a4 4 0 00-8 0v10"/>
+              </svg>
+            </button>
+            
+            <div class="w-px h-6 bg-slate-300"></div>
+            
+            <button class="btn-icon p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="flex-1 p-6 overflow-auto bg-slate-50">
+      <div class="max-w-7xl mx-auto">
+        {% block content %}
+        <!-- Contenido principal -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 class="text-lg font-semibold text-slate-800 mb-4">Contenido Principal</h2>
+          <p class="text-slate-600">Aquí se cargará el contenido específico de cada página.</p>
+        </div>
+        {% endblock %}
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Función de logout
+    async function logout() {
+      try {
+        const response = await fetch('/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          // Limpiar datos locales si los hay
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          // Redirigir al login
+          window.location.href = '/auth/login';
+        } else {
+          console.error('Error al cerrar sesión');
+          // Redirigir al login de todas formas
+          window.location.href = '/auth/login';
+        }
+      } catch (error) {
+        console.error('Error de conexión:', error);
+        // Redirigir al login de todas formas
+        window.location.href = '/auth/login';
+      }
+    }
+
+    function toggleSubmenu(submenuId) {
+      const submenu = document.getElementById(submenuId);
+      const arrow = document.getElementById(submenuId.replace('-submenu', '-arrow'));
+      
+      if (submenu.classList.contains('hidden')) {
+        // Mostrar submenú
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        // Ocultar submenú
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    // Cargar información del usuario y mantener submenú abierto
+    document.addEventListener('DOMContentLoaded', function() {
+      // Verificar sesión y cargar datos del usuario
+      fetch('/auth/verificar-sesion')
+        .then(response => response.json())
+        .then(data => {
+          if (data.valid && data.usuario) {
+            // Actualizar información del usuario en el sidebar
+            const nombreElement = document.getElementById('usuario-nombre');
+            const emailElement = document.getElementById('usuario-email');
+            const nombreMobileElement = document.getElementById('usuario-nombre-mobile');
+            
+            if (nombreElement) nombreElement.textContent = data.usuario.nombre_usuario;
+            if (emailElement) emailElement.textContent = data.usuario.email || 'admin@jerkhome.com';
+            if (nombreMobileElement) nombreMobileElement.textContent = data.usuario.nombre_usuario;
+          }
+        })
+        .catch(error => {
+          console.error('Error verificando sesión:', error);
+          // Si hay error, redirigir al login
+          window.location.href = '/auth/login';
+        });
+
+      // Mantener submenú abierto si estamos en una página de ventas
+      const currentPath = window.location.pathname;
+      
+      if (currentPath.startsWith('/ventas/')) {
+        // Abrir menú principal de ventas
+        const ventasSubmenu = document.getElementById('ventas-submenu');
+        const ventasArrow = document.getElementById('ventas-arrow');
+        
+        if (ventasSubmenu && ventasArrow) {
+          ventasSubmenu.classList.remove('hidden');
+          ventasArrow.style.transform = 'rotate(180deg)';
+        }
+        
+        // Marcar como activo el enlace correspondiente
+        const activeLink = document.querySelector(`a[href="${currentPath}"]`);
+        if (activeLink) {
+          activeLink.classList.add('bg-slate-200', 'text-slate-900', 'font-medium');
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>

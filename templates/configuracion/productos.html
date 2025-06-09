@@ -1,0 +1,922 @@
+{% extends "base.html" %}
+
+{% block title %}Productos{% endblock %}
+{% block header %}Gestión de Productos{% endblock %}
+{% block breadcrumb %}Configuración > Productos{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Header con botón crear -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-800">Gestión de Productos</h1>
+      <p class="text-slate-600 mt-1">Administra el catálogo de productos y servicios</p>
+    </div>
+    <button onclick="mostrarModal('modal-crear-producto')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      <span>Nuevo Producto</span>
+    </button>
+  </div>
+
+  <!-- Filtros de búsqueda -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Filtros de Búsqueda</h3>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Buscar por nombre</label>
+        <input type="text" id="filtro-nombre" placeholder="Nombre del producto..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">SKU</label>
+        <input type="text" id="filtro-sku" placeholder="SKU del producto..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Producto</label>
+        <select id="filtro-tipo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+          <option value="">Todos los tipos</option>
+          <option value="mueble">Mueble</option>
+          <option value="accesorio">Accesorio</option>
+          <option value="tela">Tela</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="flex items-end space-x-2">
+        <button type="button" id="btn-limpiar-filtros" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Limpiar</span>
+        </button>
+        <button type="button" id="btn-aplicar-filtros" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de productos -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-6 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-800">Lista de Productos</h3>
+      <p class="text-sm text-slate-600 mt-1">Total de productos registrados: <span id="total-productos">0</span></p>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Precio Venta</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Material</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-productos" class="bg-white divide-y divide-slate-200">
+          <!-- Contenido se carga dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Producto -->
+<div id="modal-crear-producto" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200">
+        <h3 id="modal-titulo" class="text-lg font-semibold text-slate-800">Crear Nuevo Producto</h3>
+      </div>
+      
+      <div class="p-6">
+        <!-- Pestañas -->
+        <div class="border-b border-slate-200 mb-6">
+          <nav class="-mb-px flex space-x-8">
+            <button onclick="cambiarPestaña('basico')" id="tab-basico" class="pestaña-activa py-2 px-1 border-b-2 font-medium text-sm">
+              Información Básica
+            </button>
+            <button onclick="cambiarPestaña('costos')" id="tab-costos" class="pestaña-inactiva py-2 px-1 border-b-2 font-medium text-sm">
+              Costos y Precios
+            </button>
+            <button onclick="cambiarPestaña('detalles')" id="tab-detalles" class="pestaña-inactiva py-2 px-1 border-b-2 font-medium text-sm">
+              Detalles del Producto
+            </button>
+            <button onclick="cambiarPestaña('imagenes')" id="tab-imagenes" class="pestaña-inactiva py-2 px-1 border-b-2 font-medium text-sm">
+              Imágenes
+            </button>
+            <button onclick="cambiarPestaña('insumos')" id="tab-insumos" class="pestaña-inactiva py-2 px-1 border-b-2 font-medium text-sm">
+              Insumos
+            </button>
+          </nav>
+        </div>
+        
+        <form id="form-producto" class="space-y-4">
+          <input type="hidden" id="producto-id" name="id">
+          
+          <!-- Pestaña Información Básica -->
+          <div id="content-basico" class="pestaña-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">SKU *</label>
+                <input type="text" id="producto-sku" name="sku" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="PROD-001">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Nombre *</label>
+                <input type="text" id="producto-nombre" name="nombre" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="Nombre del producto">
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Producto</label>
+                <select id="producto-tipo" name="tipo_producto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                  <option value="">Seleccionar tipo...</option>
+                  <option value="mueble">Mueble</option>
+                  <option value="accesorio">Accesorio</option>
+                  <option value="tela">Tela</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Tipo de Producto Venta</label>
+                <select id="producto-tipo-venta" name="tipo_producto_venta" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                  <option value="">Seleccionar tipo...</option>
+                  <option value="retail">Retail</option>
+                  <option value="mayorista">Mayorista</option>
+                  <option value="personalizado">Personalizado</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">SKU Esqueleto</label>
+                <input type="text" id="producto-sku-esqueleto" name="sku_esqueleto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="ESQ-001">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">SKU Hites</label>
+                <input type="text" id="producto-sku-hites" name="sku_hites" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="HIT-001">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">SKU La Polar</label>
+                <input type="text" id="producto-sku-polar" name="sku_la_polar" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="POL-001">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Descripción del Producto</label>
+              <textarea id="producto-descripcion" name="descripcion_producto" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="Descripción detallada del producto..."></textarea>
+            </div>
+          </div>
+          
+          <!-- Pestaña Costos y Precios -->
+          <div id="content-costos" class="pestaña-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Costo Costura</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="producto-costo-costura" name="costo_costura" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.00">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Costo Tapicería</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="producto-costo-tapiceria" name="costo_tapiceria" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Costo Armado</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="producto-costo-armado" name="costo_armado" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.00">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Costo Corte</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="producto-costo-corte" name="costo_corte" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.00">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Costo Esqueletería</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="producto-costo-esqueleteria" name="costo_esqueleteria" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Precio de Venta</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="producto-precio-venta" name="precio_venta" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.00">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Precio con Descuento</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="producto-precio-descuento" name="precio_descuento" min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+            
+            <!-- Resumen de costos -->
+            <div class="bg-slate-50 rounded-lg p-4">
+              <h4 class="font-medium text-slate-800 mb-3">Resumen de Costos</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span class="text-slate-600">Total Costos:</span>
+                  <span id="total-costos" class="font-medium text-slate-800 ml-2">$0.00</span>
+                </div>
+                <div>
+                  <span class="text-slate-600">Precio Venta:</span>
+                  <span id="precio-venta-display" class="font-medium text-slate-800 ml-2">$0.00</span>
+                </div>
+                <div>
+                  <span class="text-slate-600">Margen:</span>
+                  <span id="margen-producto" class="font-medium text-slate-800 ml-2">$0.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Pestaña Detalles -->
+          <div id="content-detalles" class="pestaña-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Dimensiones</label>
+                <input type="text" id="producto-dimensiones" name="dimensiones" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="120 x 80 x 75 cm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Material</label>
+                <input type="text" id="producto-material" name="material" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="Madera, Tela, etc.">
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Colores Disponibles</label>
+                <input type="text" id="producto-colores" name="colores_disponibles" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="Rojo, Azul, Verde">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Códigos Hex de Colores</label>
+                <input type="text" id="producto-colores-hex" name="colores_hex" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="#FF0000, #0000FF, #00FF00">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Tiempo de Entrega</label>
+              <input type="text" id="producto-tiempo-entrega" name="tiempo_entrega" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="2-3 semanas">
+            </div>
+          </div>
+          
+          <!-- Pestaña Imágenes -->
+          <div id="content-imagenes" class="pestaña-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Corte</label>
+                <input type="url" id="producto-imagen-corte" name="imagen_corte" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Tapizado</label>
+                <input type="url" id="producto-imagen-tapizado" name="imagen_tapizado" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Corte Esqueleto</label>
+                <input type="url" id="producto-imagen-corte-esqueleto" name="imagen_corte_esqueleto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Esqueleto</label>
+                <input type="url" id="producto-imagen-esqueleto" name="imagen_esqueleto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+              </div>
+            </div>
+            
+            <!-- Galería de imágenes adicionales -->
+            <div class="border-t border-slate-200 pt-4">
+              <h4 class="font-medium text-slate-800 mb-3">Galería de Imágenes (hasta 10)</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 1</label>
+                  <input type="url" id="producto-img-1" name="img_1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 2</label>
+                  <input type="url" id="producto-img-2" name="img_2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 3</label>
+                  <input type="url" id="producto-img-3" name="img_3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 4</label>
+                  <input type="url" id="producto-img-4" name="img_4" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 5</label>
+                  <input type="url" id="producto-img-5" name="img_5" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 6</label>
+                  <input type="url" id="producto-img-6" name="img_6" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 7</label>
+                  <input type="url" id="producto-img-7" name="img_7" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 8</label>
+                  <input type="url" id="producto-img-8" name="img_8" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 9</label>
+                  <input type="url" id="producto-img-9" name="img_9" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 10</label>
+                  <input type="url" id="producto-img-10" name="img_10" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Pestaña Insumos -->
+          <div id="content-insumos" class="pestaña-content hidden">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-medium text-slate-800">Insumos del Producto</h4>
+              <button type="button" id="btn-agregar-insumo" class="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
+                <i class="fas fa-plus mr-1"></i>Agregar Insumo
+              </button>
+            </div>
+            
+            <div id="lista-insumos-producto" class="space-y-3">
+              <!-- Insumos se agregan dinámicamente -->
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-crear-producto')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-guardar-producto" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>Guardar Producto</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div id="modal-confirmar-eliminar" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div class="p-6">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800">Confirmar Eliminación</h3>
+            <p class="text-sm text-slate-600 mt-1">¿Está seguro de que desea eliminar este producto?</p>
+          </div>
+        </div>
+        
+        <div id="producto-eliminar-info" class="mt-4 p-4 bg-slate-50 rounded-lg">
+          <!-- Info del producto a eliminar -->
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-confirmar-eliminar')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-confirmar-eliminar" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Eliminar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let productos = [];
+let insumos = [];
+let productoEditando = null;
+let productoEliminar = null;
+let pestañaActiva = 'basico';
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  cargarInsumos();
+  cargarProductos();
+  
+  // Event listeners
+  document.getElementById('btn-guardar-producto').addEventListener('click', guardarProducto);
+  document.getElementById('btn-confirmar-eliminar').addEventListener('click', confirmarEliminarProducto);
+  document.getElementById('btn-limpiar-filtros').addEventListener('click', limpiarFiltros);
+  document.getElementById('btn-aplicar-filtros').addEventListener('click', aplicarFiltros);
+  document.getElementById('btn-agregar-insumo').addEventListener('click', agregarInsumoProducto);
+  
+  // Filtros en tiempo real
+  document.getElementById('filtro-nombre').addEventListener('input', aplicarFiltros);
+  document.getElementById('filtro-sku').addEventListener('input', aplicarFiltros);
+  document.getElementById('filtro-tipo').addEventListener('change', aplicarFiltros);
+  
+  // Cálculo automático de costos
+  const camposCostos = ['producto-costo-costura', 'producto-costo-tapiceria', 'producto-costo-armado', 'producto-costo-corte', 'producto-costo-esqueleteria', 'producto-precio-venta'];
+  camposCostos.forEach(id => {
+    document.getElementById(id).addEventListener('input', calcularResumenCostos);
+  });
+});
+
+async function cargarInsumos() {
+  try {
+    const response = await fetch('/configuracion/insumos/api');
+    if (response.ok) {
+      insumos = await response.json();
+    }
+  } catch (error) {
+    console.error('Error cargando insumos:', error);
+  }
+}
+
+async function cargarProductos() {
+  try {
+    const response = await fetch('/configuracion/productos/api');
+    if (response.ok) {
+      productos = await response.json();
+      mostrarProductos(productos);
+      document.getElementById('total-productos').textContent = productos.length;
+    } else {
+      console.error('Error cargando productos');
+      mostrarMensaje('Error al cargar los productos', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarMensaje('Error de conexión', 'error');
+  }
+}
+
+function mostrarProductos(productosFiltrados) {
+  const tbody = document.getElementById('tabla-productos');
+  tbody.innerHTML = '';
+  
+  if (productosFiltrados.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+          <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          <p>No hay productos registrados</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  productosFiltrados.forEach(producto => {
+    const fila = document.createElement('tr');
+    fila.className = 'hover:bg-slate-50';
+    
+    fila.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+        ${producto.sku || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${producto.nombre || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${obtenerColorTipo(producto.tipo_producto)}">
+          ${formatearTipo(producto.tipo_producto)}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${formatearNumero(producto.precio_venta || 0)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${producto.material || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="editarProducto(${producto.id})" class="text-purple-600 hover:text-purple-900 mr-3" title="Editar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </button>
+        <button onclick="eliminarProducto(${producto.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </td>
+    `;
+    
+    tbody.appendChild(fila);
+  });
+}
+
+function cambiarPestaña(pestaña) {
+  // Ocultar todas las pestañas
+  document.querySelectorAll('.pestaña-content').forEach(content => {
+    content.classList.add('hidden');
+  });
+  
+  // Remover clases activas
+  document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+    tab.className = 'pestaña-inactiva py-2 px-1 border-b-2 font-medium text-sm';
+  });
+  
+  // Mostrar pestaña activa
+  document.getElementById(`content-${pestaña}`).classList.remove('hidden');
+  document.getElementById(`tab-${pestaña}`).className = 'pestaña-activa py-2 px-1 border-b-2 font-medium text-sm';
+  
+  pestañaActiva = pestaña;
+}
+
+function mostrarModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+  
+  if (modalId === 'modal-crear-producto') {
+    if (!productoEditando) {
+      document.getElementById('modal-titulo').textContent = 'Crear Nuevo Producto';
+      document.getElementById('form-producto').reset();
+      document.getElementById('producto-id').value = '';
+      document.getElementById('lista-insumos-producto').innerHTML = '';
+      cambiarPestaña('basico');
+      calcularResumenCostos();
+    }
+  }
+}
+
+function cerrarModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+  
+  if (modalId === 'modal-crear-producto') {
+    productoEditando = null;
+    document.getElementById('form-producto').reset();
+    document.getElementById('lista-insumos-producto').innerHTML = '';
+    cambiarPestaña('basico');
+  }
+  
+  if (modalId === 'modal-confirmar-eliminar') {
+    productoEliminar = null;
+  }
+}
+
+function agregarInsumoProducto() {
+  const contenedor = document.getElementById('lista-insumos-producto');
+  const index = contenedor.children.length;
+  
+  const div = document.createElement('div');
+  div.className = 'grid grid-cols-1 md:grid-cols-3 gap-3 p-4 border border-slate-200 rounded-lg';
+  div.innerHTML = `
+    <div>
+      <select class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="insumo_id" required>
+        <option value="">Seleccionar insumo...</option>
+        ${insumos.map(i => `<option value="${i.id}">${i.nombre} (${i.sku_padre})</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <input type="number" placeholder="Cantidad" min="0" step="0.01" class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="cantidad" required>
+    </div>
+    <div>
+      <button type="button" onclick="eliminarInsumoProducto(${index})" class="w-full px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+  
+  contenedor.appendChild(div);
+}
+
+function eliminarInsumoProducto(index) {
+  const contenedor = document.getElementById('lista-insumos-producto');
+  if (contenedor.children[index]) {
+    contenedor.children[index].remove();
+  }
+}
+
+function calcularResumenCostos() {
+  const costoCostura = parseFloat(document.getElementById('producto-costo-costura').value) || 0;
+  const costoTapiceria = parseFloat(document.getElementById('producto-costo-tapiceria').value) || 0;
+  const costoArmado = parseFloat(document.getElementById('producto-costo-armado').value) || 0;
+  const costoCorte = parseFloat(document.getElementById('producto-costo-corte').value) || 0;
+  const costoEsqueleteria = parseFloat(document.getElementById('producto-costo-esqueleteria').value) || 0;
+  const precioVenta = parseFloat(document.getElementById('producto-precio-venta').value) || 0;
+  
+  const totalCostos = costoCostura + costoTapiceria + costoArmado + costoCorte + costoEsqueleteria;
+  const margen = precioVenta - totalCostos;
+  
+    document.getElementById('total-costos').textContent = '$' + formatearNumero(totalCostos);
+    document.getElementById('precio-venta-display').textContent = '$' + formatearNumero(precioVenta);
+    document.getElementById('margen-producto').textContent = '$' + formatearNumero(margen);
+  
+  // Cambiar color del margen
+  const elementoMargen = document.getElementById('margen-producto');
+  if (margen < 0) {
+    elementoMargen.className = 'font-medium text-red-600 ml-2';
+  } else if (margen === 0) {
+    elementoMargen.className = 'font-medium text-slate-600 ml-2';
+  } else {
+    elementoMargen.className = 'font-medium text-green-600 ml-2';
+  }
+}
+
+async function editarProducto(id) {
+  const producto = productos.find(p => p.id === id);
+  if (!producto) return;
+  
+  productoEditando = producto;
+  
+  // Llenar todos los campos del formulario
+  const campos = [
+    'id', 'sku', 'nombre', 'tipo_producto', 'tipo_producto_venta', 'sku_esqueleto', 'sku_hites', 'sku_la_polar',
+    'costo_costura', 'costo_tapiceria', 'costo_armado', 'costo_corte', 'costo_esqueleteria',
+    'precio_venta', 'precio_descuento', 'dimensiones', 'material', 'colores_disponibles',
+    'colores_hex', 'tiempo_entrega', 'imagen_corte', 'imagen_tapizado', 'imagen_corte_esqueleto',
+    'imagen_esqueleto', 'img_1', 'img_2', 'img_3', 'img_4', 'img_5', 'img_6', 'img_7', 'img_8', 'img_9', 'img_10',
+    'descripcion_producto'
+  ];
+  
+  campos.forEach(campo => {
+    const elemento = document.getElementById(`producto-${campo.replace('_', '-')}`);
+    if (elemento) {
+      elemento.value = producto[campo] || '';
+    }
+  });
+  
+  // Cargar insumos del producto
+  try {
+    const response = await fetch(`/configuracion/productos/api/${producto.id}/insumos`);
+    if (response.ok) {
+      const insumosProducto = await response.json();
+      document.getElementById('lista-insumos-producto').innerHTML = '';
+      
+      insumosProducto.forEach(insumoProducto => {
+        agregarInsumoProducto();
+        const ultimoInsumo = document.getElementById('lista-insumos-producto').lastElementChild;
+        ultimoInsumo.querySelector('[data-field="insumo_id"]').value = insumoProducto.insumo_id;
+        ultimoInsumo.querySelector('[data-field="cantidad"]').value = insumoProducto.cantidad;
+      });
+    }
+  } catch (error) {
+    console.error('Error cargando insumos del producto:', error);
+  }
+  
+  document.getElementById('modal-titulo').textContent = 'Editar Producto';
+  calcularResumenCostos();
+  mostrarModal('modal-crear-producto');
+}
+
+function eliminarProducto(id) {
+  const producto = productos.find(p => p.id === id);
+  if (!producto) return;
+  
+  productoEliminar = producto;
+  
+  document.getElementById('producto-eliminar-info').innerHTML = `
+    <div class="text-sm">
+      <p><strong>SKU:</strong> ${producto.sku}</p>
+      <p><strong>Nombre:</strong> ${producto.nombre}</p>
+      <p><strong>Precio Venta:</strong> ${formatearNumero(producto.precio_venta || 0)}</p>
+    </div>
+  `;
+  
+  mostrarModal('modal-confirmar-eliminar');
+}
+
+async function guardarProducto() {
+  const formData = new FormData(document.getElementById('form-producto'));
+  const productoData = {};
+  
+  // Procesar campos del formulario
+  for (let [key, value] of formData.entries()) {
+    if (value.trim() !== '') {
+      if (key === 'id') {
+        productoData[key] = parseInt(value);
+      } else if (['costo_costura', 'costo_tapiceria', 'costo_armado', 'costo_corte', 'costo_esqueleteria', 'precio_venta', 'precio_descuento'].includes(key)) {
+        const floatValue = parseFloat(value);
+        if (!isNaN(floatValue)) {
+          productoData[key] = floatValue;
+        }
+      } else {
+        productoData[key] = value;
+      }
+    } else {
+      if (key !== 'sku' && key !== 'nombre') {
+        productoData[key] = null;
+      }
+    }
+  }
+  
+  // Procesar insumos
+  const insumos = [];
+  const contenedorInsumos = document.getElementById('lista-insumos-producto');
+  
+  for (let i = 0; i < contenedorInsumos.children.length; i++) {
+    const div = contenedorInsumos.children[i];
+    const insumo = {};
+    
+    div.querySelectorAll('[data-field]').forEach(input => {
+      const field = input.getAttribute('data-field');
+      if (field === 'insumo_id') {
+        insumo[field] = parseInt(input.value);
+      } else if (field === 'cantidad') {
+        insumo[field] = parseFloat(input.value);
+      }
+    });
+    
+    if (insumo.insumo_id && insumo.cantidad) {
+      insumos.push(insumo);
+    }
+  }
+  
+  productoData.insumos = insumos;
+  
+  // Validaciones
+  if (!productoData.sku || !productoData.nombre) {
+    mostrarMensaje('SKU y nombre son obligatorios', 'error');
+    return;
+  }
+  
+  try {
+    let response;
+    if (productoEditando) {
+      if (!productoData.id) {
+        productoData.id = productoEditando.id;
+      }
+      response = await fetch('/configuracion/productos/api', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productoData)
+      });
+    } else {
+      delete productoData.id;
+      response = await fetch('/configuracion/productos/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productoData)
+      });
+    }
+    
+    if (response.ok) {
+      const mensaje = productoEditando ? 'Producto actualizado correctamente' : 'Producto creado correctamente';
+      mostrarMensaje(mensaje, 'success');
+      cerrarModal('modal-crear-producto');
+      cargarProductos();
+    } else {
+      const error = await response.json();
+      mostrarMensaje('Error: ' + (error.detail || 'Error desconocido'), 'error');
+    }
+  } catch (error) {
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+async function confirmarEliminarProducto() {
+  if (!productoEliminar) return;
+  
+  try {
+    const response = await fetch(`/configuracion/productos/api/${productoEliminar.id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      mostrarMensaje('Producto eliminado correctamente', 'success');
+      cerrarModal('modal-confirmar-eliminar');
+      cargarProductos();
+    } else {
+      const error = await response.json();
+      mostrarMensaje('Error: ' + error.detail, 'error');
+    }
+  } catch (error) {
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+function aplicarFiltros() {
+  const filtroNombre = document.getElementById('filtro-nombre').value.toLowerCase();
+  const filtroSku = document.getElementById('filtro-sku').value.toLowerCase();
+  const filtroTipo = document.getElementById('filtro-tipo').value;
+  
+  const productosFiltrados = productos.filter(producto => {
+    const coincideNombre = !filtroNombre || (producto.nombre && producto.nombre.toLowerCase().includes(filtroNombre));
+    const coincideSku = !filtroSku || (producto.sku && producto.sku.toLowerCase().includes(filtroSku));
+    const coincideTipo = !filtroTipo || producto.tipo_producto === filtroTipo;
+    
+    return coincideNombre && coincideSku && coincideTipo;
+  });
+  
+  mostrarProductos(productosFiltrados);
+}
+
+function limpiarFiltros() {
+  document.getElementById('filtro-nombre').value = '';
+  document.getElementById('filtro-sku').value = '';
+  document.getElementById('filtro-tipo').value = '';
+  mostrarProductos(productos);
+}
+
+function formatearTipo(tipo) {
+  if (!tipo) return 'Sin tipo';
+  const tipos = {
+    'mueble': 'Mueble',
+    'accesorio': 'Accesorio',
+    'tela': 'Tela',
+    'otro': 'Otro'
+  };
+  return tipos[tipo] || tipo;
+}
+
+function obtenerColorTipo(tipo) {
+  if (!tipo) return 'bg-slate-100 text-slate-800';
+  const colores = {
+    'mueble': 'bg-blue-100 text-blue-800',
+    'accesorio': 'bg-green-100 text-green-800',
+    'tela': 'bg-yellow-100 text-yellow-800',
+    'otro': 'bg-purple-100 text-purple-800'
+  };
+  return colores[tipo] || 'bg-slate-100 text-slate-800';
+}
+
+function mostrarMensaje(mensaje, tipo) {
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+    tipo === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+  }`;
+  notificacion.textContent = mensaje;
+  
+  document.body.appendChild(notificacion);
+  
+  setTimeout(() => {
+    notificacion.remove();
+  }, 3000);
+}
+
+function formatearNumero(numero) {
+  return new Intl.NumberFormat('es-CL').format(numero);
+}
+</script>
+
+<style>
+/* Estilos para pestañas */
+.pestaña-activa {
+  color: #7c3aed;
+  border-color: #7c3aed;
+}
+
+.pestaña-inactiva {
+  color: #64748b;
+  border-color: transparent;
+}
+
+.pestaña-inactiva:hover {
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+{% endblock %}

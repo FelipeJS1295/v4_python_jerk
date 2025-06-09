@@ -1,0 +1,637 @@
+{% extends "base.html" %}
+
+{% block title %}Insumos{% endblock %}
+{% block header %}Gestión de Insumos{% endblock %}
+{% block breadcrumb %}Configuración > Insumos{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Header con botón crear -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-800">Gestión de Insumos</h1>
+      <p class="text-slate-600 mt-1">Administra el catálogo de materiales e insumos</p>
+    </div>
+    <button onclick="mostrarModal('modal-crear-insumo')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      <span>Nuevo Insumo</span>
+    </button>
+  </div>
+
+  <!-- Filtros de búsqueda -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Filtros de Búsqueda</h3>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Buscar por nombre</label>
+        <input type="text" id="filtro-nombre" placeholder="Nombre del insumo..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">SKU Padre</label>
+        <input type="text" id="filtro-sku-padre" placeholder="SKU Padre..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Proveedor</label>
+        <select id="filtro-proveedor" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+          <option value="">Todos los proveedores</option>
+        </select>
+      </div>
+      <div class="flex items-end space-x-2">
+        <button type="button" id="btn-limpiar-filtros" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Limpiar</span>
+        </button>
+        <button type="button" id="btn-aplicar-filtros" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de insumos -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-6 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-800">Lista de Insumos</h3>
+      <p class="text-sm text-slate-600 mt-1">Total de insumos registrados: <span id="total-insumos">0</span></p>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU Padre</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU Hijo</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Unidad</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proveedor</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Precio Costo</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Precio Venta</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-insumos" class="bg-white divide-y divide-slate-200">
+          <!-- Contenido se carga dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Insumo -->
+<div id="modal-crear-insumo" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200">
+        <h3 id="modal-titulo" class="text-lg font-semibold text-slate-800">Crear Nuevo Insumo</h3>
+      </div>
+      
+      <div class="p-6">
+        <form id="form-insumo" class="space-y-4">
+          <input type="hidden" id="insumo-id" name="id">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">SKU Padre *</label>
+              <input type="text" id="insumo-sku-padre" name="sku_padre" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="SKU-001">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">SKU Hijo</label>
+              <input type="text" id="insumo-sku-hijo" name="sku_hijo" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="SKU-001-A">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Nombre *</label>
+            <input type="text" id="insumo-nombre" name="nombre" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="Nombre del insumo">
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Unidad de Medida *</label>
+              <select id="insumo-unidad-medida" name="unidad_medida" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                <option value="">Seleccionar unidad...</option>
+                <option value="kg">Kilogramos (kg)</option>
+                <option value="g">Gramos (g)</option>
+                <option value="l">Litros (l)</option>
+                <option value="ml">Mililitros (ml)</option>
+                <option value="m">Metros (m)</option>
+                <option value="cm">Centímetros (cm)</option>
+                <option value="unidad">Unidad</option>
+                <option value="caja">Caja</option>
+                <option value="paquete">Paquete</option>
+                <option value="rollo">Rollo</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Proveedor *</label>
+              <select id="insumo-proveedor" name="proveedor_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                <option value="">Seleccionar proveedor...</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Precio Costo *</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-slate-500">$</span>
+                <input type="number" id="insumo-precio-costo" name="precio_costo" required min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="0.00">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Precio Venta *</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-slate-500">$</span>
+                <input type="number" id="insumo-precio-venta" name="precio_venta" required min="0" step="0.01" class="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="0.00">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Cálculo de margen automático -->
+          <div class="bg-slate-50 rounded-lg p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-slate-600">Margen de Ganancia:</span>
+                <span id="margen-ganancia" class="font-medium text-slate-800">$0.00</span>
+              </div>
+              <div>
+                <span class="text-slate-600">Porcentaje de Margen:</span>
+                <span id="porcentaje-margen" class="font-medium text-slate-800">0%</span>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-crear-insumo')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-guardar-insumo" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>Guardar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div id="modal-confirmar-eliminar" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div class="p-6">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800">Confirmar Eliminación</h3>
+            <p class="text-sm text-slate-600 mt-1">¿Está seguro de que desea eliminar este insumo?</p>
+          </div>
+        </div>
+        
+        <div id="insumo-eliminar-info" class="mt-4 p-4 bg-slate-50 rounded-lg">
+          <!-- Info del insumo a eliminar -->
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-confirmar-eliminar')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-confirmar-eliminar" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Eliminar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let insumos = [];
+let proveedores = [];
+let insumoEditando = null;
+let insumoEliminar = null;
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  cargarProveedores();
+  cargarInsumos();
+  
+  // Event listeners
+  document.getElementById('btn-guardar-insumo').addEventListener('click', guardarInsumo);
+  document.getElementById('btn-confirmar-eliminar').addEventListener('click', confirmarEliminarInsumo);
+  document.getElementById('btn-limpiar-filtros').addEventListener('click', limpiarFiltros);
+  document.getElementById('btn-aplicar-filtros').addEventListener('click', aplicarFiltros);
+  
+  // Filtros en tiempo real
+  document.getElementById('filtro-nombre').addEventListener('input', aplicarFiltros);
+  document.getElementById('filtro-sku-padre').addEventListener('input', aplicarFiltros);
+  document.getElementById('filtro-proveedor').addEventListener('change', aplicarFiltros);
+  
+  // Cálculo automático de margen
+  document.getElementById('insumo-precio-costo').addEventListener('input', calcularMargen);
+  document.getElementById('insumo-precio-venta').addEventListener('input', calcularMargen);
+});
+
+async function cargarProveedores() {
+  try {
+    const response = await fetch('/proveedores/');
+    if (response.ok) {
+      proveedores = await response.json();
+      
+      // Llenar select de proveedores en formulario
+      const selectProveedor = document.getElementById('insumo-proveedor');
+      selectProveedor.innerHTML = '<option value="">Seleccionar proveedor...</option>';
+      proveedores.forEach(proveedor => {
+        const option = document.createElement('option');
+        option.value = proveedor.id;
+        option.textContent = proveedor.nombre;
+        selectProveedor.appendChild(option);
+      });
+      
+      // Llenar filtro de proveedores
+      const filtroProveedor = document.getElementById('filtro-proveedor');
+      filtroProveedor.innerHTML = '<option value="">Todos los proveedores</option>';
+      proveedores.forEach(proveedor => {
+        const option = document.createElement('option');
+        option.value = proveedor.id;
+        option.textContent = proveedor.nombre;
+        filtroProveedor.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error cargando proveedores:', error);
+  }
+}
+
+async function cargarInsumos() {
+  try {
+    const response = await fetch('/configuracion/insumos/api');
+    if (response.ok) {
+      insumos = await response.json();
+      mostrarInsumos(insumos);
+      document.getElementById('total-insumos').textContent = insumos.length;
+    } else {
+      console.error('Error cargando insumos');
+      mostrarMensaje('Error al cargar los insumos', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarMensaje('Error de conexión', 'error');
+  }
+}
+
+function mostrarInsumos(insumosFiltrados) {
+  const tbody = document.getElementById('tabla-insumos');
+  tbody.innerHTML = '';
+  
+  if (insumosFiltrados.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+          <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          <p>No hay insumos registrados</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  insumosFiltrados.forEach(insumo => {
+    const fila = document.createElement('tr');
+    fila.className = 'hover:bg-slate-50';
+    
+    const proveedor = proveedores.find(p => p.id === insumo.proveedor_id);
+    const nombreProveedor = proveedor ? proveedor.nombre : 'Sin proveedor';
+    
+    fila.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+        ${insumo.sku_padre || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${insumo.sku_hijo || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${insumo.nombre || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${insumo.unidad_medida || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${nombreProveedor}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        $${formatearNumero(insumo.precio_costo || 0)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        $${formatearNumero(insumo.precio_venta || 0)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="editarInsumo(${insumo.id})" class="text-green-600 hover:text-green-900 mr-3" title="Editar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </button>
+        <button onclick="eliminarInsumo(${insumo.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </td>
+    `;
+    
+    tbody.appendChild(fila);
+  });
+}
+
+function mostrarModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+  
+  if (modalId === 'modal-crear-insumo') {
+    if (!insumoEditando) {
+      document.getElementById('modal-titulo').textContent = 'Crear Nuevo Insumo';
+      document.getElementById('form-insumo').reset();
+      document.getElementById('insumo-id').value = '';
+      calcularMargen();
+    }
+  }
+}
+
+function cerrarModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+  
+  if (modalId === 'modal-crear-insumo') {
+    insumoEditando = null;
+    document.getElementById('form-insumo').reset();
+    calcularMargen();
+  }
+  
+  if (modalId === 'modal-confirmar-eliminar') {
+    insumoEliminar = null;
+  }
+}
+
+function editarInsumo(id) {
+  const insumo = insumos.find(i => i.id === id);
+  if (!insumo) return;
+  
+  insumoEditando = insumo;
+  
+  // Llenar el formulario
+  document.getElementById('insumo-id').value = insumo.id;
+  document.getElementById('insumo-sku-padre').value = insumo.sku_padre || '';
+  document.getElementById('insumo-sku-hijo').value = insumo.sku_hijo || '';
+  document.getElementById('insumo-nombre').value = insumo.nombre || '';
+  document.getElementById('insumo-unidad-medida').value = insumo.unidad_medida || '';
+  document.getElementById('insumo-proveedor').value = insumo.proveedor_id || '';
+  document.getElementById('insumo-precio-costo').value = insumo.precio_costo || '';
+  document.getElementById('insumo-precio-venta').value = insumo.precio_venta || '';
+  
+  document.getElementById('modal-titulo').textContent = 'Editar Insumo';
+  calcularMargen();
+  mostrarModal('modal-crear-insumo');
+}
+
+function eliminarInsumo(id) {
+  const insumo = insumos.find(i => i.id === id);
+  if (!insumo) return;
+  
+  insumoEliminar = insumo;
+  
+  document.getElementById('insumo-eliminar-info').innerHTML = `
+    <div class="text-sm">
+      <p><strong>SKU Padre:</strong> ${insumo.sku_padre}</p>
+      <p><strong>Nombre:</strong> ${insumo.nombre}</p>
+      <p><strong>Precio Costo:</strong> $${formatearNumero(insumo.precio_costo)}</p>
+    </div>
+  `;
+  
+  mostrarModal('modal-confirmar-eliminar');
+}
+
+async function guardarInsumo() {
+  const formData = new FormData(document.getElementById('form-insumo'));
+  const insumoData = {};
+  
+  // Procesar cada campo del formulario
+  for (let [key, value] of formData.entries()) {
+    if (value.trim() !== '') {
+      if (key === 'id' || key === 'proveedor_id') {
+        const numValue = parseInt(value);
+        if (!isNaN(numValue)) {
+          insumoData[key] = numValue;
+        }
+      } else if (key === 'precio_costo' || key === 'precio_venta') {
+        const floatValue = parseFloat(value);
+        if (!isNaN(floatValue)) {
+          insumoData[key] = floatValue;
+        }
+      } else {
+        insumoData[key] = value;
+      }
+    } else {
+      // Campos opcionales
+      if (key === 'sku_hijo') {
+        insumoData[key] = null;
+      }
+    }
+  }
+  
+  // Validaciones
+  if (!insumoData.sku_padre || !insumoData.nombre || !insumoData.unidad_medida || !insumoData.proveedor_id || !insumoData.precio_costo || !insumoData.precio_venta) {
+    mostrarMensaje('Todos los campos marcados con * son obligatorios', 'error');
+    return;
+  }
+  
+  console.log('Datos a enviar:', insumoData);
+  
+  try {
+    let response;
+    if (insumoEditando) {
+      // Actualizar
+      if (!insumoData.id) {
+        insumoData.id = insumoEditando.id;
+      }
+      response = await fetch('/configuracion/insumos/api', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(insumoData)
+      });
+    } else {
+      // Crear
+      delete insumoData.id;
+      response = await fetch('/configuracion/insumos/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(insumoData)
+      });
+    }
+    
+    console.log('Response status:', response.status);
+    
+    if (response.ok) {
+      const mensaje = insumoEditando ? 'Insumo actualizado correctamente' : 'Insumo creado correctamente';
+      mostrarMensaje(mensaje, 'success');
+      cerrarModal('modal-crear-insumo');
+      cargarInsumos();
+    } else {
+      const error = await response.json();
+      console.error('Error del servidor:', error);
+      mostrarMensaje('Error: ' + (error.detail || 'Error desconocido'), 'error');
+    }
+  } catch (error) {
+    console.error('Error completo:', error);
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+async function confirmarEliminarInsumo() {
+  if (!insumoEliminar) return;
+  
+  try {
+    const response = await fetch(`/configuracion/insumos/api/${insumoEliminar.id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      mostrarMensaje('Insumo eliminado correctamente', 'success');
+      cerrarModal('modal-confirmar-eliminar');
+      cargarInsumos();
+    } else {
+      const error = await response.json();
+      mostrarMensaje('Error: ' + error.detail, 'error');
+    }
+  } catch (error) {
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+function aplicarFiltros() {
+  const filtroNombre = document.getElementById('filtro-nombre').value.toLowerCase();
+  const filtroSkuPadre = document.getElementById('filtro-sku-padre').value.toLowerCase();
+  const filtroProveedor = document.getElementById('filtro-proveedor').value;
+  
+  const insumosFiltrados = insumos.filter(insumo => {
+    const coincideNombre = !filtroNombre || (insumo.nombre && insumo.nombre.toLowerCase().includes(filtroNombre));
+    const coincideSkuPadre = !filtroSkuPadre || (insumo.sku_padre && insumo.sku_padre.toLowerCase().includes(filtroSkuPadre));
+    const coincideProveedor = !filtroProveedor || insumo.proveedor_id == filtroProveedor;
+    
+    return coincideNombre && coincideSkuPadre && coincideProveedor;
+  });
+  
+  mostrarInsumos(insumosFiltrados);
+}
+
+function limpiarFiltros() {
+  document.getElementById('filtro-nombre').value = '';
+  document.getElementById('filtro-sku-padre').value = '';
+  document.getElementById('filtro-proveedor').value = '';
+  mostrarInsumos(insumos);
+}
+
+function calcularMargen() {
+  const precioCosto = parseFloat(document.getElementById('insumo-precio-costo').value) || 0;
+  const precioVenta = parseFloat(document.getElementById('insumo-precio-venta').value) || 0;
+  
+  const margenGanancia = precioVenta - precioCosto;
+  const porcentajeMargen = precioCosto > 0 ? ((margenGanancia / precioCosto) * 100) : 0;
+  
+  document.getElementById('margen-ganancia').textContent = '$' + formatearNumero(margenGanancia);
+  document.getElementById('porcentaje-margen').textContent = porcentajeMargen.toFixed(2) + '%';
+  
+  // Cambiar color según el margen
+  const elementoMargen = document.getElementById('margen-ganancia');
+  const elementoPorcentaje = document.getElementById('porcentaje-margen');
+  
+  if (margenGanancia < 0) {
+    elementoMargen.className = 'font-medium text-red-600';
+    elementoPorcentaje.className = 'font-medium text-red-600';
+  } else if (margenGanancia === 0) {
+    elementoMargen.className = 'font-medium text-slate-600';
+    elementoPorcentaje.className = 'font-medium text-slate-600';
+  } else {
+    elementoMargen.className = 'font-medium text-green-600';
+    elementoPorcentaje.className = 'font-medium text-green-600';
+  }
+}
+
+function mostrarMensaje(mensaje, tipo) {
+  // Crear elemento de notificación
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+    tipo === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+  }`;
+  notificacion.textContent = mensaje;
+  
+  document.body.appendChild(notificacion);
+  
+  // Remover después de 3 segundos
+  setTimeout(() => {
+    notificacion.remove();
+  }, 3000);
+}
+
+function formatearNumero(numero) {
+  return new Intl.NumberFormat('es-CL').format(numero);
+}
+</script>
+
+<style>
+/* Estilos específicos para gestión de insumos */
+.modal {
+  backdrop-filter: blur(4px);
+}
+
+/* Animaciones para notificaciones */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Colores para campos de precio */
+.precio-input:focus {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+</style>
+
+{% endblock %}

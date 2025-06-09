@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}Proveedores{% endblock %}
+{% block header %}Gestión de Proveedores{% endblock %}
+{% block breadcrumb %}Configuración > Proveedores{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Header con botón crear -->
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-800">Gestión de Proveedores</h1>
+      <p class="text-slate-600 mt-1">Administra el directorio de proveedores</p>
+    </div>
+    <button onclick="mostrarModal('modal-crear-proveedor')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      <span>Nuevo Proveedor</span>
+    </button>
+  </div>
+
+  <!-- Filtros de búsqueda -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Filtros de Búsqueda</h3>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Buscar por nombre</label>
+        <input type="text" id="filtro-nombre" placeholder="Nombre del proveedor..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Buscar por RUT</label>
+        <input type="text" id="filtro-rut" placeholder="RUT del proveedor..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago</label>
+        <select id="filtro-forma-pago" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+          <option value="">Todas las formas</option>
+          <option value="contado">Contado</option>
+          <option value="credito_30">Crédito 30 días</option>
+          <option value="credito_60">Crédito 60 días</option>
+          <option value="credito_90">Crédito 90 días</option>
+        </select>
+      </div>
+      <div class="flex items-end space-x-2">
+        <button type="button" id="btn-limpiar-filtros" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Limpiar</span>
+        </button>
+        <button type="button" id="btn-aplicar-filtros" class="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center space-x-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de proveedores -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-6 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-800">Lista de Proveedores</h3>
+      <p class="text-sm text-slate-600 mt-1">Total de proveedores registrados: <span id="total-proveedores">0</span></p>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">RUT</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Dirección</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contacto</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Forma de Pago</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-proveedores" class="bg-white divide-y divide-slate-200">
+          <!-- Contenido se carga dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Proveedor -->
+<div id="modal-crear-proveedor" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-slate-200">
+        <h3 id="modal-titulo" class="text-lg font-semibold text-slate-800">Crear Nuevo Proveedor</h3>
+      </div>
+      
+      <div class="p-6">
+        <form id="form-proveedor" class="space-y-4">
+          <input type="hidden" id="proveedor-id" name="id">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">RUT *</label>
+              <input type="text" id="proveedor-rut" name="rut" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="76.123.456-7">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">Nombre *</label>
+              <input type="text" id="proveedor-nombre" name="nombre" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Nombre del proveedor">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Dirección</label>
+            <input type="text" id="proveedor-direccion" name="direccion" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Dirección del proveedor">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Contacto</label>
+            <input type="text" id="proveedor-contacto" name="contacto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Teléfono o email de contacto">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">Forma de Pago</label>
+            <select id="proveedor-forma-pago" name="forma_pago" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+              <option value="">Seleccionar forma de pago...</option>
+              <option value="contado">Contado</option>
+              <option value="credito_30">Crédito 30 días</option>
+              <option value="credito_60">Crédito 60 días</option>
+              <option value="credito_90">Crédito 90 días</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-crear-proveedor')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-guardar-proveedor" class="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>Guardar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div id="modal-confirmar-eliminar" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div class="p-6">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800">Confirmar Eliminación</h3>
+            <p class="text-sm text-slate-600 mt-1">¿Está seguro de que desea eliminar este proveedor?</p>
+          </div>
+        </div>
+        
+        <div id="proveedor-eliminar-info" class="mt-4 p-4 bg-slate-50 rounded-lg">
+          <!-- Info del proveedor a eliminar -->
+        </div>
+      </div>
+      
+      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+        <button type="button" onclick="cerrarModal('modal-confirmar-eliminar')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+          Cancelar
+        </button>
+        <button type="button" id="btn-confirmar-eliminar" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span>Eliminar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let proveedores = [];
+let proveedorEditando = null;
+let proveedorEliminar = null;
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  cargarProveedores();
+  
+  // Event listeners
+  document.getElementById('btn-guardar-proveedor').addEventListener('click', guardarProveedor);
+  document.getElementById('btn-confirmar-eliminar').addEventListener('click', confirmarEliminarProveedor);
+  document.getElementById('btn-limpiar-filtros').addEventListener('click', limpiarFiltros);
+  document.getElementById('btn-aplicar-filtros').addEventListener('click', aplicarFiltros);
+  
+  // Filtros en tiempo real
+  document.getElementById('filtro-nombre').addEventListener('input', aplicarFiltros);
+  document.getElementById('filtro-rut').addEventListener('input', aplicarFiltros);
+  document.getElementById('filtro-forma-pago').addEventListener('change', aplicarFiltros);
+});
+
+async function cargarProveedores() {
+  try {
+    const response = await fetch('/configuracion/proveedores/api');
+    if (response.ok) {
+      proveedores = await response.json();
+      mostrarProveedores(proveedores);
+      document.getElementById('total-proveedores').textContent = proveedores.length;
+    } else {
+      console.error('Error cargando proveedores');
+      mostrarMensaje('Error al cargar los proveedores', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarMensaje('Error de conexión', 'error');
+  }
+}
+
+function mostrarProveedores(proveedoresFiltrados) {
+  const tbody = document.getElementById('tabla-proveedores');
+  tbody.innerHTML = '';
+  
+  if (proveedoresFiltrados.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+          <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          <p>No hay proveedores registrados</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  proveedoresFiltrados.forEach(proveedor => {
+    const fila = document.createElement('tr');
+    fila.className = 'hover:bg-slate-50';
+    
+    // Formatear forma de pago
+    const formaPagoFormateada = formatearFormaPago(proveedor.forma_pago);
+    
+    fila.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+        ${proveedor.rut || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${proveedor.nombre || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${proveedor.direccion || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        ${proveedor.contacto || '-'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${obtenerColorFormaPago(proveedor.forma_pago)}">
+          ${formaPagoFormateada}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="editarProveedor(${proveedor.id})" class="text-orange-600 hover:text-orange-900 mr-3" title="Editar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </button>
+        <button onclick="eliminarProveedor(${proveedor.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </td>
+    `;
+    
+    tbody.appendChild(fila);
+  });
+}
+
+function mostrarModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+  
+  if (modalId === 'modal-crear-proveedor') {
+    if (!proveedorEditando) {
+      document.getElementById('modal-titulo').textContent = 'Crear Nuevo Proveedor';
+      document.getElementById('form-proveedor').reset();
+      document.getElementById('proveedor-id').value = '';
+    }
+  }
+}
+
+function cerrarModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+  
+  if (modalId === 'modal-crear-proveedor') {
+    proveedorEditando = null;
+    document.getElementById('form-proveedor').reset();
+  }
+  
+  if (modalId === 'modal-confirmar-eliminar') {
+    proveedorEliminar = null;
+  }
+}
+
+function editarProveedor(id) {
+  const proveedor = proveedores.find(p => p.id === id);
+  if (!proveedor) return;
+  
+  proveedorEditando = proveedor;
+  
+  // Llenar el formulario
+  document.getElementById('proveedor-id').value = proveedor.id;
+  document.getElementById('proveedor-rut').value = proveedor.rut || '';
+  document.getElementById('proveedor-nombre').value = proveedor.nombre || '';
+  document.getElementById('proveedor-direccion').value = proveedor.direccion || '';
+  document.getElementById('proveedor-contacto').value = proveedor.contacto || '';
+  document.getElementById('proveedor-forma-pago').value = proveedor.forma_pago || '';
+  
+  document.getElementById('modal-titulo').textContent = 'Editar Proveedor';
+  mostrarModal('modal-crear-proveedor');
+}
+
+function eliminarProveedor(id) {
+  const proveedor = proveedores.find(p => p.id === id);
+  if (!proveedor) return;
+  
+  proveedorEliminar = proveedor;
+  
+  document.getElementById('proveedor-eliminar-info').innerHTML = `
+    <div class="text-sm">
+      <p><strong>RUT:</strong> ${proveedor.rut}</p>
+      <p><strong>Nombre:</strong> ${proveedor.nombre}</p>
+      <p><strong>Dirección:</strong> ${proveedor.direccion || 'No especificada'}</p>
+    </div>
+  `;
+  
+  mostrarModal('modal-confirmar-eliminar');
+}
+
+async function guardarProveedor() {
+  const formData = new FormData(document.getElementById('form-proveedor'));
+  const proveedorData = {};
+  
+  // Procesar cada campo del formulario
+  for (let [key, value] of formData.entries()) {
+    if (value.trim() !== '') {
+      if (key === 'id') {
+        const numValue = parseInt(value);
+        if (!isNaN(numValue)) {
+          proveedorData[key] = numValue;
+        }
+      } else {
+        proveedorData[key] = value;
+      }
+    } else {
+      // Campos opcionales
+      if (key !== 'rut' && key !== 'nombre') {
+        proveedorData[key] = null;
+      }
+    }
+  }
+  
+  // Validaciones
+  if (!proveedorData.rut || !proveedorData.nombre) {
+    mostrarMensaje('RUT y nombre son obligatorios', 'error');
+    return;
+  }
+  
+  console.log('Datos a enviar:', proveedorData);
+  
+  try {
+    let response;
+    if (proveedorEditando) {
+      // Actualizar
+      if (!proveedorData.id) {
+        proveedorData.id = proveedorEditando.id;
+      }
+      response = await fetch('/configuracion/proveedores/api', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(proveedorData)
+      });
+    } else {
+      // Crear
+      delete proveedorData.id;
+      response = await fetch('/configuracion/proveedores/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(proveedorData)
+      });
+    }
+    
+    console.log('Response status:', response.status);
+    
+    if (response.ok) {
+      const mensaje = proveedorEditando ? 'Proveedor actualizado correctamente' : 'Proveedor creado correctamente';
+      mostrarMensaje(mensaje, 'success');
+      cerrarModal('modal-crear-proveedor');
+      cargarProveedores();
+    } else {
+      const error = await response.json();
+      console.error('Error del servidor:', error);
+      mostrarMensaje('Error: ' + (error.detail || 'Error desconocido'), 'error');
+    }
+  } catch (error) {
+    console.error('Error completo:', error);
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+async function confirmarEliminarProveedor() {
+  if (!proveedorEliminar) return;
+  
+  try {
+    const response = await fetch(`/configuracion/proveedores/api/${proveedorEliminar.id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      mostrarMensaje('Proveedor eliminado correctamente', 'success');
+      cerrarModal('modal-confirmar-eliminar');
+      cargarProveedores();
+    } else {
+      const error = await response.json();
+      mostrarMensaje('Error: ' + error.detail, 'error');
+    }
+  } catch (error) {
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+function aplicarFiltros() {
+  const filtroNombre = document.getElementById('filtro-nombre').value.toLowerCase();
+  const filtroRut = document.getElementById('filtro-rut').value.toLowerCase();
+  const filtroFormaPago = document.getElementById('filtro-forma-pago').value;
+  
+  const proveedoresFiltrados = proveedores.filter(proveedor => {
+    const coincideNombre = !filtroNombre || (proveedor.nombre && proveedor.nombre.toLowerCase().includes(filtroNombre));
+    const coincideRut = !filtroRut || (proveedor.rut && proveedor.rut.toLowerCase().includes(filtroRut));
+    const coincideFormaPago = !filtroFormaPago || proveedor.forma_pago === filtroFormaPago;
+    
+    return coincideNombre && coincideRut && coincideFormaPago;
+  });
+  
+  mostrarProveedores(proveedoresFiltrados);
+}
+
+function limpiarFiltros() {
+  document.getElementById('filtro-nombre').value = '';
+  document.getElementById('filtro-rut').value = '';
+  document.getElementById('filtro-forma-pago').value = '';
+  mostrarProveedores(proveedores);
+}
+
+function formatearFormaPago(formaPago) {
+  if (!formaPago) return 'No especificada';
+  
+  const formasPago = {
+    'contado': 'Contado',
+    'credito_30': 'Crédito 30 días',
+    'credito_60': 'Crédito 60 días',
+    'credito_90': 'Crédito 90 días',
+    'transferencia': 'Transferencia',
+    'cheque': 'Cheque'
+  };
+  
+  return formasPago[formaPago] || formaPago;
+}
+
+function obtenerColorFormaPago(formaPago) {
+  if (!formaPago) return 'bg-slate-100 text-slate-800';
+  
+  const colores = {
+    'contado': 'bg-green-100 text-green-800',
+    'credito_30': 'bg-blue-100 text-blue-800',
+    'credito_60': 'bg-yellow-100 text-yellow-800',
+    'credito_90': 'bg-red-100 text-red-800',
+    'transferencia': 'bg-purple-100 text-purple-800',
+    'cheque': 'bg-orange-100 text-orange-800'
+  };
+  
+  return colores[formaPago] || 'bg-slate-100 text-slate-800';
+}
+
+function mostrarMensaje(mensaje, tipo) {
+  // Crear elemento de notificación
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+    tipo === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+  }`;
+  notificacion.textContent = mensaje;
+  
+  document.body.appendChild(notificacion);
+  
+  // Remover después de 3 segundos
+  setTimeout(() => {
+    notificacion.remove();
+  }, 3000);
+}
+</script>
+
+<style>
+/* Estilos específicos para gestión de proveedores */
+.modal {
+  backdrop-filter: blur(4px);
+}
+
+/* Animaciones para notificaciones */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Colores para badges de forma de pago */
+.badge-forma-pago {
+  transition: all 0.2s ease-in-out;
+}
+</style>
+
+{% endblock %}
