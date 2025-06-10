@@ -94,12 +94,25 @@
         <span>Producción</span>
       </a>
 
-      <a href="/logistica/devoluciones" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17H5a2 2 0 01-2-2V7a2 2 0 012-2h4m0 0h6a2 2 0 012 2v4m-8-4v10m0 0h10a2 2 0 002-2v-2a2 2 0 00-2-2H9" />
+    <div class="space-y-1">
+      <div class="nav-item flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700 cursor-pointer" onclick="toggleSubmenu('logistica-submenu')">
+        <div class="flex items-center space-x-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 17H5a2 2 0 01-2-2V7a2 2 0 012-2h4m0 0h6a2 2 0 012 2v4m-8-4v10m0 0h10a2 2 0 002-2v-2a2 2 0 00-2-2H9" />
+          </svg>
+          <span>Logística</span>
+        </div>
+        <svg class="w-4 h-4 transition-transform" id="icon-logistica-submenu" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
-        <span>Logística</span>
-      </a>
+      </div>
+
+      <div id="logistica-submenu" class="ml-8 space-y-1 hidden">
+        <a href="/logistica/devoluciones" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">Devoluciones</a>
+        <a href="/bodega/facturas" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">Facturas de Compra</a>
+      </div>
+    </div>
       
       <a href="/configuracion" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

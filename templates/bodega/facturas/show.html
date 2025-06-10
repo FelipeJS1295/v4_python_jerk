@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Factura{% endblock %}
+{% block header %}Detalle de Factura{% endblock %}
+{% block breadcrumb %}Logística > Bodega > Factura #{{ factura.id }}{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-xl shadow border border-slate-200 space-y-6">
+
+  <!-- Información general -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <p class="text-sm text-slate-600">Proveedor:</p>
+      <p class="text-lg font-semibold">{{ factura.proveedor }}</p>
+    </div>
+    <div>
+      <p class="text-sm text-slate-600">N° Documento:</p>
+      <p class="text-lg font-semibold">{{ factura.numero_documento }}</p>
+    </div>
+    <div>
+      <p class="text-sm text-slate-600">Fecha Documento:</p>
+      <p class="text-lg">{{ factura.fecha_documento }}</p>
+    </div>
+    <div>
+      <p class="text-sm text-slate-600">Fecha Vencimiento:</p>
+      <p class="text-lg">{{ factura.fecha_vencimiento }}</p>
+    </div>
+  </div>
+
+  <!-- Tabla de insumos -->
+  <div>
+    <h3 class="text-md font-bold mb-2">Insumos Asociados</h3>
+    <table class="w-full table-auto border border-slate-300 text-sm">
+      <thead class="bg-slate-100">
+        <tr>
+          <th class="p-2 text-left">Nombre</th>
+          <th class="p-2 text-right">Cantidad</th>
+          <th class="p-2 text-right">Precio Unitario</th>
+          <th class="p-2 text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in insumos %}
+        <tr class="border-t">
+          <td class="p-2">{{ i.nombre }}</td>
+          <td class="p-2 text-right">{{ i.cantidad }}</td>
+          <td class="p-2 text-right">${{ '{:,.0f}'.format(i.precio_unitario) }}</td>
+          <td class="p-2 text-right">${{ '{:,.0f}'.format(i.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-slate-50 border-t font-semibold">
+        <tr>
+          <td colspan="3" class="p-2 text-right">Neto</td>
+          <td class="p-2 text-right">${{ '{:,.0f}'.format(factura.neto) }}</td>
+        </tr>
+        <tr>
+          <td colspan="3" class="p-2 text-right">IVA (19%)</td>
+          <td class="p-2 text-right">${{ '{:,.0f}'.format(factura.iva) }}</td>
+        </tr>
+        <tr>
+          <td colspan="3" class="p-2 text-right text-green-600">Total</td>
+          <td class="p-2 text-right text-green-600">${{ '{:,.0f}'.format(factura.total) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Botón volver -->
+  <div class="text-right">
+    <a href="/bodega/facturas" class="text-blue-600 hover:underline text-sm">← Volver a listado</a>
+  </div>
+
+</div>
+{% endblock %}

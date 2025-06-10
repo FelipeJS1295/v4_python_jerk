@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Factura de Compra{% endblock %}
+{% block header %}Nueva Factura de Compra{% endblock %}
+{% block breadcrumb %}Logística > Bodega > Nueva Factura{% endblock %}
+
+{% block content %}
+<form method="post" action="/bodega/facturas/guardar" class="space-y-6">
+  <div class="bg-white p-6 rounded-xl shadow border border-slate-200 space-y-4">
+
+    <!-- Proveedor -->
+    <div>
+      <label class="block text-sm font-medium text-slate-700 mb-1">Proveedor</label>
+      <select name="proveedor_id" required class="w-full border border-slate-300 rounded-md px-3 py-2">
+        <option value="">Seleccione proveedor</option>
+        {% for p in proveedores %}
+        <option value="{{ p.id }}">{{ p.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Documento y fechas -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Número de Documento</label>
+        <input type="text" name="numero_documento" required class="w-full border border-slate-300 rounded-md px-3 py-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha del Documento</label>
+        <input type="date" name="fecha_documento" required class="w-full border border-slate-300 rounded-md px-3 py-2">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha de Vencimiento</label>
+        <input type="date" name="fecha_vencimiento" required class="w-full border border-slate-300 rounded-md px-3 py-2">
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+      <select name="estado" class="w-full border border-slate-300 rounded-md px-3 py-2">
+        <option value="pendiente" selected>Pendiente</option>
+        <option value="pagada">Pagada</option>
+        <option value="atrasada">Atrasada</option>
+      </select>
+    </div>
+
+    <!-- Insumos -->
+    <div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">Insumos</label>
+      <div id="insumos-container" class="space-y-2">
+        <div class="grid grid-cols-5 gap-2">
+          <select name="insumo_ids" class="col-span-2 border border-slate-300 rounded-md px-2 py-1">
+            {% for i in insumos %}
+            <option value="{{ i.id }}">{{ i.nombre }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" step="0.01" name="cantidades" placeholder="Cantidad" class="border border-slate-300 rounded-md px-2 py-1" required>
+          <input type="number" step="0.01" name="precios_unitarios" placeholder="Precio Unit." class="border border-slate-300 rounded-md px-2 py-1" required>
+          <button type="button" onclick="agregarInsumo()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón guardar -->
+    <div class="text-right">
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md">Guardar Factura</button>
+    </div>
+  </div>
+</form>
+
+<script>
+function agregarInsumo() {
+  const container = document.getElementById('insumos-container');
+  const template = `
+    <div class="grid grid-cols-5 gap-2">
+      <select name="insumo_ids" class="col-span-2 border border-slate-300 rounded-md px-2 py-1">
+        {% for i in insumos %}
+        <option value="{{ i.id }}">{{ i.nombre }}</option>
+        {% endfor %}
+      </select>
+      <input type="number" step="0.01" name="cantidades" placeholder="Cantidad" class="border border-slate-300 rounded-md px-2 py-1" required>
+      <input type="number" step="0.01" name="precios_unitarios" placeholder="Precio Unit." class="border border-slate-300 rounded-md px-2 py-1" required>
+      <button type="button" onclick="this.parentElement.remove()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm">-</button>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', template);
+}
+</script>
+{% endblock %}
