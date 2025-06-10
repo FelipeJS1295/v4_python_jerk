@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="p-2 bg-blue-100 rounded-lg">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-3xl font-bold text-slate-800">Factura #{{ factura.id }}</h2>
+          <p class="text-slate-600">Detalle y gestión de pagos</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Información de la Factura -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-slate-200">
+      <h3 class="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Información General
+      </h3>
+      
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <div class="flex items-start gap-3">
+            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+            <div>
+              <p class="text-sm font-medium text-slate-500">Proveedor</p>
+              <p class="text-lg font-semibold text-slate-900">{{ factura.proveedor }}</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start gap-3">
+            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+            <div>
+              <p class="text-sm font-medium text-slate-500">Fecha Documento</p>
+              <p class="text-lg text-slate-900">{{ factura.fecha_documento }}</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start gap-3">
+            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+            <div>
+              <p class="text-sm font-medium text-slate-500">Fecha Vencimiento</p>
+              <p class="text-lg text-slate-900">{{ factura.fecha_vencimiento }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen Financiero -->
+        <div class="bg-gradient-to-br from-slate-50 to-blue-50 rounded-lg p-4 border border-slate-200">
+          <h4 class="font-semibold text-slate-800 mb-3">Resumen Financiero</h4>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">Total Factura:</span>
+              <span class="font-bold text-xl text-slate-900">${{ factura.total|int }}</span>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">Total Pagado:</span>
+              <span class="font-semibold text-green-600">${{ total_pagado|int }}</span>
+            </div>
+            
+            <hr class="border-slate-300">
+            
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">Faltante:</span>
+              <span class="font-bold text-lg {% if faltante > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                ${{ faltante|int }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagos Realizados -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-slate-200">
+      <h3 class="text-xl font-semibold text-slate-800 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        Pagos Realizados
+      </h3>
+
+      {% if pagos %}
+        <div class="space-y-3">
+          {% for pago in pagos %}
+          <div class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center gap-4">
+              <div class="p-2 bg-green-100 rounded-full">
+                {% if pago.tipo == 'cheque' %}
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                {% elif pago.tipo == 'transferencia' %}
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                  </svg>
+                {% else %}
+                  <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  </svg>
+                {% endif %}
+              </div>
+              <div>
+                <p class="font-medium text-slate-900 capitalize">{{ pago.tipo }} #{{ pago.numero }}</p>
+                <p class="text-sm text-slate-600">{{ pago.fecha }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <p class="font-bold text-green-600">${{ pago.monto|int }}</p>
+              </div>
+              <button onclick="confirmarEliminar({{ pago.id }})" 
+                      class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200" 
+                      title="Eliminar pago">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center py-8">
+          <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-slate-900">Sin pagos registrados</h3>
+          <p class="mt-1 text-sm text-slate-500">Esta factura aún no tiene pagos asociados.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Botón Agregar Pago -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-semibold text-slate-800 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Gestión de Pagos
+          </h3>
+          <p class="text-slate-600 mt-1">
+            {% if faltante > 0 %}
+              Registra un nuevo pago. Falta por pagar: <strong class="text-red-600">${{ faltante|int }}</strong>
+            {% else %}
+              <span class="text-green-600 font-medium">✅ Factura completamente pagada</span>
+            {% endif %}
+          </p>
+        </div>
+        {% if faltante > 0 %}
+        <button id="openModalBtn" 
+                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Agregar Pago
+        </button>
+        {% else %}
+        <div class="inline-flex items-center px-6 py-3 bg-green-100 text-green-700 font-medium rounded-lg border border-green-200">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Factura Pagada
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Agregar Pago -->
+<div id="pagoModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <!-- Header del Modal -->
+    <div class="flex items-center justify-between p-6 border-b border-slate-200">
+      <div>
+        <h3 class="text-xl font-semibold text-slate-800">Agregar Nuevo Pago</h3>
+        <p class="text-sm text-slate-600 mt-1">Factura #{{ factura.id }}</p>
+      </div>
+      <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Contenido del Modal -->
+    <div class="p-6">
+      <form method="post" action="/finanzas/factura/{{ factura.id }}/agregar-pago" class="space-y-4" id="pagoForm">
+        <div>
+          <label for="tipo" class="block text-sm font-medium text-slate-700 mb-2">Tipo de Pago</label>
+          <select name="tipo" id="tipo" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+            <option value="cheque">💳 Cheque</option>
+            <option value="transferencia">🏦 Transferencia</option>
+            <option value="efectivo">💵 Efectivo</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="numero" class="block text-sm font-medium text-slate-700 mb-2">Número de Referencia</label>
+          <input type="text" name="numero" id="numero" placeholder="Ej: 001234" 
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+        </div>
+
+        <div>
+          <label for="fecha" class="block text-sm font-medium text-slate-700 mb-2">Fecha del Pago</label>
+          <input type="date" name="fecha" id="fecha" 
+                 class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+        </div>
+
+        <div>
+          <label for="monto" class="block text-sm font-medium text-slate-700 mb-2">
+            Monto 
+            <span class="text-xs text-slate-500">(Máximo: ${{ faltante|int }})</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-3 text-slate-500">$</span>
+            <input type="number" 
+                   name="monto" 
+                   id="monto" 
+                   placeholder="0"
+                   min="1"
+                   max="{{ faltante|int }}"
+                   class="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+          </div>
+          <div id="montoError" class="text-red-600 text-xs mt-1 hidden">
+            El monto no puede ser mayor al faltante (${{ faltante|int }})
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            Faltante por pagar: <strong class="text-red-600">${{ faltante|int }}</strong>
+          </div>
+        </div>
+
+        <!-- Botones del Modal -->
+        <div class="flex gap-3 pt-4">
+          <button type="button" id="cancelBtn"
+                  class="flex-1 px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" id="submitBtn"
+                  class="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
+            Agregar Pago
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// JavaScript para el modal
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('pagoModal');
+    const openBtn = document.getElementById('openModalBtn');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    // Abrir modal
+    openBtn.addEventListener('click', function() {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
+
+    // Cerrar modal
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    // Cerrar modal al hacer clic fuera
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Cerrar modal con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+});
+
+// Función para confirmar eliminación de pago
+function confirmarEliminar(pagoId) {
+    if (confirm('¿Estás seguro de que deseas eliminar este pago? Esta acción no se puede deshacer.')) {
+        // Redirigir directamente usando GET
+        window.location.href = `/finanzas/factura/{{ factura.id }}/eliminar-pago/${pagoId}`;
+    }
+}
+</script>
+{% endblock %}

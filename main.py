@@ -25,10 +25,13 @@ from routers import (
     dashboard,
     usuarios,
     configuracion,
+    finanzas,
 )
 
 from routers.logistica import devoluciones
 from routers.logistica.bodega import facturas
+
+
 
 # Routers de configuración
 from routers.config import (
@@ -176,3 +179,6 @@ app.include_router(config_productos.router)
 # Routers de logistica
 app.include_router(devoluciones.router)
 app.include_router(facturas.router)
+
+# Routers de Finanzas
+app.include_router(finanzas.router)
