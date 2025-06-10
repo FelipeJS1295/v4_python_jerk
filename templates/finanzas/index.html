@@ -1,145 +1,218 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-  <div class="max-w-7xl mx-auto">
-    <!-- Header -->
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Header minimalista -->
     <div class="mb-8">
-      <h2 class="text-3xl font-bold text-slate-800 mb-2">Facturas de Compra</h2>
-      <p class="text-slate-600">Gestión y seguimiento de facturas de proveedores</p>
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Facturas de Compra</h1>
+          <p class="text-gray-600 text-sm mt-1">Gestión y seguimiento de facturas</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/finanzas/cargar-facturas/" 
+             class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            Importar desde SII
+          </a>
+        </div>
+      </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-slate-200">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"/>
-          </svg>
-          Filtros de Búsqueda
-        </h3>
-        <button id="toggleFilters" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-          Ocultar Filtros
-        </button>
+    <!-- Dashboard de métricas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Facturas -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div class="flex items-center">
+          <div class="p-2 bg-blue-100 rounded-lg">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Total Facturas</p>
+            <p class="text-2xl font-bold text-gray-900">{{ total_facturas or 0 }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monto Total -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div class="flex items-center">
+          <div class="p-2 bg-green-100 rounded-lg">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Monto Total</p>
+            <p class="text-2xl font-bold text-gray-900">{{ total_monto or '$0' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deuda Pendiente -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div class="flex items-center">
+          <div class="p-2 bg-red-100 rounded-lg">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.996-.833-2.766 0L3.048 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Deuda Pendiente</p>
+            <p class="text-2xl font-bold text-red-600">{{ total_faltante or '$0' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Facturas Vencidas -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div class="flex items-center">
+          <div class="p-2 bg-orange-100 rounded-lg">
+            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Facturas Vencidas</p>
+            <p class="text-2xl font-bold text-orange-600">{{ total_vencidas or 0 }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deuda por Proveedor -->
+    {% if deuda_por_proveedor %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">Top 10 - Deuda por Proveedor</h3>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4">
+          {% for proveedor in deuda_por_proveedor %}
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div class="flex-1">
+              <h4 class="font-medium text-gray-900">{{ proveedor.nombre }}</h4>
+              <p class="text-sm text-gray-500">{{ proveedor.facturas_pendientes }} factura(s) pendiente(s)</p>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-bold text-red-600">{{ proveedor.deuda_total_formatted }}</p>
+              {% if proveedor.vencidas > 0 %}
+              <p class="text-sm text-orange-600">{{ proveedor.vencidas }} vencida(s)</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Filtros minimalistas -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">Filtros</h3>
+          <button id="toggleFilters" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            Contraer
+          </button>
+        </div>
       </div>
       
-      <form method="get" action="/finanzas/" id="filtrosForm" class="space-y-4">
+      <form method="get" action="/finanzas/" id="filtrosForm" class="p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Buscar por Proveedor -->
+          
+          <!-- Proveedor -->
           <div>
-            <label for="proveedor" class="block text-sm font-medium text-slate-700 mb-2">Proveedor</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Proveedor</label>
             <input type="text" 
                    name="proveedor" 
-                   id="proveedor" 
                    value="{{ request.query_params.get('proveedor', '') }}"
-                   placeholder="Nombre del proveedor"
-                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                   placeholder="Buscar por nombre..."
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
           </div>
 
-          <!-- Estado de Pago -->
+          <!-- Estado -->
           <div>
-            <label for="estado" class="block text-sm font-medium text-slate-700 mb-2">Estado</label>
-            <select name="estado" id="estado" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-              <option value="">Todos los estados</option>
-              <option value="vencido" {% if request.query_params.get('estado') == 'vencido' %}selected{% endif %}>
-                🔴 Vencidas
-              </option>
-              <option value="al_dia" {% if request.query_params.get('estado') == 'al_dia' %}selected{% endif %}>
-                🟢 Al día
-              </option>
-              <option value="por_vencer" {% if request.query_params.get('estado') == 'por_vencer' %}selected{% endif %}>
-                🟡 Por vencer (próximos 7 días)
-              </option>
-              <option value="pagado" {% if request.query_params.get('estado') == 'pagado' %}selected{% endif %}>
-                ✅ Pagadas
-              </option>
-              <option value="pendiente" {% if request.query_params.get('estado') == 'pendiente' %}selected{% endif %}>
-                📋 Pendientes de pago
-              </option>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+            <select name="estado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+              <option value="">Todos</option>
+              <option value="vencido" {% if request.query_params.get('estado') == 'vencido' %}selected{% endif %}>Vencidas</option>
+              <option value="pendiente" {% if request.query_params.get('estado') == 'pendiente' %}selected{% endif %}>Pendientes</option>
+              <option value="pagado" {% if request.query_params.get('estado') == 'pagado' %}selected{% endif %}>Pagadas</option>
+              <option value="por_vencer" {% if request.query_params.get('estado') == 'por_vencer' %}selected{% endif %}>Por vencer</option>
             </select>
           </div>
 
           <!-- Fecha Desde -->
           <div>
-            <label for="fecha_desde" class="block text-sm font-medium text-slate-700 mb-2">Fecha Desde</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Desde</label>
             <input type="date" 
                    name="fecha_desde" 
-                   id="fecha_desde" 
                    value="{{ request.query_params.get('fecha_desde', '') }}"
-                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
           </div>
 
           <!-- Fecha Hasta -->
           <div>
-            <label for="fecha_hasta" class="block text-sm font-medium text-slate-700 mb-2">Fecha Hasta</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Hasta</label>
             <input type="date" 
                    name="fecha_hasta" 
-                   id="fecha_hasta" 
                    value="{{ request.query_params.get('fecha_hasta', '') }}"
-                   class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
           </div>
 
           <!-- Monto Mínimo -->
           <div>
-            <label for="monto_min" class="block text-sm font-medium text-slate-700 mb-2">Monto Mínimo</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Monto Mínimo</label>
             <div class="relative">
-              <span class="absolute left-3 top-3 text-slate-500">$</span>
+              <span class="absolute left-3 top-2 text-gray-500 text-sm">$</span>
               <input type="number" 
                      name="monto_min" 
-                     id="monto_min" 
                      value="{{ request.query_params.get('monto_min', '') }}"
                      placeholder="0"
-                     class="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                     class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
             </div>
           </div>
 
           <!-- Monto Máximo -->
           <div>
-            <label for="monto_max" class="block text-sm font-medium text-slate-700 mb-2">Monto Máximo</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Monto Máximo</label>
             <div class="relative">
-              <span class="absolute left-3 top-3 text-slate-500">$</span>
+              <span class="absolute left-3 top-2 text-gray-500 text-sm">$</span>
               <input type="number" 
                      name="monto_max" 
-                     id="monto_max" 
                      value="{{ request.query_params.get('monto_max', '') }}"
-                     placeholder="999999"
-                     class="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                     placeholder="∞"
+                     class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
             </div>
           </div>
 
-          <!-- Ordenar Por -->
+          <!-- Ordenar -->
           <div>
-            <label for="orden" class="block text-sm font-medium text-slate-700 mb-2">Ordenar Por</label>
-            <select name="orden" id="orden" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-              <option value="fecha_vencimiento_asc" {% if request.query_params.get('orden') == 'fecha_vencimiento_asc' %}selected{% endif %}>
-                Fecha Venc. (Más antigua)
-              </option>
-              <option value="fecha_vencimiento_desc" {% if request.query_params.get('orden') == 'fecha_vencimiento_desc' %}selected{% endif %}>
-                Fecha Venc. (Más reciente)
-              </option>
-              <option value="monto_asc" {% if request.query_params.get('orden') == 'monto_asc' %}selected{% endif %}>
-                Monto (Menor a Mayor)
-              </option>
-              <option value="monto_desc" {% if request.query_params.get('orden') == 'monto_desc' %}selected{% endif %}>
-                Monto (Mayor a Menor)
-              </option>
-              <option value="proveedor" {% if request.query_params.get('orden') == 'proveedor' %}selected{% endif %}>
-                Proveedor A-Z
-              </option>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Ordenar por</label>
+            <select name="orden" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+              <option value="fecha_vencimiento_asc" {% if request.query_params.get('orden') == 'fecha_vencimiento_asc' %}selected{% endif %}>Vencimiento (más antigua)</option>
+              <option value="fecha_vencimiento_desc" {% if request.query_params.get('orden') == 'fecha_vencimiento_desc' %}selected{% endif %}>Vencimiento (más reciente)</option>
+              <option value="monto_desc" {% if request.query_params.get('orden') == 'monto_desc' %}selected{% endif %}>Monto (mayor a menor)</option>
+              <option value="monto_asc" {% if request.query_params.get('orden') == 'monto_asc' %}selected{% endif %}>Monto (menor a mayor)</option>
+              <option value="proveedor" {% if request.query_params.get('orden') == 'proveedor' %}selected{% endif %}>Proveedor A-Z</option>
             </select>
           </div>
 
           <!-- Botones -->
           <div class="flex items-end gap-2">
             <button type="submit" 
-                    class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition-colors">
               Buscar
             </button>
             <a href="/finanzas/" 
-               class="px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+               class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
@@ -149,82 +222,85 @@
       </form>
     </div>
 
-    <!-- Resumen de Resultados -->
-    {% if total_facturas is defined %}
+    <!-- Resumen de resultados -->
+    {% if total_facturas_filtradas is defined %}
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-      <div class="flex items-center justify-between text-blue-800">
-        <div class="flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <span class="font-medium">
-            {{ total_facturas }} factura(s) encontrada(s)
-          </span>
-        </div>
-        <div class="flex gap-6 text-sm">
-          {% if total_monto is defined %}
-          <span>Total: <strong>${{ total_monto|int }}</strong></span>
+      <div class="flex items-center justify-between">
+        <span class="text-blue-800 font-medium">{{ total_facturas_filtradas }} factura(s) encontrada(s)</span>
+        <div class="flex gap-6 text-sm text-blue-700">
+          {% if total_monto_filtrado is defined %}
+          <span>Total: <strong>{{ total_monto_filtrado }}</strong></span>
           {% endif %}
-          {% if total_faltante is defined %}
-          <span>Falta pagar: <strong class="text-red-600">${{ total_faltante|int }}</strong></span>
+          {% if total_faltante_filtrado is defined %}
+          <span>Por pagar: <strong class="text-red-600">{{ total_faltante_filtrado }}</strong></span>
           {% endif %}
         </div>
       </div>
     </div>
     {% endif %}
 
-    <!-- Table Container -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden border border-slate-200">
+    <!-- Tabla minimalista -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead>
-            <tr class="bg-slate-50 border-b border-slate-200">
-              <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proveedor</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha Venc.</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Falta Pagar</th>
-              <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
-              <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Folio</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vencimiento</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Pendiente</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody class="bg-white divide-y divide-gray-200">
             {% for factura in facturas %}
-            <tr class="hover:bg-slate-25 transition-colors duration-150">
-              <td class="px-4 py-3">
-                <div class="text-sm font-medium text-slate-900">{{ factura.proveedor }}</div>
-                <div class="text-xs text-slate-500">{{ factura.fecha_documento }}</div>
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4">
+                <div>
+                  <div class="text-sm font-medium text-gray-900">{{ factura.proveedor[:30] }}</div>
+                  <div class="text-xs text-gray-500">{{ factura.fecha_documento|dd_mm_yyyy }}</div>
+                </div>
               </td>
-              <td class="px-4 py-3">
-                <div class="text-sm text-slate-900">{{ factura.fecha_vencimiento }}</div>
+              <td class="px-6 py-4">
+                <span class="text-sm font-mono text-gray-900">{{ factura.numero_documento or factura.id }}</span>
               </td>
-              <td class="px-4 py-3 text-right">
-                <div class="text-sm font-medium text-slate-900">${{ factura.total|int }}</div>
+              <td class="px-6 py-4">
+                <span class="text-sm text-gray-900">{{ factura.fecha_vencimiento|dd_mm_yyyy }}</span>
               </td>
-              <td class="px-4 py-3 text-right">
+              <td class="px-6 py-4 text-right">
+                <span class="text-sm font-medium text-gray-900">{{ factura.total_formatted or factura.total }}</span>
+              </td>
+              <td class="px-6 py-4 text-right">
                 {% if factura.faltante > 0 %}
-                  <div class="text-sm font-medium text-red-600">${{ factura.faltante|int }}</div>
+                  <span class="text-sm font-medium text-red-600">{{ factura.faltante_formatted or factura.faltante }}</span>
                 {% else %}
-                  <div class="text-sm font-medium text-green-600">$0</div>
+                  <span class="text-sm font-medium text-green-600">$0</span>
                 {% endif %}
               </td>
-              <td class="px-4 py-3 text-center">
-                {% if (factura.faltante|int) <= 0 %}
-                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+              <td class="px-6 py-4 text-center">
+                {% if factura.faltante <= 0 %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     Pagada
                   </span>
                 {% elif factura.dias_vencido > 0 %}
-                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 border border-red-200">
-                    {{ factura.dias_vencido }}d vencido
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    {{ factura.dias_vencido }}d vencida
+                  </span>
+                {% elif factura.dias_vencido >= -7 %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Por vencer
                   </span>
                 {% else %}
-                  <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     Pendiente
                   </span>
                 {% endif %}
               </td>
-              <td class="px-4 py-3 text-center">
+              <td class="px-6 py-4 text-center">
                 <a href="/finanzas/factura/{{ factura.id }}" 
-                   class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-300 rounded-md hover:bg-blue-50 transition-colors duration-150">
+                   class="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-300 rounded-md hover:bg-blue-50 transition-colors">
                   Ver
                 </a>
               </td>
@@ -234,14 +310,20 @@
         </table>
       </div>
       
-      <!-- Empty State -->
+      <!-- Estado vacío -->
       {% if not facturas %}
       <div class="text-center py-12">
-        <svg class="mx-auto h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-slate-900">No se encontraron facturas</h3>
-        <p class="mt-1 text-xs text-slate-500">No hay facturas que coincidan con los filtros aplicados.</p>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay facturas</h3>
+        <p class="mt-1 text-sm text-gray-500">No se encontraron facturas que coincidan con los filtros.</p>
+        <div class="mt-6">
+          <a href="/finanzas/cargar-facturas/" 
+             class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg">
+            Importar facturas
+          </a>
+        </div>
       </div>
       {% endif %}
     </div>
@@ -256,10 +338,10 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleBtn.addEventListener('click', function() {
         if (form.style.display === 'none') {
             form.style.display = 'block';
-            toggleBtn.textContent = 'Ocultar Filtros';
+            toggleBtn.textContent = 'Contraer';
         } else {
             form.style.display = 'none';
-            toggleBtn.textContent = 'Mostrar Filtros';
+            toggleBtn.textContent = 'Expandir';
         }
     });
 });
