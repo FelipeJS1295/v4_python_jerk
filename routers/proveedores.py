@@ -43,6 +43,20 @@ def obtener_proveedores():
     conn.close()
     return resultados
 
+@router.get("/api/{proveedor_id}", response_class=JSONResponse)
+def obtener_proveedor_por_id(proveedor_id: int):
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, rut, nombre, direccion, contacto, forma_pago FROM proveedores WHERE id = %s", (proveedor_id,))
+    proveedor = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not proveedor:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+
+    return proveedor
+
 @router.post("/api", response_class=JSONResponse)
 def crear_proveedor(proveedor: ProveedorCreate):
     conn = conectar_mysql()

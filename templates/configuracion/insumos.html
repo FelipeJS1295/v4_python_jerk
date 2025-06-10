@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function cargarProveedores() {
   try {
-    const response = await fetch('/proveedores/');
+    const response = await fetch('/configuracion/proveedores/api');
     if (response.ok) {
       proveedores = await response.json();
       
