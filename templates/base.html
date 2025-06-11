@@ -114,13 +114,37 @@
       </div>
     </div>
 
-    <a href="/finanzas" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
+<!-- Menú de Finanzas con submenú -->
+<div class="nav-item">
+  <button class="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors" 
+          onclick="toggleSubmenu('finanzas-submenu', 'finanzas-arrow')">
+    <div class="flex items-center space-x-3">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M3 10h11M9 21V3m9 4h3m-3 4h3m-3 4h3m-3 4h3" />
+              d="M3 10h11M9 21V3m9 4h3m-3 4h3m-3 4h3m-3 4h3" />
       </svg>
       <span>Finanzas</span>
+    </div>
+    <svg class="w-4 h-4 transition-transform duration-200" id="finanzas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </button>
+
+  <!-- Submenú -->
+  <div id="finanzas-submenu" class="hidden ml-8 mt-2 space-y-1">
+    <a href="/finanzas" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
+      <i class="fas fa-file-invoice-dollar w-4 h-4 text-center"></i>
+      <span>Facturas</span>
     </a>
+
+    <a href="/finanzas/cheques" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
+      <i class="fas fa-money-check-alt w-4 h-4 text-center"></i>
+      <span>Cheques</span>
+    </a>
+  </div>
+</div>
+
+
       
       <a href="/configuracion" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Calendario de Cheques{% endblock %}
+{% block header %}Calendario{% endblock %}
+{% block breadcrumb %}Finanzas > Cheques > Calendario{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+  <!-- Encabezado minimalista -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-light text-gray-900">Fechas programadas</h1>
+      <p class="text-sm text-gray-500 mt-1">Cheques organizados por fecha de cobro</p>
+    </div>
+    <a href="/finanzas/cheques" 
+       class="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-all duration-200">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+      </svg>
+      Volver a la lista
+    </a>
+  </div>
+
+  <!-- Grid de tarjetas minimalistas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {% for f in fechas %}
+    <a href="/finanzas/cheques/detalle-fecha?fecha={{ f.fecha }}" 
+       class="group block bg-white border border-gray-100 rounded-2xl p-6 hover:border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+      
+      <!-- Fecha destacada -->
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-200">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Fecha de Cobro</p>
+            <p class="text-lg font-semibold text-gray-900">{{ f.fecha.strftime('%d/%m/%Y') }}</p>
+          </div>
+        </div>
+        <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </div>
+
+      <!-- Métricas -->
+      <div class="space-y-4">
+        <!-- Cantidad de cheques -->
+        <div class="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </div>
+            <span class="text-sm font-medium text-gray-700">Cheques</span>
+          </div>
+          <span class="text-lg font-bold text-indigo-600">{{ f.cantidad }}</span>
+        </div>
+
+        <!-- Monto total -->
+        <div class="flex items-center justify-between py-3 px-4 bg-emerald-50 rounded-xl">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+              </svg>
+            </div>
+            <span class="text-sm font-medium text-gray-700">Total</span>
+          </div>
+          <span class="text-lg font-bold text-emerald-600">
+            ${{ "{:,.0f}".format(f.total).replace(",", ".") }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Indicador de acción -->
+      <div class="mt-6 pt-4 border-t border-gray-100">
+        <div class="flex items-center justify-center text-xs font-medium text-gray-500 group-hover:text-blue-600 transition-colors duration-200">
+          <span>Ver detalles</span>
+          <svg class="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </div>
+      </div>
+    </a>
+    {% else %}
+    <!-- Estado vacío elegante -->
+    <div class="col-span-full">
+      <div class="text-center py-16">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay fechas programadas</h3>
+        <p class="text-gray-500 max-w-sm mx-auto">
+          No se encontraron cheques con fechas programadas para cobro.
+        </p>
+        <div class="mt-6">
+          <a href="/finanzas/cheques" 
+             class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-colors duration-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Gestionar cheques
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<style>
+/* Animaciones y transiciones personalizadas */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+.group:hover .floating-icon {
+  animation: float 2s ease-in-out infinite;
+}
+
+/* Mejoras visuales adicionales */
+.group:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Transición suave para números */
+.group:hover .text-lg {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Gradiente sutil en hover */
+.group:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+</style>
+{% endblock %}

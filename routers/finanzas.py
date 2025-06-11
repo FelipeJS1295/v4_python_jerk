@@ -341,7 +341,8 @@ def agregar_pago(
     tipo: str = Form(...),
     numero: str = Form(...),
     fecha: date = Form(...),
-    monto: int = Form(...)
+    monto: int = Form(...),
+    estado: str = Form(default="pendiente")  # 👈 nuevo parámetro
 ):
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
@@ -356,14 +357,13 @@ def agregar_pago(
             conn.close()
             return RedirectResponse(url=f"/finanzas/factura/{factura_id}?error=factura_no_encontrada", status_code=303)
         
-        # Calcular total pagado actual (ENTEROS)
+        # Calcular total pagado actual
         cursor.execute("SELECT COALESCE(SUM(monto), 0) as total_pagado FROM pagos_factura WHERE factura_id = %s", (factura_id,))
         resultado = cursor.fetchone()
         total_pagado = int(resultado["total_pagado"]) if resultado["total_pagado"] else 0
         
-        # Calcular faltante (ENTEROS)
         faltante = int(factura["total"]) - total_pagado
-        
+
         # Validaciones
         if monto <= 0:
             cursor.close()
@@ -380,30 +380,24 @@ def agregar_pago(
             conn.close()
             return RedirectResponse(url=f"/finanzas/factura/{factura_id}?error=numero_requerido", status_code=303)
         
-        # Insertar el pago
+        # Insertar el pago con estado incluido
         cursor.execute("""
-            INSERT INTO pagos_factura (factura_id, tipo, numero, monto, fecha)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (factura_id, tipo, numero.strip(), monto, fecha))
+            INSERT INTO pagos_factura (factura_id, tipo, numero, monto, fecha, estado)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (factura_id, tipo, numero.strip(), monto, fecha, estado))
         
-        # Calcular nuevo faltante después del pago
+        # Calcular nuevo faltante
         nuevo_faltante = faltante - monto
-        
-        # Actualizar estado de la factura según el nuevo faltante
+
+        # Actualizar estado de la factura
         if nuevo_faltante <= 0:
             nuevo_estado = "pagada"
         else:
-            # Verificar si está vencida
             cursor.execute("SELECT fecha_vencimiento FROM facturas_compra WHERE id = %s", (factura_id,))
             fecha_venc = cursor.fetchone()["fecha_vencimiento"]
             dias_vencido = calcular_dias_vencido(fecha_venc)
-            
-            if dias_vencido > 0:
-                nuevo_estado = "vencida"
-            else:
-                nuevo_estado = "pendiente"
+            nuevo_estado = "vencida" if dias_vencido > 0 else "pendiente"
         
-        # Actualizar el estado en la base de datos
         cursor.execute("""
             UPDATE facturas_compra 
             SET estado = %s, updated_at = NOW() 
@@ -1026,3 +1020,107 @@ def formatear_fecha(fecha):
         return fecha.strftime('%d-%m-%Y')
     except:
         return str(fecha)
+
+@router.get("/cheques", response_class=HTMLResponse)
+def listar_cheques(request: Request, cliente: Optional[str] = None, estado: Optional[str] = None, desde: Optional[str] = None, hasta: Optional[str] = None):
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT p.id, c.nombre AS cliente, f.numero_documento, p.numero AS cheque, p.monto, p.estado, p.fecha
+        FROM pagos_factura p
+        JOIN facturas_compra f ON f.id = p.factura_id
+        JOIN proveedores c ON f.proveedor_id = c.id
+        WHERE p.tipo = 'cheque'
+    """
+    params = []
+
+    if cliente:
+        query += " AND c.nombre LIKE %s"
+        params.append(f"%{cliente}%")
+
+    if estado:
+        query += " AND p.estado = %s"
+        params.append(estado)
+
+    if desde:
+        query += " AND p.fecha >= %s"
+        params.append(desde)
+
+    if hasta:
+        query += " AND p.fecha <= %s"
+        params.append(hasta)
+
+    query += " ORDER BY p.fecha ASC"
+
+    cursor.execute(query, params)
+    cheques = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return templates.TemplateResponse("finanzas/cheques/index.html", {
+        "request": request,
+        "cheques": cheques,
+    })
+
+@router.post("/cheques/{pago_id}/actualizar-estado")
+def actualizar_estado_cheque(pago_id: int, nuevo_estado: str = Form(...)):
+    conn = conectar_mysql()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE pagos_factura SET estado = %s WHERE id = %s", (nuevo_estado, pago_id))
+        conn.commit()
+        return RedirectResponse(url="/finanzas/cheques?success=estado_actualizado", status_code=303)
+    except:
+        conn.rollback()
+        return RedirectResponse(url="/finanzas/cheques?error=fallo_actualizar", status_code=303)
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.get("/cheques/calendario", response_class=HTMLResponse)
+def ver_calendario_cheques(request: Request):
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT fecha, COUNT(*) AS cantidad, SUM(monto) AS total
+        FROM pagos_factura
+        WHERE tipo = 'cheque'
+        GROUP BY fecha
+        ORDER BY fecha ASC
+    """)
+    fechas = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return templates.TemplateResponse("finanzas/cheques/calendario.html", {
+        "request": request,
+        "fechas": fechas
+    })
+
+@router.get("/cheques/detalle-fecha", response_class=HTMLResponse)
+def detalle_cheques_por_fecha(request: Request, fecha: str):
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT p.id, f.numero_documento, c.nombre AS cliente, p.numero AS cheque, p.monto, p.estado
+        FROM pagos_factura p
+        JOIN facturas_compra f ON f.id = p.factura_id
+        JOIN proveedores c ON f.proveedor_id = c.id
+        WHERE p.tipo = 'cheque' AND p.fecha = %s
+        ORDER BY c.nombre
+    """, (fecha,))
+    cheques = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return templates.TemplateResponse("finanzas/cheques/detalle_fecha.html", {
+        "request": request,
+        "cheques": cheques,
+        "fecha": fecha
+    })
