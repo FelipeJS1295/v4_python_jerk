@@ -1,0 +1,239 @@
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi.responses import JSONResponse
+import os
+import uuid
+import shutil
+from PIL import Image
+from pathlib import Path
+from typing import Optional
+
+# Crear router
+router = APIRouter()
+
+# Configuración
+PROJECT_ROOT = Path("/var/www/v4_python_jerk")
+UPLOAD_DIR = PROJECT_ROOT / "static" / "images" / "productos"
+THUMBNAILS_DIR = UPLOAD_DIR / "thumbnails"
+TEMP_DIR = PROJECT_ROOT / "uploads" / "temp"
+BASE_URL = "http://147.79.74.244:8080/images/productos"
+
+def ensure_directories():
+    """Crear directorios necesarios"""
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    THUMBNAILS_DIR.mkdir(parents=True, exist_ok=True)
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+def optimize_image(input_path: Path, output_path: Path, quality: int = 85, max_width: int = 1200) -> bool:
+    """Optimizar imagen manteniendo calidad"""
+    try:
+        with Image.open(input_path) as img:
+            # Convertir a RGB si es necesario
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            
+            # Redimensionar si es muy grande
+            if img.width > max_width:
+                ratio = max_width / img.width
+                new_height = int(img.height * ratio)
+                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Guardar optimizada
+            img.save(output_path, 'JPEG', quality=quality, optimize=True)
+            return True
+            
+    except Exception as e:
+        print(f"Error optimizando imagen: {e}")
+        return False
+
+def create_thumbnail(image_path: Path, thumb_path: Path, size: tuple = (300, 300)) -> bool:
+    """Crear thumbnail de imagen"""
+    try:
+        with Image.open(image_path) as img:
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            
+            img.thumbnail(size, Image.Resampling.LANCZOS)
+            img.save(thumb_path, 'JPEG', quality=80, optimize=True)
+            return True
+            
+    except Exception as e:
+        print(f"Error creando thumbnail: {e}")
+        return False
+
+def validate_image_file(file: UploadFile) -> bool:
+    """Validar archivo de imagen"""
+    if not file.content_type or not file.content_type.startswith('image/'):
+        return False
+    
+    allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+    file_extension = Path(file.filename).suffix.lower()
+    
+    return file_extension in allowed_extensions
+
+@router.post("/configuracion/productos/upload-image")
+async def upload_product_image(
+    image: UploadFile = File(...),
+    product_id: str = Form(...)
+):
+    """Endpoint para subir imágenes de productos"""
+    
+    ensure_directories()
+    
+    if not validate_image_file(image):
+        raise HTTPException(
+            status_code=400, 
+            detail="Formato de archivo no válido. Soportados: JPG, PNG, GIF, WEBP"
+        )
+    
+    content = await image.read()
+    
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=400, 
+            detail="La imagen es demasiado grande (máximo 10MB)"
+        )
+    
+    if len(content) == 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="El archivo está vacío"
+        )
+    
+    temp_file = None
+    final_file = None
+    thumb_file = None
+    
+    try:
+        file_extension = Path(image.filename).suffix.lower()
+        unique_id = uuid.uuid4().hex[:8]
+        unique_filename = f"{product_id}_{unique_id}.jpg"
+        
+        temp_file = TEMP_DIR / f"temp_{unique_id}{file_extension}"
+        final_file = UPLOAD_DIR / unique_filename
+        thumb_file = THUMBNAILS_DIR / unique_filename
+        
+        # Guardar archivo temporal
+        with open(temp_file, 'wb') as f:
+            f.write(content)
+        
+        if not temp_file.exists() or temp_file.stat().st_size == 0:
+            raise Exception("Error guardando archivo temporal")
+        
+        # Optimizar imagen
+        if not optimize_image(temp_file, final_file):
+            shutil.copy2(temp_file, final_file)
+            print(f"Warning: Optimización falló, usando archivo original")
+        
+        if not final_file.exists():
+            raise Exception("Error guardando imagen final")
+        
+        # Crear thumbnail
+        if not create_thumbnail(final_file, thumb_file):
+            print(f"Warning: No se pudo crear thumbnail")
+        
+        image_url = f"{BASE_URL}/{unique_filename}"
+        thumbnail_url = f"{BASE_URL}/thumbnails/{unique_filename}" if thumb_file.exists() else None
+        
+        return JSONResponse(content={
+            "success": True,
+            "url": image_url,
+            "thumbnail_url": thumbnail_url,
+            "filename": unique_filename,
+            "size": final_file.stat().st_size,
+            "message": "Imagen subida correctamente"
+        })
+        
+    except Exception as e:
+        print(f"Error subiendo imagen: {e}")
+        
+        # Limpiar archivos en caso de error
+        if temp_file and temp_file.exists():
+            temp_file.unlink(missing_ok=True)
+        if final_file and final_file.exists():
+            final_file.unlink(missing_ok=True)
+        if thumb_file and thumb_file.exists():
+            thumb_file.unlink(missing_ok=True)
+        
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+    
+    finally:
+        if temp_file and temp_file.exists():
+            temp_file.unlink(missing_ok=True)
+
+@router.delete("/configuracion/productos/delete-image/{filename}")
+async def delete_product_image(filename: str):
+    """Endpoint para eliminar imágenes"""
+    try:
+        if not filename or '..' in filename or '/' in filename:
+            raise HTTPException(status_code=400, detail="Nombre de archivo inválido")
+        
+        image_path = UPLOAD_DIR / filename
+        thumb_path = THUMBNAILS_DIR / filename
+        
+        deleted_files = []
+        
+        if image_path.exists():
+            image_path.unlink()
+            deleted_files.append("imagen principal")
+        
+        if thumb_path.exists():
+            thumb_path.unlink()
+            deleted_files.append("thumbnail")
+        
+        if not deleted_files:
+            raise HTTPException(status_code=404, detail="Imagen no encontrada")
+        
+        return JSONResponse(content={
+            "success": True,
+            "deleted_files": deleted_files,
+            "message": f"Eliminados: {', '.join(deleted_files)}"
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error eliminando imagen: {e}")
+        raise HTTPException(status_code=500, detail="Error eliminando imagen")
+
+@router.get("/configuracion/productos/storage-info")
+async def get_storage_info():
+    """Información de almacenamiento"""
+    try:
+        total_images = 0
+        total_size = 0
+        total_thumbnails = 0
+        
+        if UPLOAD_DIR.exists():
+            for image_file in UPLOAD_DIR.glob("*.jpg"):
+                if image_file.is_file():
+                    total_images += 1
+                    total_size += image_file.stat().st_size
+        
+        if THUMBNAILS_DIR.exists():
+            for thumb_file in THUMBNAILS_DIR.glob("*.jpg"):
+                if thumb_file.is_file():
+                    total_thumbnails += 1
+                    total_size += thumb_file.stat().st_size
+        
+        return JSONResponse(content={
+            "images": {
+                "total_images": total_images,
+                "total_thumbnails": total_thumbnails,
+                "total_size_mb": round(total_size / (1024 * 1024), 2)
+            },
+            "directories": {
+                "upload_dir": str(UPLOAD_DIR),
+                "thumbnails_dir": str(THUMBNAILS_DIR),
+                "temp_dir": str(TEMP_DIR)
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error obteniendo info: {e}")
+        raise HTTPException(status_code=500, detail="Error obteniendo información")
+
+# Inicializar directorios
+ensure_directories()

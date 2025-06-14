@@ -26,6 +26,8 @@ from routers import (
     usuarios,
     configuracion,
     finanzas,
+    ecomerce,
+    image_router,
 )
 
 from routers.logistica import devoluciones
@@ -182,3 +184,7 @@ app.include_router(facturas.router)
 
 # Routers de Finanzas
 app.include_router(finanzas.router)
+
+# Routers de E-commerce
+app.include_router(ecomerce.router)
+app.include_router(image_router.router)
