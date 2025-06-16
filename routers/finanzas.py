@@ -20,6 +20,11 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 templates.env.filters['dd_mm_yyyy'] = lambda fecha: fecha.strftime('%d-%m-%Y') if fecha else ''
 
 
+def obtener_conexion():
+    """Usar la función centralizada de db.py"""
+    from db import conectar_mysql
+    return conectar_mysql()
+
 def convertir_parametros_seguros(request: Request):
     """Convierte los parámetros de query de manera segura"""
     query_params = request.query_params
@@ -530,14 +535,6 @@ def validar_rut(rut):
     # Patrón para RUT chileno: 7-8 dígitos, guión, dígito verificador
     patron = r'^\d{7,8}-[\dkK]$'
     return bool(re.match(patron, rut))
-
-def obtener_conexion():
-    return connect(
-        host="localhost",
-        user="root",
-        password="",  # <-- CAMBIA ESTO por tu password real
-        database="integracion"
-    )
 
 @router.get("/cargar-facturas/", response_class=HTMLResponse)
 def cargar_facturas_page(request: Request):
