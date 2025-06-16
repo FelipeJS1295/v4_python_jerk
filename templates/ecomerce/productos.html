@@ -267,7 +267,7 @@
             
             <button 
               class="bg-brand-coral-500 hover:bg-brand-coral-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-              onclick="agregarAlCarrito({{ producto.id }}, '{{ producto.nombre }}')"
+              onclick="agregarAlCarrito({{ producto.id }}, '{{ producto.nombre }}', {{ producto.precio_descuento or producto.precio_venta or 0 }}, '{{ producto.img_1 }}', {{ producto.precio_venta or 0 }})"
             >
               <i class="fas fa-shopping-cart"></i>
               <span class="hidden sm:inline">Agregar</span>
@@ -485,40 +485,52 @@ function updatePagination() {
   }
 }
 
-// Funciones de interacción con productos
-function agregarAlCarrito(productoId, nombreProducto) {
+function agregarAlCarrito(id, nombre, precio = 0, imagen = "", precio_original = 0) {
   const button = event.target.closest('button');
   const originalContent = button.innerHTML;
-  
-  // Animación de carga
+
   button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
   button.disabled = true;
-  
-  // Simular llamada a API
+
   setTimeout(() => {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
+    const existente = carrito.find(p => p.id === id);
+    if (existente) {
+      existente.cantidad += 1;
+    } else {
+      carrito.push({
+        id,
+        nombre,
+        precio,                  // precio con descuento (si hay)
+        precio_original,         // precio de lista
+        imagen,
+        cantidad: 1
+      });
+    }
+
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+
+    // Visual feedback
     button.innerHTML = '<i class="fas fa-check"></i>';
     button.classList.remove('bg-brand-coral-500');
     button.classList.add('bg-green-500');
-    
-    // Actualizar contador del carrito si existe
-    const cartCounter = document.querySelector('[data-cart-counter]');
-    if (cartCounter) {
-      const currentCount = parseInt(cartCounter.textContent) || 0;
-      cartCounter.textContent = currentCount + 1;
-    }
-    
-    // Restaurar botón después de 2 segundos
+
     setTimeout(() => {
       button.innerHTML = originalContent;
       button.disabled = false;
       button.classList.remove('bg-green-500');
       button.classList.add('bg-brand-coral-500');
     }, 2000);
-    
-    console.log(`Producto ${productoId} (${nombreProducto}) añadido al carrito`);
-    
-  }, 1000);
+
+    const cartCounter = document.querySelector('[data-cart-counter]');
+    if (cartCounter) {
+      const totalItems = carrito.reduce((sum, p) => sum + p.cantidad, 0);
+      cartCounter.textContent = totalItems;
+    }
+  }, 800);
 }
+
 
 function toggleFavorito(productoId) {
   const button = event.target.closest('button');

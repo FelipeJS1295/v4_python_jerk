@@ -557,3 +557,23 @@ def create_thumbnail(image_path: Path, thumb_path: Path, size: tuple = (300, 300
     except Exception as e:
         print(f"Error creando thumbnail: {e}")
         return False
+
+@router.get("/politicas", response_class=HTMLResponse)
+def vista_politicas_legales(request: Request):
+    """
+    Página de Términos, Privacidad y Cookies.
+    """
+    return templates.TemplateResponse("ecomerce/politicas.html", {
+        "request": request,
+        "now": datetime.now
+    })
+
+@router.get("/carrito", response_class=HTMLResponse)
+def vista_carrito(request: Request):
+    """
+    Página del carrito de compras.
+    """
+    return templates.TemplateResponse("ecomerce/carrito.html", {
+        "request": request,
+        "now": datetime.now
+    })

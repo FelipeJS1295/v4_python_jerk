@@ -46,7 +46,7 @@
               <i class="fas fa-phone text-brand-coral-400"></i>
             </div>
             <div>
-              <div class="text-white font-medium">+56 9 8765 4321</div>
+              <div class="text-white font-medium">+56 9 3253 8029</div>
               <div class="text-white/60 text-sm">Atención Personalizada</div>
             </div>
           </div>
@@ -90,11 +90,11 @@
             </div>
             <div class="flex justify-between items-center py-3 border-b border-white/10">
               <span class="text-white/80">Sábados</span>
-              <span class="text-white font-medium">9:00 - 18:00</span>
+              <span class="text-white font-medium">9:00 - 13:00</span>
             </div>
             <div class="flex justify-between items-center py-3 border-b border-white/10">
               <span class="text-white/80">Domingos</span>
-              <span class="text-white font-medium">10:00 - 17:00</span>
+              <span class="text-white font-medium">Cerrado</span>
             </div>
             <div class="flex justify-between items-center py-3">
               <span class="text-white/80">Consultas Virtuales</span>
@@ -331,7 +331,7 @@
         </p>
         <button class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
           <i class="fab fa-whatsapp mr-2"></i>
-          +56 9 8765 4321
+          +56 9 3253 8029
         </button>
       </div>
       
@@ -427,15 +427,15 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('button').forEach(button => {
     const text = button.textContent.trim();
     
-    if (text.includes('WhatsApp') || text.includes('+56 9 8765 4321')) {
+    if (text.includes('WhatsApp') || text.includes('+56 9 3253 8029')) {
       button.addEventListener('click', () => {
-        window.open('https://wa.me/56987654321?text=Hola, me interesa conocer más sobre sus muebles premium.', '_blank');
+        window.open('https://wa.me/56932538029?text=Hola, me interesa conocer más sobre sus muebles premium.', '_blank');
       });
     }
     
     if (text.includes('Llamar') || text.includes('Llamada')) {
       button.addEventListener('click', () => {
-        window.location.href = 'tel:+56987654321';
+        window.location.href = 'tel:+56932538029';
       });
     }
     
