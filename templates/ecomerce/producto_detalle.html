@@ -1,0 +1,616 @@
+{% extends "base_ecomerce.html" %}
+
+{% block title %}{{ producto.nombre }} - Jerk Home{% endblock %}
+
+{% block description %}{{ producto.descripcion_producto or (producto.nombre + " - Mueble premium de alta calidad en Jerk Home") }}{% endblock %}
+
+{% block breadcrumb %}
+<section class="bg-dark-800 py-6 mt-20">
+  <div class="container mx-auto px-6">
+    <nav class="flex" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a href="/inicio" class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white transition-colors">
+            <i class="fas fa-home w-4 h-4 mr-2"></i>
+            Inicio
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right w-4 h-4 text-gray-600 mx-2"></i>
+            <a href="/productos" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">
+              Productos
+            </a>
+          </div>
+        </li>
+        {% if producto.tipo_producto %}
+        <li>
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right w-4 h-4 text-gray-600 mx-2"></i>
+            <a href="/{{ producto.tipo_producto }}" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">
+              {{ producto.tipo_producto.title() }}
+            </a>
+          </div>
+        </li>
+        {% endif %}
+        <li>
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right w-4 h-4 text-gray-600 mx-2"></i>
+            <span class="text-sm font-medium text-white">{{ producto.nombre }}</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<!-- Detalle del Producto -->
+<section class="py-24 bg-gradient-to-b from-[#1a0e0a] to-[#0d0603] text-white">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid lg:grid-cols-2 gap-12 items-start">
+      
+      <!-- Galería de Imágenes -->
+      <div class="space-y-4">
+        <!-- Imagen Principal -->
+        <div class="aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-dark-800 to-dark-700">
+          {% set imagen_principal = producto.imagen or producto.img_1 %}
+          {% if imagen_principal %}
+          <img 
+            id="mainImage"
+            src="{{ imagen_principal }}" 
+            alt="{{ producto.nombre }}"
+            class="w-full h-full object-cover cursor-pointer"
+            onclick="openImageModal('{{ imagen_principal }}')"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+          />
+          <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center" style="display:none;">
+            <div class="text-center text-gray-500">
+              <i class="fas fa-image text-6xl mb-4"></i>
+              <p class="text-lg">Sin imagen disponible</p>
+            </div>
+          </div>
+          {% else %}
+          <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center">
+            <div class="text-center text-gray-500">
+              <i class="fas fa-image text-6xl mb-4"></i>
+              <p class="text-lg">Sin imagen disponible</p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Miniaturas -->
+        <div class="flex gap-4 overflow-x-auto pb-2">
+          {% set imagenes = [] %}
+          {% if producto.img_1 %}{% set _ = imagenes.append(producto.img_1) %}{% endif %}
+          {% if producto.img_2 %}{% set _ = imagenes.append(producto.img_2) %}{% endif %}
+          {% if producto.img_3 %}{% set _ = imagenes.append(producto.img_3) %}{% endif %}
+          {% if producto.img_4 %}{% set _ = imagenes.append(producto.img_4) %}{% endif %}
+          {% if producto.img_5 %}{% set _ = imagenes.append(producto.img_5) %}{% endif %}
+          
+          {% for imagen in imagenes %}
+          <div class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer border-2 border-transparent hover:border-brand-coral-500 transition-all"
+               onclick="changeMainImage('{{ imagen }}')">
+            <img 
+              src="{{ imagen }}" 
+              alt="Vista {{ loop.index }}"
+              class="w-full h-full object-cover"
+              onerror="this.parentElement.style.display='none';"
+            />
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      
+      <!-- Información del Producto -->
+      <div class="space-y-6">
+        
+        <!-- Header -->
+        <div>
+          {% if producto.tipo_producto %}
+          <div class="inline-flex items-center glass-subtle px-3 py-1 rounded-full mb-4">
+            <span class="text-sm font-medium text-brand-coral-400 tracking-wider uppercase">{{ producto.tipo_producto }}</span>
+          </div>
+          {% endif %}
+          
+          <h1 class="text-3xl lg:text-4xl font-bold text-white mb-4">
+            {{ producto.nombre }}
+          </h1>
+          
+          {% if producto.descripcion_producto %}
+          <p class="text-lg text-gray-300 leading-relaxed">
+            {{ producto.descripcion_producto }}
+          </p>
+          {% endif %}
+        </div>
+        
+        <!-- Precio -->
+        <div class="border-t border-gray-700 pt-6">
+          {% if producto.precio_venta and producto.precio_venta > 0 %}
+            {% if producto.precio_descuento and producto.precio_descuento > 0 and producto.precio_descuento < producto.precio_venta %}
+            <div class="flex items-center gap-4 mb-2">
+              <span class="text-3xl font-bold text-brand-coral-400">
+                ${{ "{:,.0f}".format(producto.precio_descuento).replace(',', '.') }}
+              </span>
+              <span class="text-xl text-gray-500 line-through">
+                ${{ "{:,.0f}".format(producto.precio_venta).replace(',', '.') }}
+              </span>
+              {% set descuento = ((producto.precio_venta - producto.precio_descuento) / producto.precio_venta * 100) | round %}
+              <span class="bg-red-500 text-white px-2 py-1 rounded-lg text-sm font-bold">
+                -{{ descuento }}%
+              </span>
+            </div>
+            {% else %}
+            <div class="flex items-center gap-4 mb-2">
+              <span class="text-3xl font-bold text-brand-coral-400">
+                ${{ "{:,.0f}".format(producto.precio_venta).replace(',', '.') }}
+              </span>
+            </div>
+            {% endif %}
+          {% else %}
+            <div class="text-2xl font-bold text-gray-400 mb-2">
+              Consultar precio
+            </div>
+          {% endif %}
+          
+          {% if producto.tempo_entrega %}
+          <div class="flex items-center gap-2 text-gray-400">
+            <i class="fas fa-truck"></i>
+            <span class="text-sm">Tiempo de entrega: {{ producto.tempo_entrega }}</span>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Características -->
+        {% if producto.material or producto.dimensiones or producto.colores_disponibles %}
+        <div class="border-t border-gray-700 pt-6">
+          <h3 class="text-lg font-semibold text-white mb-4">Características</h3>
+          <div class="grid grid-cols-1 gap-4">
+            
+            {% if producto.material %}
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
+                <i class="fas fa-cube text-brand-coral-400"></i>
+              </div>
+              <div>
+                <div class="text-sm text-gray-400">Material</div>
+                <div class="text-white font-medium">{{ producto.material }}</div>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if producto.dimensiones %}
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
+                <i class="fas fa-ruler text-brand-coral-400"></i>
+              </div>
+              <div>
+                <div class="text-sm text-gray-400">Dimensiones</div>
+                <div class="text-white font-medium">{{ producto.dimensiones }}</div>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if producto.colores_disponibles %}
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
+                <i class="fas fa-palette text-brand-coral-400"></i>
+              </div>
+              <div>
+                <div class="text-sm text-gray-400">Colores disponibles</div>
+                <div class="text-white font-medium">{{ producto.colores_disponibles }}</div>
+              </div>
+            </div>
+            {% endif %}
+            
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Acciones -->
+        <div class="border-t border-gray-700 pt-6 space-y-4">
+          <div class="flex flex-col sm:flex-row gap-4">
+            <button 
+              id="addToCartBtn"
+              class="flex-1 bg-brand-coral-500 hover:bg-brand-coral-600 text-white px-6 py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-3"
+              onclick="agregarAlCarrito({{ producto.id }}, '{{ producto.nombre | replace("'", "\\'") }}')"
+            >
+              <i class="fas fa-shopping-cart"></i>
+              <span>Agregar al Carrito</span>
+            </button>
+            
+            <button 
+              id="favoriteBtn"
+              class="px-6 py-4 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-lg transition-all"
+              onclick="toggleFavorito({{ producto.id }})"
+              title="Agregar a favoritos"
+            >
+              <i class="far fa-heart"></i>
+            </button>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4">
+            <button 
+              class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-3"
+              onclick="contactarWhatsApp({{ producto.id }})"
+            >
+              <i class="fab fa-whatsapp"></i>
+              <span>Consultar por WhatsApp</span>
+            </button>
+            
+            <button 
+              class="flex-1 bg-dark-700 hover:bg-dark-600 text-gray-300 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-3"
+              onclick="solicitarCotizacion({{ producto.id }})"
+            >
+              <i class="fas fa-calculator"></i>
+              <span>Solicitar Cotización</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Información Adicional -->
+        <div class="border-t border-gray-700 pt-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div class="text-center p-4 bg-dark-800 rounded-lg">
+              <i class="fas fa-shipping-fast text-brand-coral-400 text-2xl mb-2"></i>
+              <div class="text-sm font-medium text-white">Entrega Gratuita</div>
+              <div class="text-xs text-gray-400">En Santiago</div>
+            </div>
+            
+            <div class="text-center p-4 bg-dark-800 rounded-lg">
+              <i class="fas fa-tools text-brand-coral-400 text-2xl mb-2"></i>
+              <div class="text-sm font-medium text-white">Instalación</div>
+              <div class="text-xs text-gray-400">Incluida</div>
+            </div>
+            
+            <div class="text-center p-4 bg-dark-800 rounded-lg">
+              <i class="fas fa-shield-alt text-brand-coral-400 text-2xl mb-2"></i>
+              <div class="text-sm font-medium text-white">Garantía</div>
+              <div class="text-xs text-gray-400">2 años</div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Productos Relacionados -->
+{% if productos_relacionados %}
+<section class="py-16 bg-gradient-to-b from-[#2b2a2a] to-[#3a1f1f] text-white">
+  <div class="max-w-7xl mx-auto px-6">
+    
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-white mb-4">Productos Relacionados</h2>
+      <p class="text-gray-400">Otros productos que podrían interesarte</p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {% for producto_rel in productos_relacionados %}
+      <div class="bg-dark-700 rounded-xl overflow-hidden hover:bg-dark-600 transition-all duration-300 group border border-gray-600">
+        
+        <!-- Imagen -->
+        <div class="relative aspect-[4/3] overflow-hidden">
+          {% if producto_rel.imagen %}
+          <img 
+            src="{{ producto_rel.imagen }}" 
+            alt="{{ producto_rel.nombre }}"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+          />
+          <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center" style="display:none;">
+            <i class="fas fa-image text-gray-500 text-3xl"></i>
+          </div>
+          {% else %}
+          <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center">
+            <i class="fas fa-image text-gray-500 text-3xl"></i>
+          </div>
+          {% endif %}
+          
+          <!-- Overlay -->
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+            <button 
+              onclick="window.location.href='/producto/{{ producto_rel.id }}'"
+              class="opacity-0 group-hover:opacity-100 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-lg transition-all duration-300"
+            >
+              <i class="fas fa-eye mr-2"></i>Ver Detalles
+            </button>
+          </div>
+        </div>
+        
+        <!-- Info -->
+        <div class="p-4">
+          <h3 class="text-white font-semibold mb-2 line-clamp-2">{{ producto_rel.nombre }}</h3>
+          <div class="flex items-center justify-between">
+            {% if producto_rel.precio_venta and producto_rel.precio_venta > 0 %}
+            <span class="text-brand-coral-400 font-bold">
+              ${{ "{:,.0f}".format(producto_rel.precio_venta).replace(',', '.') }}
+            </span>
+            {% else %}
+            <span class="text-gray-400">Consultar precio</span>
+            {% endif %}
+            <button 
+              onclick="window.location.href='/producto/{{ producto_rel.id }}'"
+              class="text-gray-400 hover:text-white transition-colors"
+            >
+              <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <div class="text-center mt-8">
+      <a href="/productos" class="inline-flex items-center gap-2 bg-dark-700 hover:bg-dark-600 text-white px-6 py-3 rounded-lg transition-colors">
+        <i class="fas fa-th"></i>
+        <span>Ver Todos los Productos</span>
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Modal de Imagen -->
+<div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="relative max-w-6xl w-full">
+      <button 
+        onclick="closeImageModal()"
+        class="absolute top-4 right-4 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10"
+      >
+        <i class="fas fa-times text-xl"></i>
+      </button>
+      <img id="modalImage" src="" alt="" class="w-full h-auto rounded-lg max-h-[90vh] object-contain">
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Cambiar imagen principal
+function changeMainImage(imageSrc) {
+  const mainImage = document.getElementById('mainImage');
+  if (mainImage) {
+    mainImage.src = imageSrc;
+  }
+}
+
+// Modal de imagen
+function openImageModal(imageSrc) {
+  const modal = document.getElementById('imageModal');
+  const modalImage = document.getElementById('modalImage');
+  
+  modalImage.src = imageSrc;
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  modal.classList.add('hidden');
+  document.body.style.overflow = 'auto';
+}
+
+// Agregar al carrito
+function agregarAlCarrito(productoId, nombreProducto) {
+  const button = document.getElementById('addToCartBtn');
+  const originalContent = button.innerHTML;
+  
+  // Animación de carga
+  button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Agregando...</span>';
+  button.disabled = true;
+  
+  // Simular llamada a API
+  setTimeout(() => {
+    button.innerHTML = '<i class="fas fa-check mr-2"></i><span>¡Agregado!</span>';
+    button.classList.remove('bg-brand-coral-500');
+    button.classList.add('bg-green-500');
+    
+    // Mostrar notificación
+    showNotification(`${nombreProducto} agregado al carrito`, 'success');
+    
+    // Actualizar contador del carrito
+    const cartCounter = document.querySelector('[data-cart-counter]');
+    if (cartCounter) {
+      const currentCount = parseInt(cartCounter.textContent) || 0;
+      cartCounter.textContent = currentCount + 1;
+    }
+    
+    // Restaurar botón después de 3 segundos
+    setTimeout(() => {
+      button.innerHTML = originalContent;
+      button.disabled = false;
+      button.classList.remove('bg-green-500');
+      button.classList.add('bg-brand-coral-500');
+    }, 3000);
+    
+  }, 1500);
+}
+
+// Toggle favorito
+function toggleFavorito(productoId) {
+  const button = document.getElementById('favoriteBtn');
+  const icon = button.querySelector('i');
+  
+  if (icon.classList.contains('fas')) {
+    icon.classList.remove('fas');
+    icon.classList.add('far');
+    button.classList.remove('text-red-400');
+    button.classList.add('text-gray-300');
+    showNotification('Producto removido de favoritos', 'info');
+  } else {
+    icon.classList.remove('far');
+    icon.classList.add('fas');
+    button.classList.remove('text-gray-300');
+    button.classList.add('text-red-400');
+    showNotification('Producto agregado a favoritos', 'success');
+  }
+}
+
+// Contactar por WhatsApp
+function contactarWhatsApp(productoId) {
+  const mensaje = encodeURIComponent(`Hola, me interesa el producto "${document.querySelector('h1').textContent}". ¿Podrían darme más información?`);
+  window.open(`https://wa.me/56987654321?text=${mensaje}`, '_blank');
+}
+
+// Solicitar cotización
+function solicitarCotizacion(productoId) {
+  const productName = document.querySelector('h1').textContent;
+  const mensaje = encodeURIComponent(`Solicito cotización para: ${productName}`);
+  window.location.href = `mailto:contacto@jerkhome.cl?subject=Cotización - ${productName}&body=${mensaje}`;
+}
+
+// Sistema de notificaciones
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 max-w-sm ${
+    type === 'success' ? 'bg-green-500 text-white' : 
+    type === 'error' ? 'bg-red-500 text-white' : 
+    'bg-blue-500 text-white'
+  }`;
+  notification.innerHTML = `
+    <div class="flex items-center gap-3">
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      <span class="text-sm">${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Animación de entrada
+  setTimeout(() => {
+    notification.style.transform = 'translateX(0)';
+  }, 10);
+  
+  // Remover después de 4 segundos
+  setTimeout(() => {
+    notification.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 4000);
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeImageModal();
+  }
+});
+
+// Cerrar modal clickeando fuera
+document.getElementById('imageModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeImageModal();
+  }
+});
+
+// Efecto parallax suave en scroll
+window.addEventListener('scroll', function() {
+  const scrolled = window.pageYOffset;
+  const parallax = document.querySelector('.parallax-bg');
+  if (parallax) {
+    const speed = scrolled * 0.5;
+    parallax.style.transform = `translate3d(0, ${speed}px, 0)`;
+  }
+});
+</script>
+
+<style>
+/* Estilos específicos para la página de detalle */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Animaciones suaves para la galería */
+#mainImage {
+  transition: all 0.3s ease;
+}
+
+.thumbnail-image {
+  transition: all 0.3s ease;
+}
+
+.thumbnail-image:hover {
+  transform: scale(1.05);
+}
+
+/* Modal de imagen */
+#imageModal {
+  backdrop-filter: blur(8px);
+}
+
+#modalImage {
+  animation: fadeInScale 0.3s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Botones con efectos */
+button {
+  transition: all 0.3s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Loading states */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .aspect-square {
+    aspect-ratio: 4/3;
+  }
+  
+  .grid-cols-1.md\\:grid-cols-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark theme colors consistency */
+.bg-dark-700 { background-color: #374151; }
+.bg-dark-800 { background-color: #1f2937; }
+.bg-dark-900 { background-color: #111827; }
+.text-brand-coral-400 { color: #fb7185; }
+.text-brand-coral-500 { color: #f43f5e; }
+.bg-brand-coral-500 { background-color: #f43f5e; }
+.bg-brand-coral-600 { background-color: #e11d48; }
+.border-brand-coral-500 { border-color: #f43f5e; }
+</style>
+
+{% endblock %}

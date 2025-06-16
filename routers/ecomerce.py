@@ -37,13 +37,12 @@ def obtener_conexion_segura():
 @router.get("/productos", response_class=HTMLResponse)
 def vista_productos(request: Request, tipo: Optional[str] = Query(None)):
     """
-    Página principal de productos con filtros avanzados y búsqueda.
-    Ahora soporta filtrado por tipo via query parameter.
+    Página principal de productos. Muestra solo productos con imagen y tipo 'local'.
     """
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
 
-    # Base query - traer todos los productos excepto externos
+    # Base query con condiciones
     base_query = """
         SELECT 
             id,
@@ -59,32 +58,30 @@ def vista_productos(request: Request, tipo: Optional[str] = Query(None)):
             tiempo_entrega,
             visitas
         FROM productos
-        WHERE (tipo_producto_venta != 'externo' OR tipo_producto_venta IS NULL)
+        WHERE tipo_producto_venta = 'local'
+          AND img_1 IS NOT NULL AND img_1 != ''
     """
-    
-    # Agregar filtro por tipo si se especifica
+
+    # Agregar filtro por tipo si corresponde
     if tipo:
         base_query += f" AND tipo_producto LIKE '%{tipo}%'"
-    
+
     base_query += " ORDER BY COALESCE(visitas, 0) DESC, precio_venta ASC"
-    
+
     cursor.execute(base_query)
     productos = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    # Determinar título de página según filtro
+    # Título dinámico
     titulo_pagina = "Todos los Productos"
     descripcion = "Descubre nuestra colección completa de muebles premium"
-    
+
     if tipo:
         if tipo.lower() == "camas":
             titulo_pagina = "Camas"
             descripcion = "Camas cómodas para el descanso perfecto"
-        elif tipo.lower() == "mesas":
-            titulo_pagina = "Mesas"
-            descripcion = "Mesas elegantes para cada espacio"
         elif tipo.lower() == "seccionales":
             titulo_pagina = "Sofás Seccionales"
             descripcion = "Sofás seccionales modulares para espacios amplios"
@@ -100,6 +97,7 @@ def vista_productos(request: Request, tipo: Optional[str] = Query(None)):
         "filtro_activo": tipo,
         "now": datetime.now
     })
+
 
 
 @router.get("/inicio", response_class=HTMLResponse)
@@ -299,12 +297,12 @@ def vista_decoracion(request: Request):
 @router.get("/producto/{producto_id}", response_class=HTMLResponse)
 def vista_producto_detalle(request: Request, producto_id: int):
     """
-    Página de detalle de un producto específico.
+    Página de detalle de un producto específico (solo local con imagen).
     """
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
 
-    # Obtener producto específico con todos los detalles - no externos
+    # Obtener producto específico con todos los detalles
     cursor.execute("""
         SELECT 
             id,
@@ -324,7 +322,9 @@ def vista_producto_detalle(request: Request, producto_id: int):
             tiempo_entrega,
             visitas
         FROM productos
-        WHERE id = %s AND (tipo_producto_venta != 'externo' OR tipo_producto_venta IS NULL)
+        WHERE id = %s 
+          AND tipo_producto_venta = 'local'
+          AND img_1 IS NOT NULL AND img_1 != ''
     """, (producto_id,))
     
     producto = cursor.fetchone()
@@ -332,7 +332,6 @@ def vista_producto_detalle(request: Request, producto_id: int):
     if not producto:
         cursor.close()
         conn.close()
-        # Redirigir a página principal si no existe el producto
         return templates.TemplateResponse("ecomerce/index.html", {
             "request": request,
             "productos": [],
@@ -348,7 +347,7 @@ def vista_producto_detalle(request: Request, producto_id: int):
     """, (producto_id,))
     conn.commit()
 
-    # Obtener productos relacionados por tipo - no externos
+    # Obtener productos relacionados del mismo tipo
     cursor.execute("""
         SELECT 
             id,
@@ -357,8 +356,10 @@ def vista_producto_detalle(request: Request, producto_id: int):
             img_1 AS imagen,
             precio_descuento
         FROM productos
-        WHERE tipo_producto = %s AND id != %s
-        AND (tipo_producto_venta != 'externo' OR tipo_producto_venta IS NULL)
+        WHERE tipo_producto = %s 
+          AND id != %s
+          AND tipo_producto_venta = 'local'
+          AND img_1 IS NOT NULL AND img_1 != ''
         ORDER BY visitas DESC
         LIMIT 4
     """, (producto['tipo_producto'], producto_id))
@@ -374,6 +375,7 @@ def vista_producto_detalle(request: Request, producto_id: int):
         "productos_relacionados": productos_relacionados,
         "now": datetime.now
     })
+
 
 
 @router.get("/buscar", response_class=HTMLResponse)
