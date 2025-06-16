@@ -10,18 +10,23 @@ from typing import Optional
 # Crear router
 router = APIRouter()
 
-# Configuración
-PROJECT_ROOT = Path("/var/www/v4_python_jerk")
+# Configuración para desarrollo local
+PROJECT_ROOT = Path.cwd()  # Directorio actual del proyecto
 UPLOAD_DIR = PROJECT_ROOT / "static" / "images" / "productos"
 THUMBNAILS_DIR = UPLOAD_DIR / "thumbnails"
 TEMP_DIR = PROJECT_ROOT / "uploads" / "temp"
-BASE_URL = "http://147.79.74.244:8080/images/productos"
+BASE_URL = "http://localhost:8000/images/productos"  # Puerto local típico de FastAPI
 
 def ensure_directories():
     """Crear directorios necesarios"""
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     THUMBNAILS_DIR.mkdir(parents=True, exist_ok=True)
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    
+    print(f"📁 Directorios creados en: {PROJECT_ROOT}")
+    print(f"   - Upload: {UPLOAD_DIR}")
+    print(f"   - Thumbnails: {THUMBNAILS_DIR}")
+    print(f"   - Temp: {TEMP_DIR}")
 
 def optimize_image(input_path: Path, output_path: Path, quality: int = 85, max_width: int = 1200) -> bool:
     """Optimizar imagen manteniendo calidad"""
@@ -79,6 +84,8 @@ async def upload_product_image(
     
     ensure_directories()
     
+    print(f"📤 Subiendo imagen: {image.filename} para producto: {product_id}")
+    
     if not validate_image_file(image):
         raise HTTPException(
             status_code=400, 
@@ -87,7 +94,7 @@ async def upload_product_image(
     
     content = await image.read()
     
-    if len(content) > 10 * 1024 * 1024:
+    if len(content) > 10 * 1024 * 1024:  # 10MB
         raise HTTPException(
             status_code=400, 
             detail="La imagen es demasiado grande (máximo 10MB)"
@@ -112,6 +119,8 @@ async def upload_product_image(
         final_file = UPLOAD_DIR / unique_filename
         thumb_file = THUMBNAILS_DIR / unique_filename
         
+        print(f"💾 Guardando archivo como: {unique_filename}")
+        
         # Guardar archivo temporal
         with open(temp_file, 'wb') as f:
             f.write(content)
@@ -122,17 +131,19 @@ async def upload_product_image(
         # Optimizar imagen
         if not optimize_image(temp_file, final_file):
             shutil.copy2(temp_file, final_file)
-            print(f"Warning: Optimización falló, usando archivo original")
+            print(f"⚠️ Optimización falló, usando archivo original")
         
         if not final_file.exists():
             raise Exception("Error guardando imagen final")
         
         # Crear thumbnail
         if not create_thumbnail(final_file, thumb_file):
-            print(f"Warning: No se pudo crear thumbnail")
+            print(f"⚠️ No se pudo crear thumbnail")
         
         image_url = f"{BASE_URL}/{unique_filename}"
         thumbnail_url = f"{BASE_URL}/thumbnails/{unique_filename}" if thumb_file.exists() else None
+        
+        print(f"✅ Imagen guardada: {image_url}")
         
         return JSONResponse(content={
             "success": True,
@@ -144,15 +155,15 @@ async def upload_product_image(
         })
         
     except Exception as e:
-        print(f"Error subiendo imagen: {e}")
+        print(f"❌ Error subiendo imagen: {e}")
         
         # Limpiar archivos en caso de error
-        if temp_file and temp_file.exists():
-            temp_file.unlink(missing_ok=True)
-        if final_file and final_file.exists():
-            final_file.unlink(missing_ok=True)
-        if thumb_file and thumb_file.exists():
-            thumb_file.unlink(missing_ok=True)
+        for file_path in [temp_file, final_file, thumb_file]:
+            if file_path and file_path.exists():
+                try:
+                    file_path.unlink()
+                except:
+                    pass
         
         raise HTTPException(
             status_code=500, 
@@ -161,14 +172,24 @@ async def upload_product_image(
     
     finally:
         if temp_file and temp_file.exists():
-            temp_file.unlink(missing_ok=True)
+            try:
+                temp_file.unlink()
+            except:
+                pass
 
 @router.delete("/configuracion/productos/delete-image/{filename}")
 async def delete_product_image(filename: str):
     """Endpoint para eliminar imágenes"""
     try:
-        if not filename or '..' in filename or '/' in filename:
+        print(f"🗑️ Eliminando imagen: {filename}")
+        
+        # Validar nombre de archivo
+        if not filename or '..' in filename or '/' in filename or '\\' in filename:
             raise HTTPException(status_code=400, detail="Nombre de archivo inválido")
+        
+        # Solo permitir archivos .jpg
+        if not filename.endswith('.jpg'):
+            raise HTTPException(status_code=400, detail="Solo se permiten archivos .jpg")
         
         image_path = UPLOAD_DIR / filename
         thumb_path = THUMBNAILS_DIR / filename
@@ -178,13 +199,22 @@ async def delete_product_image(filename: str):
         if image_path.exists():
             image_path.unlink()
             deleted_files.append("imagen principal")
+            print(f"🗑️ Eliminada imagen principal: {image_path}")
         
         if thumb_path.exists():
             thumb_path.unlink()
             deleted_files.append("thumbnail")
+            print(f"🗑️ Eliminado thumbnail: {thumb_path}")
         
         if not deleted_files:
-            raise HTTPException(status_code=404, detail="Imagen no encontrada")
+            print(f"ℹ️ Imagen {filename} no encontrada (posiblemente ya eliminada)")
+            return JSONResponse(content={
+                "success": True,
+                "message": "Imagen no encontrada (posiblemente ya eliminada)",
+                "deleted_files": []
+            })
+        
+        print(f"✅ Eliminación completada: {deleted_files}")
         
         return JSONResponse(content={
             "success": True,
@@ -195,13 +225,18 @@ async def delete_product_image(filename: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error eliminando imagen: {e}")
-        raise HTTPException(status_code=500, detail="Error eliminando imagen")
+        print(f"❌ Error eliminando imagen: {e}")
+        return JSONResponse(content={
+            "success": False,
+            "message": f"Error eliminando imagen: {str(e)}"
+        })
 
 @router.get("/configuracion/productos/storage-info")
 async def get_storage_info():
     """Información de almacenamiento"""
     try:
+        ensure_directories()
+        
         total_images = 0
         total_size = 0
         total_thumbnails = 0
@@ -218,7 +253,10 @@ async def get_storage_info():
                     total_thumbnails += 1
                     total_size += thumb_file.stat().st_size
         
+        print(f"📊 Storage info - Imágenes: {total_images}, Thumbnails: {total_thumbnails}, Tamaño: {total_size/1024/1024:.2f}MB")
+        
         return JSONResponse(content={
+            "success": True,
             "images": {
                 "total_images": total_images,
                 "total_thumbnails": total_thumbnails,
@@ -227,13 +265,14 @@ async def get_storage_info():
             "directories": {
                 "upload_dir": str(UPLOAD_DIR),
                 "thumbnails_dir": str(THUMBNAILS_DIR),
-                "temp_dir": str(TEMP_DIR)
+                "temp_dir": str(TEMP_DIR),
+                "base_url": BASE_URL
             }
         })
         
     except Exception as e:
-        print(f"Error obteniendo info: {e}")
+        print(f"❌ Error obteniendo info: {e}")
         raise HTTPException(status_code=500, detail="Error obteniendo información")
 
-# Inicializar directorios
+# Inicializar directorios al importar
 ensure_directories()

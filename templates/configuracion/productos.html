@@ -288,71 +288,334 @@
           
           <!-- Pestaña Imágenes -->
           <div id="content-imagenes" class="pestaña-content hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Corte</label>
-                <input type="url" id="producto-imagen-corte" name="imagen_corte" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+            
+            <!-- Imágenes principales del proceso -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              
+              <!-- Imagen Corte -->
+              <div class="border border-slate-200 rounded-lg p-4">
+                <label class="block text-sm font-medium text-slate-700 mb-3">
+                  <i class="fas fa-cut mr-2"></i>Imagen Corte
+                </label>
+                <div class="image-upload-container" data-field="imagen_corte">
+                  <input type="hidden" name="imagen_corte" id="producto-imagen-corte">
+                  <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                    <div class="upload-content">
+                      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+                      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+                      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+                    </div>
+                    <div class="image-preview hidden">
+                      <img src="" alt="Preview" class="max-w-full h-32 object-cover mx-auto rounded">
+                      <div class="mt-2 flex justify-center space-x-2">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image">
+                          <i class="fas fa-trash mr-1"></i>Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden file-input">
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Tapizado</label>
-                <input type="url" id="producto-imagen-tapizado" name="imagen_tapizado" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+              <!-- Imagen Tapizado -->
+              <div class="border border-slate-200 rounded-lg p-4">
+                <label class="block text-sm font-medium text-slate-700 mb-3">
+                  <i class="fas fa-palette mr-2"></i>Imagen Tapizado
+                </label>
+                <div class="image-upload-container" data-field="imagen_tapizado">
+                  <input type="hidden" name="imagen_tapizado" id="producto-imagen-tapizado">
+                  <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                    <div class="upload-content">
+                      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+                      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+                      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+                    </div>
+                    <div class="image-preview hidden">
+                      <img src="" alt="Preview" class="max-w-full h-32 object-cover mx-auto rounded">
+                      <div class="mt-2 flex justify-center space-x-2">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image">
+                          <i class="fas fa-trash mr-1"></i>Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden file-input">
+                </div>
+              </div>
+
+              <!-- Imagen Corte Esqueleto -->
+              <div class="border border-slate-200 rounded-lg p-4">
+                <label class="block text-sm font-medium text-slate-700 mb-3">
+                  <i class="fas fa-bone mr-2"></i>Imagen Corte Esqueleto
+                </label>
+                <div class="image-upload-container" data-field="imagen_corte_esqueleto">
+                  <input type="hidden" name="imagen_corte_esqueleto" id="producto-imagen-corte-esqueleto">
+                  <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                    <div class="upload-content">
+                      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+                      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+                      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+                    </div>
+                    <div class="image-preview hidden">
+                      <img src="" alt="Preview" class="max-w-full h-32 object-cover mx-auto rounded">
+                      <div class="mt-2 flex justify-center space-x-2">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image">
+                          <i class="fas fa-trash mr-1"></i>Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden file-input">
+                </div>
+              </div>
+
+              <!-- Imagen Esqueleto -->
+              <div class="border border-slate-200 rounded-lg p-4">
+                <label class="block text-sm font-medium text-slate-700 mb-3">
+                  <i class="fas fa-project-diagram mr-2"></i>Imagen Esqueleto
+                </label>
+                <div class="image-upload-container" data-field="imagen_esqueleto">
+                  <input type="hidden" name="imagen_esqueleto" id="producto-imagen-esqueleto">
+                  <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                    <div class="upload-content">
+                      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+                      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+                      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+                    </div>
+                    <div class="image-preview hidden">
+                      <img src="" alt="Preview" class="max-w-full h-32 object-cover mx-auto rounded">
+                      <div class="mt-2 flex justify-center space-x-2">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image">
+                          <i class="fas fa-trash mr-1"></i>Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <input type="file" accept="image/*" class="hidden file-input">
+                </div>
               </div>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Corte Esqueleto</label>
-                <input type="url" id="producto-imagen-corte-esqueleto" name="imagen_corte_esqueleto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen Esqueleto</label>
-                <input type="url" id="producto-imagen-esqueleto" name="imagen_esqueleto" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
-              </div>
-            </div>
-            
-            <!-- Galería de imágenes adicionales -->
-            <div class="border-t border-slate-200 pt-4">
-              <h4 class="font-medium text-slate-800 mb-3">Galería de Imágenes (hasta 10)</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 1</label>
-                  <input type="url" id="producto-img-1" name="img_1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+            <!-- Separador -->
+            <div class="border-t border-slate-200 pt-8">
+              <h4 class="text-lg font-semibold text-slate-800 mb-6 flex items-center">
+                <i class="fas fa-images mr-2 text-purple-600"></i>
+                Galería de Imágenes del Producto
+                <span class="ml-2 text-sm font-normal text-slate-500">(hasta 10 imágenes)</span>
+              </h4>
+              
+              <!-- Galería de imágenes -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="galeria-imagenes">
+                
+                <!-- Imagen 1 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 1</label>
+                  <div class="image-upload-container" data-field="img_1">
+                    <input type="hidden" name="img_1" id="producto-img-1">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 2</label>
-                  <input type="url" id="producto-img-2" name="img_2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 2 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 2</label>
+                  <div class="image-upload-container" data-field="img_2">
+                    <input type="hidden" name="img_2" id="producto-img-2">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 3</label>
-                  <input type="url" id="producto-img-3" name="img_3" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 3 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 3</label>
+                  <div class="image-upload-container" data-field="img_3">
+                    <input type="hidden" name="img_3" id="producto-img-3">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 4</label>
-                  <input type="url" id="producto-img-4" name="img_4" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 4 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 4</label>
+                  <div class="image-upload-container" data-field="img_4">
+                    <input type="hidden" name="img_4" id="producto-img-4">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 5</label>
-                  <input type="url" id="producto-img-5" name="img_5" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 5 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 5</label>
+                  <div class="image-upload-container" data-field="img_5">
+                    <input type="hidden" name="img_5" id="producto-img-5">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 6</label>
-                  <input type="url" id="producto-img-6" name="img_6" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 6 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 6</label>
+                  <div class="image-upload-container" data-field="img_6">
+                    <input type="hidden" name="img_6" id="producto-img-6">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 7</label>
-                  <input type="url" id="producto-img-7" name="img_7" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 7 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 7</label>
+                  <div class="image-upload-container" data-field="img_7">
+                    <input type="hidden" name="img_7" id="producto-img-7">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 8</label>
-                  <input type="url" id="producto-img-8" name="img_8" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 8 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 8</label>
+                  <div class="image-upload-container" data-field="img_8">
+                    <input type="hidden" name="img_8" id="producto-img-8">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 9</label>
-                  <input type="url" id="producto-img-9" name="img_9" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 9 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 9</label>
+                  <div class="image-upload-container" data-field="img_9">
+                    <input type="hidden" name="img_9" id="producto-img-9">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">Imagen 10</label>
-                  <input type="url" id="producto-img-10" name="img_10" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="https://...">
+
+                <!-- Imagen 10 -->
+                <div class="border border-slate-200 rounded-lg p-3">
+                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 10</label>
+                  <div class="image-upload-container" data-field="img_10">
+                    <input type="hidden" name="img_10" id="producto-img-10">
+                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
+                      <div class="upload-content">
+                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+                        <p class="text-xs text-slate-600">Agregar</p>
+                      </div>
+                      <div class="image-preview hidden">
+                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" class="hidden file-input">
+                  </div>
                 </div>
               </div>
             </div>
@@ -437,6 +700,7 @@ let pestañaActiva = 'basico';
 document.addEventListener('DOMContentLoaded', function() {
   cargarInsumos();
   cargarProductos();
+  inicializarUploadImagenes();
   
   // Event listeners
   document.getElementById('btn-guardar-producto').addEventListener('click', guardarProducto);
@@ -456,6 +720,189 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById(id).addEventListener('input', calcularResumenCostos);
   });
 });
+
+// Función para inicializar la funcionalidad de upload de imágenes
+function inicializarUploadImagenes() {
+  document.querySelectorAll('.image-upload-container').forEach(container => {
+    const uploadArea = container.querySelector('.upload-area');
+    const fileInput = container.querySelector('.file-input');
+    const uploadContent = container.querySelector('.upload-content');
+    const imagePreview = container.querySelector('.image-preview');
+    const hiddenInput = container.querySelector('input[type="hidden"]');
+    const deleteButton = container.querySelector('.delete-image');
+    const field = container.dataset.field;
+
+    // Click para abrir selector de archivos
+    uploadArea.addEventListener('click', () => {
+      if (!imagePreview.classList.contains('hidden')) return;
+      fileInput.click();
+    });
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('border-purple-500', 'bg-purple-50');
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('border-purple-500', 'bg-purple-50');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('border-purple-500', 'bg-purple-50');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileUpload(files[0], container);
+      }
+    });
+
+    // Selección de archivo
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileUpload(e.target.files[0], container);
+      }
+    });
+
+    // Eliminar imagen
+    if (deleteButton) {
+      deleteButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Preguntar al usuario si realmente quiere eliminar
+        if (confirm('¿Estás seguro de que quieres eliminar esta imagen?')) {
+          eliminarImagenDelServidor(container); // Esta función SÍ elimina del servidor
+        }
+      });
+    }
+  });
+}
+
+// Función para manejar la subida de archivos
+async function handleFileUpload(file, container) {
+  // Validar tipo de archivo
+  if (!file.type.startsWith('image/')) {
+    mostrarMensaje('Solo se permiten archivos de imagen', 'error');
+    return;
+  }
+
+  // Validar tamaño (máximo 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    mostrarMensaje('La imagen es demasiado grande. Máximo 5MB', 'error');
+    return;
+  }
+
+  const uploadArea = container.querySelector('.upload-area');
+  const uploadContent = container.querySelector('.upload-content');
+  const imagePreview = container.querySelector('.image-preview');
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const img = imagePreview.querySelector('img');
+
+  // Mostrar estado de carga
+  uploadContent.innerHTML = '<i class="fas fa-spinner fa-spin text-2xl text-purple-500 mb-2"></i><p class="text-sm text-purple-600">Subiendo...</p>';
+
+  try {
+    // Crear FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('product_id', document.getElementById('producto-id').value || 'temp');
+
+    // Subir archivo al servidor
+    const response = await fetch('/configuracion/productos/upload-image', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al subir la imagen');
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Mostrar preview de la imagen
+      img.src = result.url;
+      hiddenInput.value = result.url;
+      
+      uploadContent.classList.add('hidden');
+      imagePreview.classList.remove('hidden');
+      
+      mostrarMensaje('Imagen subida correctamente', 'success');
+    } else {
+      throw new Error(result.message || 'Error al procesar la imagen');
+    }
+
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    mostrarMensaje('Error al subir la imagen: ' + error.message, 'error');
+    
+    // Restaurar estado original
+    uploadContent.innerHTML = `
+      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+    `;
+  }
+}
+
+// Función para eliminar imagen
+async function eliminarImagen(container) {
+  const uploadContent = container.querySelector('.upload-content');
+  const imagePreview = container.querySelector('.image-preview');
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const fileInput = container.querySelector('.file-input');
+  const img = imagePreview.querySelector('img');
+
+  // NO ELIMINAR DEL SERVIDOR automáticamente
+  // Solo limpiar la UI
+  console.log('🔄 Limpiando UI (sin eliminar del servidor):', hiddenInput.value);
+
+  // Resetear UI
+  hiddenInput.value = '';
+  fileInput.value = '';
+  img.src = '';
+  uploadContent.classList.remove('hidden');
+  imagePreview.classList.add('hidden');
+
+  // Restaurar contenido del upload área
+  if (uploadContent.querySelector('.fas.fa-plus')) {
+    uploadContent.innerHTML = `
+      <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+      <p class="text-xs text-slate-600">Agregar</p>
+    `;
+  } else {
+    uploadContent.innerHTML = `
+      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+    `;
+  }
+}
+
+async function eliminarImagenDelServidor(container) {
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const url = hiddenInput.value;
+  
+  if (url && url.includes('/images/productos/')) {
+    try {
+      const filename = url.split('/').pop();
+      const response = await fetch(`/configuracion/productos/delete-image/${filename}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        console.log('✅ Imagen eliminada del servidor:', filename);
+      }
+    } catch (error) {
+      console.error('❌ Error eliminando del servidor:', error);
+    }
+  }
+  
+  // Después eliminar de la UI
+  eliminarImagen(container);
+}
 
 async function cargarInsumos() {
   try {
@@ -570,6 +1017,7 @@ function mostrarModal(modalId) {
       document.getElementById('form-producto').reset();
       document.getElementById('producto-id').value = '';
       document.getElementById('lista-insumos-producto').innerHTML = '';
+      limpiarImagenes();
       cambiarPestaña('basico');
       calcularResumenCostos();
     }
@@ -583,12 +1031,33 @@ function cerrarModal(modalId) {
     productoEditando = null;
     document.getElementById('form-producto').reset();
     document.getElementById('lista-insumos-producto').innerHTML = '';
+    limpiarImagenes();
     cambiarPestaña('basico');
   }
   
   if (modalId === 'modal-confirmar-eliminar') {
     productoEliminar = null;
   }
+}
+
+function limpiarImagenes() {
+  document.querySelectorAll('.image-upload-container').forEach(container => {
+    eliminarImagen(container); // Solo limpiar UI, NO eliminar del servidor
+  });
+}
+
+function cargarImagenEnContainer(container, url) {
+  if (!url) return;
+  
+  const uploadContent = container.querySelector('.upload-content');
+  const imagePreview = container.querySelector('.image-preview');
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const img = imagePreview.querySelector('img');
+
+  img.src = url;
+  hiddenInput.value = url;
+  uploadContent.classList.add('hidden');
+  imagePreview.classList.remove('hidden');
 }
 
 function agregarInsumoProducto() {
@@ -635,9 +1104,9 @@ function calcularResumenCostos() {
   const totalCostos = costoCostura + costoTapiceria + costoArmado + costoCorte + costoEsqueleteria;
   const margen = precioVenta - totalCostos;
   
-    document.getElementById('total-costos').textContent = '$' + formatearNumero(totalCostos);
-    document.getElementById('precio-venta-display').textContent = '$' + formatearNumero(precioVenta);
-    document.getElementById('margen-producto').textContent = '$' + formatearNumero(margen);
+  document.getElementById('total-costos').textContent = '$' + formatearNumero(totalCostos);
+  document.getElementById('precio-venta-display').textContent = '$' + formatearNumero(precioVenta);
+  document.getElementById('margen-producto').textContent = '$' + formatearNumero(margen);
   
   // Cambiar color del margen
   const elementoMargen = document.getElementById('margen-producto');
@@ -661,15 +1130,28 @@ async function editarProducto(id) {
     'id', 'sku', 'nombre', 'tipo_producto', 'tipo_producto_venta', 'sku_esqueleto', 'sku_hites', 'sku_la_polar',
     'costo_costura', 'costo_tapiceria', 'costo_armado', 'costo_corte', 'costo_esqueleteria',
     'precio_venta', 'precio_descuento', 'dimensiones', 'material', 'colores_disponibles',
-    'colores_hex', 'tiempo_entrega', 'imagen_corte', 'imagen_tapizado', 'imagen_corte_esqueleto',
-    'imagen_esqueleto', 'img_1', 'img_2', 'img_3', 'img_4', 'img_5', 'img_6', 'img_7', 'img_8', 'img_9', 'img_10',
-    'descripcion_producto'
+    'colores_hex', 'tiempo_entrega', 'descripcion_producto'
   ];
   
   campos.forEach(campo => {
     const elemento = document.getElementById(`producto-${campo.replace('_', '-')}`);
     if (elemento) {
       elemento.value = producto[campo] || '';
+    }
+  });
+
+  // Cargar imágenes existentes
+  const imageFields = [
+    'imagen_corte', 'imagen_tapizado', 'imagen_corte_esqueleto', 'imagen_esqueleto',
+    'img_1', 'img_2', 'img_3', 'img_4', 'img_5', 'img_6', 'img_7', 'img_8', 'img_9', 'img_10'
+  ];
+  
+  imageFields.forEach(field => {
+    if (producto[field]) {
+      const container = document.querySelector(`[data-field="${field}"]`);
+      if (container) {
+        cargarImagenEnContainer(container, producto[field]);
+      }
     }
   });
   
@@ -903,6 +1385,29 @@ function formatearNumero(numero) {
   border-color: #cbd5e1;
 }
 
+/* Estilos para upload de imágenes */
+.upload-area {
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  border-color: #7c3aed;
+  background-color: #f8fafc;
+}
+
+.upload-area.drag-over {
+  border-color: #7c3aed;
+  background-color: #ede9fe;
+}
+
+.image-preview img {
+  transition: all 0.3s ease;
+}
+
+.image-preview:hover img {
+  opacity: 0.8;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .grid-cols-2 {
@@ -915,6 +1420,10 @@ function formatearNumero(numero) {
   
   .grid-cols-4 {
     grid-template-columns: 1fr;
+  }
+  
+  .xl\:grid-cols-5 {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>
