@@ -5,7 +5,7 @@
 {% block description %}{{ producto.descripcion_producto or (producto.nombre + " - Mueble premium de alta calidad en Jerk Home") }}{% endblock %}
 
 {% block breadcrumb %}
-<section class="bg-dark-800 py-6 mt-20">
+<section class="bg-gray-900 py-4 mt-20">
   <div class="container mx-auto px-6">
     <nav class="flex" aria-label="Breadcrumb">
       <ol class="inline-flex items-center space-x-1 md:space-x-3">
@@ -49,85 +49,97 @@
 <!-- Detalle del Producto -->
 <section class="py-24 bg-gradient-to-b from-[#1a0e0a] to-[#0d0603] text-white">
   <div class="max-w-7xl mx-auto px-6">
-    <div class="grid lg:grid-cols-2 gap-12 items-start">
+    <div class="grid lg:grid-cols-2 gap-16 items-start">
       
       <!-- Galería de Imágenes -->
-      <div class="space-y-4">
-        <!-- Imagen Principal -->
-        <div class="aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-dark-800 to-dark-700">
-          {% set imagen_principal = producto.imagen or producto.img_1 %}
-          {% if imagen_principal %}
-          <img 
-            id="mainImage"
-            src="{{ imagen_principal }}" 
-            alt="{{ producto.nombre }}"
-            class="w-full h-full object-cover cursor-pointer"
-            onclick="openImageModal('{{ imagen_principal }}')"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-          />
-          <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center" style="display:none;">
-            <div class="text-center text-gray-500">
-              <i class="fas fa-image text-6xl mb-4"></i>
-              <p class="text-lg">Sin imagen disponible</p>
+      <div class="space-y-6">
+        <!-- Imagen Principal - Más pequeña y centrada -->
+        <div class="flex justify-center">
+          <div class="w-96 h-96 bg-gradient-to-br from-dark-800 to-dark-700 rounded-xl overflow-hidden">
+            {% set imagen_principal = producto.imagen or producto.img_1 %}
+            {% if imagen_principal %}
+            <img 
+              id="mainImage"
+              src="{{ imagen_principal }}" 
+              alt="{{ producto.nombre }}"
+              class="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform duration-300"
+              onclick="openImageModal(0)"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+            <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center" style="display:none;">
+              <div class="text-center text-gray-500">
+                <i class="fas fa-image text-4xl mb-2"></i>
+                <p class="text-sm">Sin imagen disponible</p>
+              </div>
             </div>
-          </div>
-          {% else %}
-          <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center">
-            <div class="text-center text-gray-500">
-              <i class="fas fa-image text-6xl mb-4"></i>
-              <p class="text-lg">Sin imagen disponible</p>
+            {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-dark-700 to-dark-600 flex items-center justify-center">
+              <div class="text-center text-gray-500">
+                <i class="fas fa-image text-4xl mb-2"></i>
+                <p class="text-sm">Sin imagen disponible</p>
+              </div>
             </div>
+            {% endif %}
           </div>
-          {% endif %}
         </div>
         
         <!-- Miniaturas -->
-        <div class="flex gap-4 overflow-x-auto pb-2">
-          {% set imagenes = [] %}
-          {% if producto.img_1 %}{% set _ = imagenes.append(producto.img_1) %}{% endif %}
-          {% if producto.img_2 %}{% set _ = imagenes.append(producto.img_2) %}{% endif %}
-          {% if producto.img_3 %}{% set _ = imagenes.append(producto.img_3) %}{% endif %}
-          {% if producto.img_4 %}{% set _ = imagenes.append(producto.img_4) %}{% endif %}
-          {% if producto.img_5 %}{% set _ = imagenes.append(producto.img_5) %}{% endif %}
-          
-          {% for imagen in imagenes %}
-          <div class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer border-2 border-transparent hover:border-brand-coral-500 transition-all"
-               onclick="changeMainImage('{{ imagen }}')">
-            <img 
-              src="{{ imagen }}" 
-              alt="Vista {{ loop.index }}"
-              class="w-full h-full object-cover"
-              onerror="this.parentElement.style.display='none';"
-            />
+        <div class="flex justify-center">
+          <div class="flex gap-3 overflow-x-auto max-w-lg">
+            {% set imagenes = [] %}
+            {% if producto.img_1 %}{% set _ = imagenes.append(producto.img_1) %}{% endif %}
+            {% if producto.img_2 %}{% set _ = imagenes.append(producto.img_2) %}{% endif %}
+            {% if producto.img_3 %}{% set _ = imagenes.append(producto.img_3) %}{% endif %}
+            {% if producto.img_4 %}{% set _ = imagenes.append(producto.img_4) %}{% endif %}
+            {% if producto.img_5 %}{% set _ = imagenes.append(producto.img_5) %}{% endif %}
+            
+            {% for imagen in imagenes %}
+            <div class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 border-gray-600 hover:border-brand-coral-500 transition-all duration-200 thumbnail"
+                 data-index="{{ loop.index0 }}"
+                 onclick="changeMainImage('{{ imagen }}', {{ loop.index0 }})">
+              <img 
+                src="{{ imagen }}" 
+                alt="Vista {{ loop.index }}"
+                class="w-full h-full object-contain bg-dark-700"
+                onerror="this.parentElement.style.display='none';"
+              />
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
         </div>
+        
+        <!-- Descripción -->
+        {% if producto.descripcion_producto %}
+        <div class="glass-subtle rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+            <i class="fas fa-info-circle text-brand-coral-400 mr-2"></i>
+            Descripción
+          </h3>
+          <p class="text-gray-300 leading-relaxed">
+            {{ producto.descripcion_producto }}
+          </p>
+        </div>
+        {% endif %}
       </div>
       
       <!-- Información del Producto -->
-      <div class="space-y-6">
+      <div class="space-y-8">
         
         <!-- Header -->
         <div>
           {% if producto.tipo_producto %}
-          <div class="inline-flex items-center glass-subtle px-3 py-1 rounded-full mb-4">
-            <span class="text-sm font-medium text-brand-coral-400 tracking-wider uppercase">{{ producto.tipo_producto }}</span>
+          <div class="inline-flex items-center glass-subtle px-3 py-1 rounded-full text-sm font-medium mb-4">
+            <span class="text-brand-coral-400 tracking-wider uppercase">{{ producto.tipo_producto }}</span>
           </div>
           {% endif %}
           
           <h1 class="text-3xl lg:text-4xl font-bold text-white mb-4">
             {{ producto.nombre }}
           </h1>
-          
-          {% if producto.descripcion_producto %}
-          <p class="text-lg text-gray-300 leading-relaxed">
-            {{ producto.descripcion_producto }}
-          </p>
-          {% endif %}
         </div>
         
         <!-- Precio -->
-        <div class="border-t border-gray-700 pt-6">
+        <div class="glass-subtle rounded-xl p-6">
           {% if producto.precio_venta and producto.precio_venta > 0 %}
             {% if producto.precio_descuento and producto.precio_descuento > 0 and producto.precio_descuento < producto.precio_venta %}
             <div class="flex items-center gap-4 mb-2">
@@ -156,8 +168,8 @@
           {% endif %}
           
           {% if producto.tempo_entrega %}
-          <div class="flex items-center gap-2 text-gray-400">
-            <i class="fas fa-truck"></i>
+          <div class="flex items-center gap-2 text-gray-400 mt-2">
+            <i class="fas fa-truck text-sm"></i>
             <span class="text-sm">Tiempo de entrega: {{ producto.tempo_entrega }}</span>
           </div>
           {% endif %}
@@ -165,14 +177,17 @@
         
         <!-- Características -->
         {% if producto.material or producto.dimensiones or producto.colores_disponibles %}
-        <div class="border-t border-gray-700 pt-6">
-          <h3 class="text-lg font-semibold text-white mb-4">Características</h3>
-          <div class="grid grid-cols-1 gap-4">
+        <div class="glass-subtle rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+            <i class="fas fa-cog text-brand-coral-400 mr-2"></i>
+            Características
+          </h3>
+          <div class="space-y-4">
             
             {% if producto.material %}
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
-                <i class="fas fa-cube text-brand-coral-400"></i>
+            <div class="flex items-center gap-3 pb-3 border-b border-white/10 last:border-0">
+              <div class="w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-cube text-brand-coral-400 text-sm"></i>
               </div>
               <div>
                 <div class="text-sm text-gray-400">Material</div>
@@ -182,9 +197,9 @@
             {% endif %}
             
             {% if producto.dimensiones %}
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
-                <i class="fas fa-ruler text-brand-coral-400"></i>
+            <div class="flex items-center gap-3 pb-3 border-b border-white/10 last:border-0">
+              <div class="w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-ruler text-brand-coral-400 text-sm"></i>
               </div>
               <div>
                 <div class="text-sm text-gray-400">Dimensiones</div>
@@ -195,8 +210,8 @@
             
             {% if producto.colores_disponibles %}
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-dark-700 rounded-lg flex items-center justify-center">
-                <i class="fas fa-palette text-brand-coral-400"></i>
+              <div class="w-8 h-8 bg-dark-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-palette text-brand-coral-400 text-sm"></i>
               </div>
               <div>
                 <div class="text-sm text-gray-400">Colores disponibles</div>
@@ -210,64 +225,64 @@
         {% endif %}
         
         <!-- Acciones -->
-        <div class="border-t border-gray-700 pt-6 space-y-4">
-          <div class="flex flex-col sm:flex-row gap-4">
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
             <button 
               id="addToCartBtn"
-              class="flex-1 bg-brand-coral-500 hover:bg-brand-coral-600 text-white px-6 py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-3"
+              class="bg-brand-coral-500 hover:bg-brand-coral-600 text-white px-6 py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
               onclick="agregarAlCarrito({{ producto.id }}, '{{ producto.nombre | replace("'", "\\'") }}')"
             >
               <i class="fas fa-shopping-cart"></i>
-              <span>Agregar al Carrito</span>
+              <span>Agregar</span>
             </button>
             
             <button 
               id="favoriteBtn"
-              class="px-6 py-4 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-lg transition-all"
+              class="bg-dark-700 hover:bg-dark-600 text-gray-300 px-6 py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
               onclick="toggleFavorito({{ producto.id }})"
-              title="Agregar a favoritos"
             >
               <i class="far fa-heart"></i>
+              <span>Favorito</span>
             </button>
           </div>
           
-          <div class="flex flex-col sm:flex-row gap-4">
+          <div class="grid grid-cols-2 gap-4">
             <button 
-              class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-3"
+              class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
               onclick="contactarWhatsApp({{ producto.id }})"
             >
               <i class="fab fa-whatsapp"></i>
-              <span>Consultar por WhatsApp</span>
+              <span>WhatsApp</span>
             </button>
             
             <button 
-              class="flex-1 bg-dark-700 hover:bg-dark-600 text-gray-300 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-3"
+              class="bg-dark-700 hover:bg-dark-600 text-gray-300 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
               onclick="solicitarCotizacion({{ producto.id }})"
             >
               <i class="fas fa-calculator"></i>
-              <span>Solicitar Cotización</span>
+              <span>Cotizar</span>
             </button>
           </div>
         </div>
         
         <!-- Información Adicional -->
-        <div class="border-t border-gray-700 pt-6">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-subtle rounded-xl p-6">
+          <div class="grid grid-cols-3 gap-4">
             
-            <div class="text-center p-4 bg-dark-800 rounded-lg">
-              <i class="fas fa-shipping-fast text-brand-coral-400 text-2xl mb-2"></i>
-              <div class="text-sm font-medium text-white">Entrega Gratuita</div>
-              <div class="text-xs text-gray-400">En Santiago</div>
+            <div class="text-center">
+              <i class="fas fa-shipping-fast text-brand-coral-400 text-xl mb-2"></i>
+              <div class="text-sm font-medium text-white">Entrega</div>
+              <div class="text-xs text-gray-400">Gratuita</div>
             </div>
             
-            <div class="text-center p-4 bg-dark-800 rounded-lg">
-              <i class="fas fa-tools text-brand-coral-400 text-2xl mb-2"></i>
+            <div class="text-center">
+              <i class="fas fa-tools text-brand-coral-400 text-xl mb-2"></i>
               <div class="text-sm font-medium text-white">Instalación</div>
               <div class="text-xs text-gray-400">Incluida</div>
             </div>
             
-            <div class="text-center p-4 bg-dark-800 rounded-lg">
-              <i class="fas fa-shield-alt text-brand-coral-400 text-2xl mb-2"></i>
+            <div class="text-center">
+              <i class="fas fa-shield-alt text-brand-coral-400 text-xl mb-2"></i>
               <div class="text-sm font-medium text-white">Garantía</div>
               <div class="text-xs text-gray-400">2 años</div>
             </div>
@@ -356,17 +371,86 @@
 </section>
 {% endif %}
 
-<!-- Modal de Imagen -->
-<div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div class="relative max-w-6xl w-full">
+<!-- Modal de Galería Avanzado -->
+<div id="imageModal" class="fixed inset-0 bg-black/95 z-50 hidden">
+  <div class="flex flex-col h-full">
+    
+    <!-- Header del Modal -->
+    <div class="flex items-center justify-between p-4 bg-black/50">
+      <div class="flex items-center gap-4">
+        <h3 class="text-white font-semibold">{{ producto.nombre }}</h3>
+        <span id="imageCounter" class="text-gray-300 text-sm"></span>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <!-- Controles de Zoom -->
+        <button 
+          onclick="zoomOut()"
+          class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center text-white transition-colors"
+          title="Alejar"
+        >
+          <i class="fas fa-search-minus"></i>
+        </button>
+        
+        <button 
+          onclick="zoomIn()"
+          class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center text-white transition-colors"
+          title="Acercar"
+        >
+          <i class="fas fa-search-plus"></i>
+        </button>
+        
+        <button 
+          onclick="resetZoom()"
+          class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center text-white transition-colors"
+          title="Zoom original"
+        >
+          <i class="fas fa-expand-arrows-alt"></i>
+        </button>
+        
+        <!-- Cerrar -->
+        <button 
+          onclick="closeImageModal()"
+          class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center text-white transition-colors ml-2"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Contenedor de Imagen Principal -->
+    <div class="flex-1 relative overflow-hidden">
+      <div id="imageContainer" class="w-full h-full flex items-center justify-center p-4">
+        <img 
+          id="modalImage" 
+          src="" 
+          alt="" 
+          class="max-w-full max-h-full object-contain transition-transform duration-300 cursor-move"
+          style="transform-origin: center center;"
+        >
+      </div>
+      
+      <!-- Navegación -->
       <button 
-        onclick="closeImageModal()"
-        class="absolute top-4 right-4 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10"
+        onclick="previousImage()"
+        class="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
       >
-        <i class="fas fa-times text-xl"></i>
+        <i class="fas fa-chevron-left"></i>
       </button>
-      <img id="modalImage" src="" alt="" class="w-full h-auto rounded-lg max-h-[90vh] object-contain">
+      
+      <button 
+        onclick="nextImage()"
+        class="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+      >
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+    
+    <!-- Miniaturas del Modal -->
+    <div class="bg-black/50 p-4">
+      <div class="flex gap-2 justify-center overflow-x-auto" id="modalThumbnails">
+        <!-- Las miniaturas se cargan dinámicamente -->
+      </div>
     </div>
   </div>
 </div>
@@ -375,28 +459,212 @@
 
 {% block scripts %}
 <script>
+// Variables globales para el modal
+let currentImageIndex = 0;
+let imageScale = 1;
+let isPanning = false;
+let startX, startY, translateX = 0, translateY = 0;
+
+// Array de imágenes
+const productImages = [
+  {% for imagen in [producto.img_1, producto.img_2, producto.img_3, producto.img_4, producto.img_5] %}
+  {% if imagen %}'{{ imagen }}'{% if not loop.last %},{% endif %}{% endif %}
+  {% endfor %}
+].filter(img => img);
+
 // Cambiar imagen principal
-function changeMainImage(imageSrc) {
+function changeMainImage(imageSrc, index) {
   const mainImage = document.getElementById('mainImage');
   if (mainImage) {
     mainImage.src = imageSrc;
   }
+  
+  // Actualizar thumbnails activos
+  document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+    if (i === index) {
+      thumb.classList.add('border-brand-coral-500');
+      thumb.classList.remove('border-gray-600');
+    } else {
+      thumb.classList.remove('border-brand-coral-500');
+      thumb.classList.add('border-gray-600');
+    }
+  });
 }
 
-// Modal de imagen
-function openImageModal(imageSrc) {
-  const modal = document.getElementById('imageModal');
-  const modalImage = document.getElementById('modalImage');
+// Abrir modal de galería
+function openImageModal(startIndex = 0) {
+  if (productImages.length === 0) return;
   
-  modalImage.src = imageSrc;
+  const modal = document.getElementById('imageModal');
+  currentImageIndex = startIndex;
+  
+  // Cargar miniaturas del modal
+  loadModalThumbnails();
+  
+  // Mostrar imagen actual
+  showModalImage(currentImageIndex);
+  
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  
+  // Reset zoom y posición
+  resetZoom();
 }
 
+// Cargar miniaturas del modal
+function loadModalThumbnails() {
+  const container = document.getElementById('modalThumbnails');
+  container.innerHTML = '';
+  
+  productImages.forEach((img, index) => {
+    const thumb = document.createElement('div');
+    thumb.className = `w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+      index === currentImageIndex ? 'border-blue-500' : 'border-white/20'
+    }`;
+    thumb.onclick = () => showModalImage(index);
+    
+    const imgEl = document.createElement('img');
+    imgEl.src = img;
+    imgEl.className = 'w-full h-full object-contain bg-gray-800';
+    
+    thumb.appendChild(imgEl);
+    container.appendChild(thumb);
+  });
+}
+
+// Mostrar imagen en el modal
+function showModalImage(index) {
+  if (index < 0 || index >= productImages.length) return;
+  
+  currentImageIndex = index;
+  const modalImage = document.getElementById('modalImage');
+  const imageCounter = document.getElementById('imageCounter');
+  
+  modalImage.src = productImages[index];
+  imageCounter.textContent = `${index + 1} de ${productImages.length}`;
+  
+  // Actualizar miniaturas activas
+  document.querySelectorAll('#modalThumbnails > div').forEach((thumb, i) => {
+    if (i === index) {
+      thumb.classList.add('border-blue-500');
+      thumb.classList.remove('border-white/20');
+    } else {
+      thumb.classList.remove('border-blue-500');
+      thumb.classList.add('border-white/20');
+    }
+  });
+  
+  // Reset zoom y posición
+  resetZoom();
+}
+
+// Navegación del modal
+function nextImage() {
+  const nextIndex = (currentImageIndex + 1) % productImages.length;
+  showModalImage(nextIndex);
+}
+
+function previousImage() {
+  const prevIndex = currentImageIndex === 0 ? productImages.length - 1 : currentImageIndex - 1;
+  showModalImage(prevIndex);
+}
+
+// Funciones de zoom
+function zoomIn() {
+  imageScale = Math.min(imageScale * 1.2, 3);
+  updateImageTransform();
+}
+
+function zoomOut() {
+  imageScale = Math.max(imageScale / 1.2, 0.5);
+  updateImageTransform();
+}
+
+function resetZoom() {
+  imageScale = 1;
+  translateX = 0;
+  translateY = 0;
+  updateImageTransform();
+}
+
+function updateImageTransform() {
+  const modalImage = document.getElementById('modalImage');
+  modalImage.style.transform = `scale(${imageScale}) translate(${translateX}px, ${translateY}px)`;
+}
+
+// Funcionalidad de arrastrar imagen
+function initImagePanning() {
+  const modalImage = document.getElementById('modalImage');
+  const container = document.getElementById('imageContainer');
+  
+  modalImage.addEventListener('mousedown', startPanning);
+  container.addEventListener('mousemove', panImage);
+  container.addEventListener('mouseup', stopPanning);
+  container.addEventListener('mouseleave', stopPanning);
+  
+  // Touch events para móviles
+  modalImage.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    startPanning({ clientX: touch.clientX, clientY: touch.clientY });
+    e.preventDefault();
+  });
+  
+  container.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      panImage({ clientX: touch.clientX, clientY: touch.clientY });
+      e.preventDefault();
+    }
+  });
+  
+  container.addEventListener('touchend', stopPanning);
+}
+
+function startPanning(e) {
+  if (imageScale <= 1) return;
+  
+  isPanning = true;
+  startX = e.clientX - translateX;
+  startY = e.clientY - translateY;
+  
+  document.getElementById('modalImage').style.cursor = 'grabbing';
+}
+
+function panImage(e) {
+  if (!isPanning || imageScale <= 1) return;
+  
+  translateX = e.clientX - startX;
+  translateY = e.clientY - startY;
+  
+  updateImageTransform();
+}
+
+function stopPanning() {
+  isPanning = false;
+  document.getElementById('modalImage').style.cursor = imageScale > 1 ? 'grab' : 'default';
+}
+
+// Zoom con rueda del mouse
+function initMouseWheelZoom() {
+  const container = document.getElementById('imageContainer');
+  
+  container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    
+    if (e.deltaY < 0) {
+      zoomIn();
+    } else {
+      zoomOut();
+    }
+  });
+}
+
+// Cerrar modal
 function closeImageModal() {
   const modal = document.getElementById('imageModal');
   modal.classList.add('hidden');
   document.body.style.overflow = 'auto';
+  resetZoom();
 }
 
 // Agregar al carrito
@@ -404,54 +672,42 @@ function agregarAlCarrito(productoId, nombreProducto) {
   const button = document.getElementById('addToCartBtn');
   const originalContent = button.innerHTML;
   
-  // Animación de carga
-  button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Agregando...</span>';
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Agregando...</span>';
   button.disabled = true;
   
-  // Simular llamada a API
   setTimeout(() => {
-    button.innerHTML = '<i class="fas fa-check mr-2"></i><span>¡Agregado!</span>';
-    button.classList.remove('bg-brand-coral-500');
-    button.classList.add('bg-green-500');
+    button.innerHTML = '<i class="fas fa-check"></i><span>¡Agregado!</span>';
+    button.classList.remove('bg-brand-coral-500', 'hover:bg-brand-coral-600');
+    button.classList.add('bg-green-600');
     
-    // Mostrar notificación
     showNotification(`${nombreProducto} agregado al carrito`, 'success');
     
-    // Actualizar contador del carrito
-    const cartCounter = document.querySelector('[data-cart-counter]');
-    if (cartCounter) {
-      const currentCount = parseInt(cartCounter.textContent) || 0;
-      cartCounter.textContent = currentCount + 1;
-    }
-    
-    // Restaurar botón después de 3 segundos
     setTimeout(() => {
       button.innerHTML = originalContent;
       button.disabled = false;
-      button.classList.remove('bg-green-500');
-      button.classList.add('bg-brand-coral-500');
-    }, 3000);
+      button.classList.remove('bg-green-600');
+      button.classList.add('bg-brand-coral-500', 'hover:bg-brand-coral-600');
+    }, 2000);
     
-  }, 1500);
+  }, 1000);
 }
 
 // Toggle favorito
 function toggleFavorito(productoId) {
   const button = document.getElementById('favoriteBtn');
   const icon = button.querySelector('i');
+  const text = button.querySelector('span');
   
   if (icon.classList.contains('fas')) {
     icon.classList.remove('fas');
     icon.classList.add('far');
-    button.classList.remove('text-red-400');
-    button.classList.add('text-gray-300');
-    showNotification('Producto removido de favoritos', 'info');
+    text.textContent = 'Favorito';
+    showNotification('Removido de favoritos', 'info');
   } else {
     icon.classList.remove('far');
     icon.classList.add('fas');
-    button.classList.remove('text-gray-300');
-    button.classList.add('text-red-400');
-    showNotification('Producto agregado a favoritos', 'success');
+    text.textContent = 'Favorito';
+    showNotification('Agregado a favoritos', 'success');
   }
 }
 
@@ -485,41 +741,64 @@ function showNotification(message, type = 'info') {
   
   document.body.appendChild(notification);
   
-  // Animación de entrada
   setTimeout(() => {
     notification.style.transform = 'translateX(0)';
   }, 10);
   
-  // Remover después de 4 segundos
   setTimeout(() => {
     notification.style.transform = 'translateX(100%)';
     setTimeout(() => {
       notification.remove();
     }, 300);
-  }, 4000);
+  }, 3000);
 }
 
-// Cerrar modal con ESC
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  // Inicializar funcionalidades del modal
+  initImagePanning();
+  initMouseWheelZoom();
+  
+  // Seleccionar primera miniatura por defecto
+  const firstThumbnail = document.querySelector('.thumbnail');
+  if (firstThumbnail) {
+    firstThumbnail.classList.add('border-brand-coral-500');
+    firstThumbnail.classList.remove('border-gray-600');
+  }
+});
+
+// Eventos de teclado para el modal
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeImageModal();
+  const modal = document.getElementById('imageModal');
+  if (modal.classList.contains('hidden')) return;
+  
+  switch(e.key) {
+    case 'Escape':
+      closeImageModal();
+      break;
+    case 'ArrowLeft':
+      previousImage();
+      break;
+    case 'ArrowRight':
+      nextImage();
+      break;
+    case '+':
+    case '=':
+      zoomIn();
+      break;
+    case '-':
+      zoomOut();
+      break;
+    case '0':
+      resetZoom();
+      break;
   }
 });
 
-// Cerrar modal clickeando fuera
+// Cerrar modal clickeando fuera de la imagen
 document.getElementById('imageModal').addEventListener('click', function(e) {
-  if (e.target === this) {
+  if (e.target === this || e.target.id === 'imageContainer') {
     closeImageModal();
-  }
-});
-
-// Efecto parallax suave en scroll
-window.addEventListener('scroll', function() {
-  const scrolled = window.pageYOffset;
-  const parallax = document.querySelector('.parallax-bg');
-  if (parallax) {
-    const speed = scrolled * 0.5;
-    parallax.style.transform = `translate3d(0, ${speed}px, 0)`;
   }
 });
 </script>
@@ -539,42 +818,9 @@ window.addEventListener('scroll', function() {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Animaciones suaves para la galería */
-#mainImage {
-  transition: all 0.3s ease;
-}
-
-.thumbnail-image {
-  transition: all 0.3s ease;
-}
-
-.thumbnail-image:hover {
-  transform: scale(1.05);
-}
-
-/* Modal de imagen */
-#imageModal {
-  backdrop-filter: blur(8px);
-}
-
-#modalImage {
-  animation: fadeInScale 0.3s ease-out;
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Botones con efectos */
+/* Transiciones suaves */
 button {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 button:hover:not(:disabled) {
@@ -585,21 +831,155 @@ button:active:not(:disabled) {
   transform: translateY(0);
 }
 
-/* Loading states */
+/* Estados de carga */
 button:disabled {
   cursor: not-allowed;
   opacity: 0.7;
 }
 
+/* Modal de imagen */
+#imageModal {
+  backdrop-filter: blur(4px);
+}
+
+#modalImage {
+  transition: transform 0.3s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#modalImage.zoomed {
+  cursor: grab;
+}
+
+#modalImage.zoomed:active {
+  cursor: grabbing;
+}
+
+/* Animaciones del modal */
+#imageModal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#imageModal:not(.hidden) {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scroll personalizado para miniaturas */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .aspect-square {
-    aspect-ratio: 4/3;
-  }
-  
-  .grid-cols-1.md\\:grid-cols-3 {
+  .grid-cols-2 {
     grid-template-columns: 1fr;
   }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .w-96 {
+    width: 100%;
+    max-width: 384px;
+  }
+  
+  .h-96 {
+    height: 300px;
+  }
+  
+  /* Modal responsive */
+  #imageModal .flex {
+    padding: 1rem;
+  }
+  
+  #imageModal .w-10 {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  #imageModal .w-12 {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .text-3xl {
+    font-size: 1.875rem;
+  }
+  
+  .lg\:text-4xl {
+    font-size: 2.25rem;
+  }
+  
+  .space-y-8 > * + * {
+    margin-top: 1.5rem;
+  }
+  
+  .gap-16 {
+    gap: 2rem;
+  }
+}
+
+/* Mejoras de accesibilidad */
+button:focus {
+  outline: 2px solid #fb7185;
+  outline-offset: 2px;
+}
+
+.thumbnail:focus {
+  outline: 2px solid #fb7185;
+  outline-offset: 2px;
+}
+
+/* Loading states mejorados */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fa-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Hover effects para productos relacionados */
+.group:hover .group-hover\:scale-105 {
+  transform: scale(1.05);
+}
+
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+.group:hover .group-hover\:bg-black\/20 {
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Dark theme colors consistency */
@@ -611,6 +991,19 @@ button:disabled {
 .bg-brand-coral-500 { background-color: #f43f5e; }
 .bg-brand-coral-600 { background-color: #e11d48; }
 .border-brand-coral-500 { border-color: #f43f5e; }
+
+/* Estilos para el zoom indicator */
+.zoom-indicator {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  pointer-events: none;
+}
 </style>
 
 {% endblock %}
