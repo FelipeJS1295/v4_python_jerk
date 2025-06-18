@@ -140,8 +140,8 @@ async def upload_product_image(
         if not create_thumbnail(final_file, thumb_file):
             print(f"⚠️ No se pudo crear thumbnail")
         
-        image_url = f"{BASE_URL}/{unique_filename}"
-        thumbnail_url = f"{BASE_URL}/thumbnails/{unique_filename}" if thumb_file.exists() else None
+        image_url = f"/images/productos/{unique_filename}"
+        thumbnail_url = f"/images/productos/thumbnails/{unique_filename}" if thumb_file.exists() else None
         
         print(f"✅ Imagen guardada: {image_url}")
         
