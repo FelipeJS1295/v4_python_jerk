@@ -485,51 +485,157 @@ function updatePagination() {
   }
 }
 
-function agregarAlCarrito(id, nombre, precio = 0, imagen = "", precio_original = 0) {
-  const button = event.target.closest('button');
-  const originalContent = button.innerHTML;
-
-  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-  button.disabled = true;
-
-  setTimeout(() => {
-    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-
-    const existente = carrito.find(p => p.id === id);
-    if (existente) {
-      existente.cantidad += 1;
-    } else {
-      carrito.push({
-        id,
-        nombre,
-        precio,                  // precio con descuento (si hay)
-        precio_original,         // precio de lista
-        imagen,
-        cantidad: 1
-      });
-    }
-
-    localStorage.setItem("carrito", JSON.stringify(carrito));
-
-    // Visual feedback
-    button.innerHTML = '<i class="fas fa-check"></i>';
-    button.classList.remove('bg-brand-coral-500');
-    button.classList.add('bg-green-500');
-
-    setTimeout(() => {
-      button.innerHTML = originalContent;
-      button.disabled = false;
-      button.classList.remove('bg-green-500');
-      button.classList.add('bg-brand-coral-500');
-    }, 2000);
-
-    const cartCounter = document.querySelector('[data-cart-counter]');
-    if (cartCounter) {
-      const totalItems = carrito.reduce((sum, p) => sum + p.cantidad, 0);
-      cartCounter.textContent = totalItems;
-    }
-  }, 800);
+// Función para agregar productos al carrito (para usar en páginas de productos)
+function agregarAlCarrito(productoId, nombreProducto, precioVenta, precioDescuento = null, imagen = null) {
+  // Obtener carrito actual
+  let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+  
+  // Crear objeto producto con estructura completa
+  const producto = {
+    id: parseInt(productoId),
+    nombre: nombreProducto,
+    precio_venta: parseFloat(precioVenta) || 0,
+    precio_descuento: precioDescuento ? parseFloat(precioDescuento) : null,
+    imagen: imagen || null,
+    cantidad: 1
+  };
+  
+  // Verificar si el producto ya existe en el carrito
+  const indiceExistente = carrito.findIndex(item => item.id === producto.id);
+  
+  if (indiceExistente !== -1) {
+    // Si existe, incrementar cantidad
+    carrito[indiceExistente].cantidad += 1;
+  } else {
+    // Si no existe, agregarlo
+    carrito.push(producto);
+  }
+  
+  // Guardar en localStorage
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+  
+  // Actualizar contador del carrito en el header si existe
+  actualizarContadorCarrito();
+  
+  console.log('Producto agregado al carrito:', producto);
+  console.log('Carrito actual:', carrito);
+  
+  return true;
 }
+
+// Función para actualizar el contador del carrito en el header
+function actualizarContadorCarrito() {
+  const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+  const totalItems = carrito.reduce((sum, item) => sum + (parseInt(item.cantidad) || 0), 0);
+  
+  // Buscar elemento del contador en el header
+  const contadores = document.querySelectorAll('[data-cart-counter], .cart-counter, #cart-counter');
+  contadores.forEach(contador => {
+    if (contador) {
+      contador.textContent = totalItems;
+      
+      // Agregar animación si hay items
+      if (totalItems > 0) {
+        contador.classList.add('animate-bounce');
+        setTimeout(() => {
+          contador.classList.remove('animate-bounce');
+        }, 1000);
+      }
+    }
+  });
+}
+
+// Función específica para la página de detalle de producto
+function agregarAlCarritoDetalle(productoId, nombreProducto) {
+  // Obtener datos adicionales del producto desde la página
+  const precioVentaElement = document.querySelector('[data-precio-venta]') || 
+                            document.querySelector('.precio-venta') ||
+                            document.querySelector('.text-3xl.font-bold');
+                            
+  const precioDescuentoElement = document.querySelector('[data-precio-descuento]') || 
+                                document.querySelector('.precio-descuento');
+                                
+  const imagenElement = document.querySelector('#mainImage') || 
+                       document.querySelector('.product-image') ||
+                       document.querySelector('img[alt*="' + nombreProducto + '"]');
+  
+  // Extraer valores númericos de los precios
+  let precioVenta = 0;
+  let precioDescuento = null;
+  
+  if (precioVentaElement) {
+    const precioTexto = precioVentaElement.textContent.replace(/[^\d]/g, '');
+    precioVenta = parseInt(precioTexto) || 0;
+  }
+  
+  if (precioDescuentoElement) {
+    const descuentoTexto = precioDescuentoElement.textContent.replace(/[^\d]/g, '');
+    precioDescuento = parseInt(descuentoTexto) || null;
+  }
+  
+  const imagen = imagenElement ? imagenElement.src : null;
+  
+  // Verificar que tenemos los datos mínimos
+  if (!nombreProducto || precioVenta <= 0) {
+    console.error('Datos del producto incompletos:', {
+      id: productoId,
+      nombre: nombreProducto,
+      precio: precioVenta
+    });
+    mostrarNotificacion('Error: Datos del producto incompletos', 'error');
+    return false;
+  }
+  
+  // Agregar al carrito
+  const exito = agregarAlCarrito(productoId, nombreProducto, precioVenta, precioDescuento, imagen);
+  
+  if (exito) {
+    mostrarNotificacion(`${nombreProducto} agregado al carrito`, 'success');
+  }
+  
+  return exito;
+}
+
+// Función de utilidad para formatear precios
+function formatearPrecio(precio) {
+  return new Intl.NumberFormat('es-CL').format(Math.round(parseFloat(precio) || 0));
+}
+
+// Función para mostrar notificaciones (debe estar disponible en todas las páginas)
+function mostrarNotificacion(mensaje, tipo = 'info') {
+  // Verificar si ya existe una función de notificaciones
+  if (typeof showNotification === 'function') {
+    showNotification(mensaje, tipo);
+    return;
+  }
+  
+  // Crear notificación simple si no existe la función
+  const notification = document.createElement('div');
+  notification.className = `fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 max-w-sm ${
+    tipo === 'success' ? 'bg-green-500 text-white' : 
+    tipo === 'error' ? 'bg-red-500 text-white' : 
+    'bg-blue-500 text-white'
+  }`;
+  
+  notification.innerHTML = `
+    <div class="flex items-center gap-3">
+      <i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      <span class="text-sm">${mensaje}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.transform = 'translateX(100%)';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+// Inicializar contador al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+  actualizarContadorCarrito();
+});
 
 
 function toggleFavorito(productoId) {

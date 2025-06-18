@@ -667,21 +667,134 @@ function closeImageModal() {
   resetZoom();
 }
 
-// Agregar al carrito
+// ===== FUNCIONALIDAD DEL CARRITO MEJORADA =====
+
+// Agregar al carrito con datos completos
 function agregarAlCarrito(productoId, nombreProducto) {
   const button = document.getElementById('addToCartBtn');
   const originalContent = button.innerHTML;
   
-  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Agregando...</span>';
+  // Obtener datos del producto desde la página
+  let precioFinal = 0;  // Solo el precio final que se va a cobrar
+  let imagen = null;
+  
+  // Buscar precio final (el que realmente se cobra, sea con o sin descuento)
+  const precioElements = [
+    document.querySelector('.text-3xl.font-bold.text-brand-coral-400'),
+    document.querySelector('.text-2xl.font-bold.text-brand-coral-400'),
+    document.querySelector('[data-precio-venta]'),
+    document.querySelector('.precio-venta'),
+    document.querySelector('.text-gradient')
+  ];
+  
+  for (const element of precioElements) {
+    if (element && element.textContent) {
+      const precioTexto = element.textContent.replace(/[^\d]/g, '');
+      if (precioTexto && parseInt(precioTexto) > 0) {
+        precioFinal = parseInt(precioTexto);
+        break;
+      }
+    }
+  }
+  
+  // Buscar imagen principal
+  const imagenElement = document.querySelector('#mainImage') || 
+                       document.querySelector('.product-image') ||
+                       document.querySelector('img[alt*="' + nombreProducto + '"]');
+  
+  if (imagenElement && imagenElement.src) {
+    imagen = imagenElement.src;
+  }
+  
+  // Validar que tenemos los datos mínimos necesarios
+  if (!nombreProducto) {
+    console.error('Nombre del producto es requerido');
+    showNotification('Error: Nombre del producto no encontrado', 'error');
+    return false;
+  }
+  
+  if (precioFinal <= 0) {
+    console.error('Precio del producto no válido:', precioFinal);
+    showNotification('Error: Precio del producto no válido', 'error');
+    return false;
+  }
+  
+  // Debug: mostrar datos obtenidos
+  console.log('=== DATOS DEL PRODUCTO (DETALLE) ===');
+  console.log('ID:', productoId);
+  console.log('Nombre:', nombreProducto);
+  console.log('Precio final:', precioFinal);
+  console.log('Imagen:', imagen ? 'Sí' : 'No');
+  console.log('===================================');
+  
+  // Animación de carga
+  button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Agregando...</span>';
   button.disabled = true;
   
+  // Obtener carrito actual del localStorage
+  let carrito = [];
+  try {
+    const carritoGuardado = localStorage.getItem('carrito');
+    if (carritoGuardado) {
+      carrito = JSON.parse(carritoGuardado);
+    }
+  } catch (error) {
+    console.error('Error cargando carrito:', error);
+    carrito = [];
+  }
+  
+  // Crear objeto producto con SOLO el precio final (igual que desde productos)
+  const producto = {
+    id: parseInt(productoId),
+    nombre: nombreProducto,
+    precio_venta: precioFinal,        // Solo el precio final
+    precio_descuento: null,           // No guardar descuento separado
+    imagen: imagen,
+    cantidad: 1
+  };
+  
+  // Verificar si el producto ya existe en el carrito
+  const indiceExistente = carrito.findIndex(item => parseInt(item.id) === parseInt(productoId));
+  
+  if (indiceExistente !== -1) {
+    // Si existe, incrementar cantidad
+    carrito[indiceExistente].cantidad = (parseInt(carrito[indiceExistente].cantidad) || 0) + 1;
+    console.log('Producto existente, nueva cantidad:', carrito[indiceExistente].cantidad);
+  } else {
+    // Si no existe, agregarlo al carrito
+    carrito.push(producto);
+    console.log('Producto nuevo agregado al carrito');
+  }
+  
+  // Guardar carrito actualizado en localStorage
+  try {
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    console.log('Carrito guardado en localStorage:', carrito);
+  } catch (error) {
+    console.error('Error guardando carrito:', error);
+    showNotification('Error guardando en el carrito', 'error');
+    button.innerHTML = originalContent;
+    button.disabled = false;
+    return false;
+  }
+  
+  // Simular procesamiento (1.5 segundos)
   setTimeout(() => {
-    button.innerHTML = '<i class="fas fa-check"></i><span>¡Agregado!</span>';
+    // Cambiar a estado de éxito
+    button.innerHTML = '<i class="fas fa-check mr-2"></i><span>¡Agregado!</span>';
     button.classList.remove('bg-brand-coral-500', 'hover:bg-brand-coral-600');
     button.classList.add('bg-green-600');
     
-    showNotification(`${nombreProducto} agregado al carrito`, 'success');
+    // Mostrar notificación de éxito
+    const mensaje = indiceExistente !== -1 
+      ? `Cantidad actualizada: ${carrito[indiceExistente].cantidad}` 
+      : `${nombreProducto} agregado al carrito`;
+    showNotification(mensaje, 'success');
     
+    // Actualizar contador del carrito en el header
+    actualizarContadorCarrito();
+    
+    // Restaurar botón después de 2 segundos
     setTimeout(() => {
       button.innerHTML = originalContent;
       button.disabled = false;
@@ -689,49 +802,78 @@ function agregarAlCarrito(productoId, nombreProducto) {
       button.classList.add('bg-brand-coral-500', 'hover:bg-brand-coral-600');
     }, 2000);
     
-  }, 1000);
+  }, 1500);
+  
+  return true;
+}
+
+// Actualizar contador del carrito en el header
+function actualizarContadorCarrito() {
+  try {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const totalItems = carrito.reduce((sum, item) => sum + (parseInt(item.cantidad) || 0), 0);
+    
+    // Buscar elementos del contador (múltiples selectores)
+    const contadores = document.querySelectorAll('[data-cart-counter], .cart-counter, .animate-gentle-bounce, #cart-counter');
+    
+    contadores.forEach(contador => {
+      if (contador) {
+        contador.textContent = totalItems;
+        
+        // Agregar animación si hay items
+        if (totalItems > 0) {
+          contador.classList.add('animate-bounce');
+          setTimeout(() => contador.classList.remove('animate-bounce'), 1000);
+        }
+      }
+    });
+    
+    console.log('Contador actualizado:', totalItems, 'productos');
+  } catch (error) {
+    console.error('Error actualizando contador:', error);
+  }
 }
 
 // Toggle favorito
 function toggleFavorito(productoId) {
   const button = document.getElementById('favoriteBtn');
   const icon = button.querySelector('i');
-  const text = button.querySelector('span');
   
   if (icon.classList.contains('fas')) {
     icon.classList.remove('fas');
     icon.classList.add('far');
-    text.textContent = 'Favorito';
     showNotification('Removido de favoritos', 'info');
   } else {
     icon.classList.remove('far');
     icon.classList.add('fas');
-    text.textContent = 'Favorito';
     showNotification('Agregado a favoritos', 'success');
   }
 }
 
 // Contactar por WhatsApp
 function contactarWhatsApp(productoId) {
-  const mensaje = encodeURIComponent(`Hola, me interesa el producto "${document.querySelector('h1').textContent}". ¿Podrían darme más información?`);
+  const productName = document.querySelector('h1').textContent || 'este producto';
+  const mensaje = encodeURIComponent(`Hola, me interesa el producto "${productName}". ¿Podrían darme más información?`);
   window.open(`https://wa.me/56987654321?text=${mensaje}`, '_blank');
 }
 
 // Solicitar cotización
 function solicitarCotizacion(productoId) {
-  const productName = document.querySelector('h1').textContent;
+  const productName = document.querySelector('h1').textContent || 'Producto';
   const mensaje = encodeURIComponent(`Solicito cotización para: ${productName}`);
   window.location.href = `mailto:contacto@jerkhome.cl?subject=Cotización - ${productName}&body=${mensaje}`;
 }
 
-// Sistema de notificaciones
+// Sistema de notificaciones mejorado
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = `fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 max-w-sm ${
     type === 'success' ? 'bg-green-500 text-white' : 
     type === 'error' ? 'bg-red-500 text-white' : 
-    'bg-blue-500 text-white'
+    type === 'info' ? 'bg-blue-500 text-white' :
+    'bg-gray-600 text-white'
   }`;
+  
   notification.innerHTML = `
     <div class="flex items-center gap-3">
       <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
@@ -741,16 +883,37 @@ function showNotification(message, type = 'info') {
   
   document.body.appendChild(notification);
   
+  // Animación de entrada
   setTimeout(() => {
     notification.style.transform = 'translateX(0)';
   }, 10);
   
+  // Remover después de 4 segundos
   setTimeout(() => {
     notification.style.transform = 'translateX(100%)';
     setTimeout(() => {
       notification.remove();
     }, 300);
-  }, 3000);
+  }, 4000);
+}
+
+// Función de debug para verificar el carrito
+function debugCarrito() {
+  console.log('=== DEBUG CARRITO ===');
+  try {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    console.log('Carrito actual:', carrito);
+    console.log('Total productos:', carrito.length);
+    
+    carrito.forEach((producto, index) => {
+      console.log(`${index + 1}. ${producto.nombre}`);
+      console.log(`   Precio: $${(producto.precio_venta || 0).toLocaleString()}`);
+      console.log(`   Cantidad: ${producto.cantidad}`);
+    });
+  } catch (error) {
+    console.error('Error cargando carrito:', error);
+  }
+  console.log('===================');
 }
 
 // Inicialización
@@ -759,12 +922,21 @@ document.addEventListener('DOMContentLoaded', function() {
   initImagePanning();
   initMouseWheelZoom();
   
+  // Actualizar contador del carrito al cargar la página
+  actualizarContadorCarrito();
+  
   // Seleccionar primera miniatura por defecto
   const firstThumbnail = document.querySelector('.thumbnail');
   if (firstThumbnail) {
     firstThumbnail.classList.add('border-brand-coral-500');
     firstThumbnail.classList.remove('border-gray-600');
   }
+  
+  // Hacer disponible la función de debug en consola
+  window.debugCarrito = debugCarrito;
+  
+  console.log('🛒 Página de producto inicializada');
+  console.log('💡 Ejecuta debugCarrito() en consola para ver el estado del carrito');
 });
 
 // Eventos de teclado para el modal

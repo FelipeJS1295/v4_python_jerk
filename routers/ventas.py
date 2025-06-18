@@ -17,62 +17,139 @@ router = APIRouter(prefix="/ventas", tags=["Ventas"])
 @router.get("/", response_model=list[VentaOut])
 def obtener_ventas():
     conn = conectar_mysql()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(dictionary=True, buffered=True)  # ✅ AGREGADO BUFFERED=TRUE
     
-    cursor.execute("""
-        SELECT 
-            vr.id,
-            vr.numero_orden,
-            c.nombre AS cliente,
-            vr.producto,
-            vr.fecha_entrega,
-            vr.estado,
-            vr.sku
-        FROM ventas_retail vr
-        JOIN clientes c ON vr.cliente_id = c.id
-        ORDER BY vr.fecha_entrega DESC
-    """)
-    resultados = cursor.fetchall()
+    try:
+        cursor.execute("""
+            SELECT 
+                vr.id,
+                vr.numero_orden,
+                c.nombre AS cliente,
+                vr.producto,
+                vr.fecha_entrega,
+                vr.estado,
+                vr.sku
+            FROM ventas_retail vr
+            JOIN clientes c ON vr.cliente_id = c.id
+            ORDER BY vr.fecha_entrega DESC
+        """)
+        resultados = cursor.fetchall()
 
-    # Validar fechas nulas
-    for r in resultados:
-        fecha = r["fecha_entrega"]
-        r["fecha_entrega"] = fecha.strftime("%Y-%m-%d") if fecha else ""
+        # Validar fechas nulas
+        for r in resultados:
+            fecha = r["fecha_entrega"]
+            r["fecha_entrega"] = fecha.strftime("%Y-%m-%d") if fecha else ""
 
-    return resultados
+        return resultados
+    
+    except Exception as e:
+        print(f"Error en obtener_ventas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @router.post("/", response_model=VentaOut)
 def crear_venta(venta: VentaCreate):
     conn = conectar_mysql()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True, buffered=True)  # ✅ AGREGADO BUFFERED=TRUE
+    
     try:
+        # Log de datos recibidos para debugging
+        print(f"📥 Datos de venta recibidos: {venta.dict()}")
+        
+        # Validaciones básicas
+        if not venta.cliente_final or not venta.cliente_final.strip():
+            raise HTTPException(status_code=400, detail="cliente_final es obligatorio")
+        
+        if not venta.producto or not venta.producto.strip():
+            raise HTTPException(status_code=400, detail="producto es obligatorio")
+        
+        if venta.precio is None or venta.precio < 0:
+            raise HTTPException(status_code=400, detail="precio debe ser mayor o igual a 0")
+        
+        # Definir columnas exactamente como están en la base de datos
         columnas = [
             "cliente_id", "numero_orden", "cliente_final", "rut_documento", "email",
             "telefono", "fecha_entrega", "fecha_cliente", "producto", "precio",
             "precio_cliente", "costo_despacho", "comuna", "direccion", "region",
             "sku", "estado", "documento", "razon_social", "rut", "giro",
-            "direccion_factura", "courier", "unidades", "users_id"
+            "direccion_factura", "courier", "unidades", "users_id", "fecha_compra"
         ]
-        valores = [getattr(venta, col) for col in columnas]
+        
+        # Obtener valores, usando valores por defecto para campos opcionales
+        valores = [
+            venta.cliente_id or 1,
+            venta.numero_orden or f"ORD-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            venta.cliente_final.strip(),
+            venta.rut_documento or "",
+            venta.email or "",
+            venta.telefono or "",
+            venta.fecha_entrega or datetime.now().date(),
+            venta.fecha_cliente or datetime.now().date(),
+            venta.producto.strip(),
+            venta.precio or 0,
+            venta.precio_cliente or venta.precio or 0,
+            venta.costo_despacho or 0,
+            venta.comuna or "",
+            venta.direccion or "",
+            venta.region or "",
+            venta.sku or "",
+            venta.estado or "nueva",
+            venta.documento or "boleta",
+            venta.razon_social or venta.cliente_final or "",
+            venta.rut or venta.rut_documento or "",
+            venta.giro or "Particular",
+            venta.direccion_factura or venta.direccion or "",
+            venta.courier or "Retiro en tienda",
+            venta.unidades or 1,
+            venta.users_id or 1,
+            venta.fecha_compra or datetime.now().date()
+        ]
 
         placeholders = ", ".join(["%s"] * len(columnas))
         columnas_str = ", ".join(columnas)
 
-        cursor.execute("""
-            SELECT vr.id, c.nombre AS cliente, vr.fecha_entrega, vr.producto, vr.estado
-            FROM ventas_retail vr
-            JOIN clientes c ON vr.cliente_id = c.id
-            ORDER BY vr.fecha_entrega DESC
-        """)
+        query = f"""
+            INSERT INTO ventas_retail ({columnas_str})
+            VALUES ({placeholders})
+        """
+        
+        print(f"🔄 Ejecutando query: {query}")
+        print(f"📊 Valores: {valores}")
+        
+        cursor.execute(query, valores)
         conn.commit()
+        
         venta_id = cursor.lastrowid
-        conn.close()
-        return {"id": venta_id, **venta.dict()}
+        print(f"✅ Venta creada con ID: {venta_id}")
+        
+        # Retornar la venta creada
+        venta_dict = venta.dict()
+        venta_dict["id"] = venta_id
+        venta_dict["fecha_entrega"] = str(valores[columnas.index("fecha_entrega")])
+        venta_dict["fecha_compra"] = str(valores[columnas.index("fecha_compra")])
+
+        return venta_dict
+        
     except Exception as e:
         conn.rollback()
+        print(f"❌ Error en crear_venta: {e}")
+        
+        # Proporcionar más detalles del error
+        if "Duplicate entry" in str(e):
+            raise HTTPException(status_code=400, detail="Ya existe una venta con ese número de orden")
+        elif "cannot be null" in str(e):
+            raise HTTPException(status_code=400, detail=f"Campo obligatorio faltante: {str(e)}")
+        elif "Data too long" in str(e):
+            raise HTTPException(status_code=400, detail=f"Datos demasiado largos: {str(e)}")
+        else:
+            raise HTTPException(status_code=400, detail=f"Error al crear venta: {str(e)}")
+    finally:
+        cursor.close()
         conn.close()
-        raise HTTPException(status_code=400, detail=str(e))
+
 
 class EstadoUpdate(BaseModel):
     ids: List[int]
@@ -81,7 +158,7 @@ class EstadoUpdate(BaseModel):
 @router.put("/cambiar-estado")
 def cambiar_estado_ventas(data: EstadoUpdate):
     conn = conectar_mysql()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)  # ✅ AGREGADO BUFFERED=TRUE
 
     try:
         formato = ", ".join(["%s"] * len(data.ids))
@@ -96,13 +173,15 @@ def cambiar_estado_ventas(data: EstadoUpdate):
         cursor.close()
         conn.close()
 
+
 class EliminarVentas(BaseModel):
     ids: List[int]
 
 @router.post("/eliminar-varias")
 def eliminar_varias_ventas(data: EliminarVentas):
     conn = conectar_mysql()
-    cursor = conn.cursor()
+    cursor = conn.cursor(buffered=True)  # ✅ AGREGADO BUFFERED=TRUE
+    
     try:
         placeholders = ", ".join(["%s"] * len(data.ids))
         query = f"DELETE FROM ventas_retail WHERE id IN ({placeholders})"

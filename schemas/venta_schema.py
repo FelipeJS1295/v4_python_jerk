@@ -11,6 +11,7 @@ class VentaBase(BaseModel):
     telefono: Optional[str] = None
     fecha_entrega: Optional[date] = None
     fecha_cliente: Optional[date] = None
+    fecha_compra: Optional[date] = None  # ✅ este campo era necesario
     producto: Optional[str] = None
     precio: Optional[float] = None
     precio_cliente: Optional[float] = None
@@ -35,7 +36,6 @@ class VentaCreate(VentaBase):
 class VentaOut(BaseModel):
     id: int
     numero_orden: str
-    cliente: str
     fecha_entrega: str
     producto: str
     estado: str

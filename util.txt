@@ -1,0 +1,8 @@
+# Para actualizar (en lugar de git pull)
+/var/www/update_jerkhome_safe.sh
+
+# Para verificar estado
+/var/www/monitor_jerkhome.sh
+
+# Para ver logs si hay problemas
+pm2 logs jerkhome-admin

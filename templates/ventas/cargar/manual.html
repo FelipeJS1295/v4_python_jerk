@@ -226,7 +226,7 @@ async function cargarClientes() {
 
 async function cargarProductos() {
   try {
-    const response = await fetch('/productos/');
+    const response = await fetch('/configuracion/productos/api');
     if (response.ok) {
       const productos = await response.json();
       productoSelect.innerHTML = '<option value="">Seleccionar producto...</option>';

@@ -49,15 +49,15 @@
         <!-- Stats elegantes -->
         <div class="grid grid-cols-3 gap-8 pt-8 border-t border-white/10">
           <div>
-            <div class="text-2xl font-bold text-gradient">500+</div>
+            <div class="text-2xl font-bold text-gradient">100+</div>
             <div class="text-sm text-white/60 tracking-wide">Diseños Exclusivos</div>
           </div>
           <div>
-            <div class="text-2xl font-bold text-gradient">25</div>
+            <div class="text-2xl font-bold text-gradient">8</div>
             <div class="text-sm text-white/60 tracking-wide">Años Experiencia</div>
           </div>
           <div>
-            <div class="text-2xl font-bold text-gradient">10K+</div>
+            <div class="text-2xl font-bold text-gradient">Miles</div>
             <div class="text-sm text-white/60 tracking-wide">Clientes Satisfechos</div>
           </div>
         </div>
@@ -66,9 +66,21 @@
       <!-- Imagen hero minimalista -->
       <div class="relative animate-fade-in">
         <div class="relative">
-          <!-- Imagen principal -->
-          <div class="aspect-[4/5] rounded-3xl overflow-hidden glass-subtle">
-            <div class="w-full h-full bg-gradient-to-br from-dark-800 to-dark-900 flex items-center justify-center">
+          <!-- Imagen principal con overlay -->
+          <div class="aspect-[4/5] rounded-3xl overflow-hidden glass-subtle relative">
+            
+            <!-- Imagen de fondo -->
+            <img 
+              src="/static/img/fabrica_1.jpeg" 
+              alt="Jerk Home Fábrica" 
+              class="absolute inset-0 w-full h-full object-cover"
+            />
+
+            <!-- Capa oscura -->
+            <div class="absolute inset-0 bg-black/60"></div>
+
+            <!-- Contenido encima -->
+            <div class="relative z-10 w-full h-full flex items-center justify-center">
               <div class="text-center space-y-4">
                 <div class="w-32 h-32 mx-auto bg-gradient-to-br from-brand-coral-500/20 to-brand-coral-600/20 rounded-2xl flex items-center justify-center">
                   <i class="fas fa-home text-brand-coral-400 text-6xl"></i>
@@ -79,9 +91,11 @@
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
+
     </div>
     
     <!-- Indicador de scroll -->
@@ -152,7 +166,7 @@
           <div class="flex items-center justify-between">
             <div class="text-white/70">
               <div class="text-sm">Desde</div>
-              <div class="text-xl font-bold text-gradient">$1,299</div>
+              <div class="text-xl font-bold text-gradient">$149.990-</div>
             </div>
             <div class="flex items-center gap-2 text-brand-coral-400 font-medium">
               <span class="text-sm">Ver Colección</span>
@@ -193,7 +207,7 @@
           <div class="flex items-center justify-between">
             <div class="text-white/70">
               <div class="text-sm">Desde</div>
-              <div class="text-xl font-bold text-gradient">$899</div>
+              <div class="text-xl font-bold text-gradient">$129.990</div>
             </div>
             <div class="flex items-center gap-2 text-brand-coral-400 font-medium">
               <span class="text-sm">Ver Colección</span>
@@ -234,7 +248,7 @@
           <div class="flex items-center justify-between">
             <div class="text-white/70">
               <div class="text-sm">Desde</div>
-              <div class="text-xl font-bold text-gradient">$1,599</div>
+              <div class="text-xl font-bold text-gradient">$79.990</div>
             </div>
             <div class="flex items-center gap-2 text-brand-coral-400 font-medium">
               <span class="text-sm">Ver Colección</span>

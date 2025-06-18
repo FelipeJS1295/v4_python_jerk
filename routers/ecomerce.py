@@ -577,3 +577,78 @@ def vista_carrito(request: Request):
         "request": request,
         "now": datetime.now
     })
+
+@router.get("/checkout", response_class=HTMLResponse)
+def vista_checkout(request: Request):
+    """
+    Página de checkout para finalizar compra.
+    """
+    return templates.TemplateResponse("ecomerce/checkout.html", {
+        "request": request,
+        "now": datetime.now
+    })
+
+@router.get("/compra-exitosa", response_class=HTMLResponse)
+def vista_compra_exitosa(request: Request):
+    """
+    Página de confirmación de compra exitosa.
+    """
+    return templates.TemplateResponse("ecomerce/compra_exitosa.html", {
+        "request": request,
+        "now": datetime.now
+    })
+
+@router.post("/procesar-venta")
+async def procesar_venta_checkout(venta_data: dict):
+    """
+    Procesar una venta desde el checkout.
+    """
+    try:
+        conn = conectar_mysql()
+        cursor = conn.cursor()
+        
+        # Insertar la venta
+        cursor.execute("""
+            INSERT INTO ventas_retail (
+                cliente_id, numero_orden, cliente_final, rut_documento, email, telefono,
+                fecha_compra, fecha_entrega, producto, precio, precio_cliente, 
+                costo_despacho, comuna, direccion, region, sku, estado, unidades,
+                created_at, updated_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                NOW(), NOW()
+            )
+        """, (
+            venta_data.get('cliente_id', 9),
+            venta_data.get('numero_orden'),
+            venta_data.get('cliente_final'),
+            venta_data.get('rut_documento'),
+            venta_data.get('email'),
+            venta_data.get('telefono'),
+            venta_data.get('fecha_compra'),
+            venta_data.get('fecha_entrega'),
+            venta_data.get('producto'),
+            venta_data.get('precio'),
+            venta_data.get('precio_cliente'),
+            venta_data.get('costo_despacho', 0),
+            venta_data.get('comuna'),
+            venta_data.get('direccion'),
+            venta_data.get('region'),
+            venta_data.get('sku', ''),
+            venta_data.get('estado', 'nueva'),
+            venta_data.get('unidades', 1)
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return {"success": True, "message": "Venta procesada correctamente"}
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+            cursor.close()
+            conn.close()
+        
+        return {"success": False, "error": str(e)}
