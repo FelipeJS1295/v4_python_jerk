@@ -68,6 +68,11 @@ class ProductoUpdate(ProductoBase):
 # RUTAS
 # ---------------------------
 
+def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
+    if path and path.startswith("/static/"):
+        return path.replace("/static", "", 1)
+    return path
+
 # RUTA PARA SERVIR EL TEMPLATE HTML
 @router.get("/", response_class=HTMLResponse)
 async def pagina_productos(request: Request):
@@ -88,7 +93,24 @@ def obtener_productos():
 def crear_producto(producto: ProductoCreate):
     conn = conectar_mysql()
     cursor = conn.cursor()
+
+    # Función para limpiar rutas
+    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
+        if path and path.startswith("/static/"):
+            return path.replace("/static", "", 1)
+        return path
+
     try:
+        # Limpiar campos de imagen
+        campos_imagen = [
+            "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
+            "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
+        ]
+        for campo in campos_imagen:
+            valor = getattr(producto, campo)
+            setattr(producto, campo, limpiar_ruta_imagen(valor))
+
+        # Insertar producto
         cursor.execute("""
             INSERT INTO productos (sku, nombre, tipo_producto, tipo_producto_venta, sku_esqueleto, sku_hites, sku_la_polar,
                 costo_costura, costo_tapiceria, costo_armado, costo_corte, costo_esqueleteria,
@@ -119,17 +141,37 @@ def crear_producto(producto: ProductoCreate):
 
         conn.commit()
         return {"message": "Producto creado correctamente", "producto_id": producto_id}
+
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=str(err))
+
     finally:
         cursor.close()
         conn.close()
+
 
 @router.put("/api", response_class=JSONResponse)
 def actualizar_producto(producto: ProductoUpdate):
     conn = conectar_mysql()
     cursor = conn.cursor()
+
+    # Función para limpiar ruta de imagen
+    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
+        if path and path.startswith("/static/"):
+            return path.replace("/static", "", 1)
+        return path
+
     try:
+        # Limpiar campos de imagen antes de guardar
+        campos_imagen = [
+            "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
+            "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
+        ]
+        for campo in campos_imagen:
+            valor = getattr(producto, campo)
+            setattr(producto, campo, limpiar_ruta_imagen(valor))
+
+        # Actualizar producto
         cursor.execute("""
             UPDATE productos SET sku=%s, nombre=%s, tipo_producto=%s, tipo_producto_venta=%s,
             sku_esqueleto=%s, sku_hites=%s, sku_la_polar=%s, costo_costura=%s, costo_tapiceria=%s,
@@ -150,9 +192,8 @@ def actualizar_producto(producto: ProductoUpdate):
             producto.img_9, producto.img_10, producto.descripcion_producto, producto.id
         ))
 
-        # Eliminar insumos existentes y agregar los nuevos
+        # Actualizar insumos
         cursor.execute("DELETE FROM producto_insumo WHERE producto_id = %s", (producto.id,))
-
         for insumo in producto.insumos:
             cursor.execute("""
                 INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
@@ -161,11 +202,14 @@ def actualizar_producto(producto: ProductoUpdate):
 
         conn.commit()
         return {"message": "Producto actualizado correctamente"}
+
     except mysql.connector.Error as err:
         raise HTTPException(status_code=500, detail=str(err))
+
     finally:
         cursor.close()
         conn.close()
+
 
 @router.delete("/api/{producto_id}", response_class=JSONResponse)
 def eliminar_producto(producto_id: int):

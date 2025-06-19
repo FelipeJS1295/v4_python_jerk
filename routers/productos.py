@@ -62,6 +62,12 @@ class InsumoProducto(BaseModel):
     insumo_id: int
     cantidad: float
 
+
+def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
+    if path and path.startswith("/static/"):
+        return path.replace("/static", "", 1)
+    return path
+
 # RUTA PARA SERVIR EL TEMPLATE HTML
 @router.get("/", response_class=HTMLResponse)
 async def pagina_productos(request: Request):
@@ -115,7 +121,23 @@ def obtener_producto_por_id(producto_id: int):
 def crear_producto(producto: ProductoCreate):
     conn = conectar_mysql()
     cursor = conn.cursor()
+
+    # Función para limpiar la ruta de imagen
+    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
+        if path and path.startswith("/static/"):
+            return path.replace("/static", "", 1)
+        return path
+
     try:
+        # Limpiar rutas si vienen con /static
+        campos_imagen = [
+            "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
+            "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
+        ]
+        for campo in campos_imagen:
+            valor = getattr(producto, campo)
+            setattr(producto, campo, limpiar_ruta_imagen(valor))
+
         # Insertar producto
         cursor.execute("""
             INSERT INTO productos (
@@ -142,9 +164,9 @@ def crear_producto(producto: ProductoCreate):
             producto.dimensiones, producto.material, producto.colores_disponibles,
             producto.tiempo_entrega, producto.colores_hex
         ))
-        
+
         producto_id = cursor.lastrowid
-        
+
         # Insertar insumos si los hay
         if producto.insumos:
             for insumo in producto.insumos:
@@ -152,13 +174,14 @@ def crear_producto(producto: ProductoCreate):
                     INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
                     VALUES (%s, %s, %s)
                 """, (producto_id, insumo['insumo_id'], insumo['cantidad']))
-        
+
         conn.commit()
         return {"message": "Producto creado correctamente", "id": producto_id}
-        
+
     except mysql.connector.Error as err:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(err))
+
     finally:
         cursor.close()
         conn.close()
@@ -167,7 +190,23 @@ def crear_producto(producto: ProductoCreate):
 def actualizar_producto(producto: ProductoUpdate):
     conn = conectar_mysql()
     cursor = conn.cursor()
+
+    # Función local para limpiar la ruta de imagen
+    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
+        if path and path.startswith("/static/"):
+            return path.replace("/static", "", 1)
+        return path
+
     try:
+        # Limpiar rutas si vienen con /static
+        campos_imagen = [
+            "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
+            "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
+        ]
+        for campo in campos_imagen:
+            valor = getattr(producto, campo)
+            setattr(producto, campo, limpiar_ruta_imagen(valor))
+
         # Actualizar producto
         cursor.execute("""
             UPDATE productos SET
@@ -191,26 +230,28 @@ def actualizar_producto(producto: ProductoUpdate):
             producto.dimensiones, producto.material, producto.colores_disponibles,
             producto.tiempo_entrega, producto.colores_hex, producto.id
         ))
-        
+
         # Actualizar insumos - eliminar existentes y crear nuevos
         cursor.execute("DELETE FROM producto_insumo WHERE producto_id = %s", (producto.id,))
-        
+
         if producto.insumos:
             for insumo in producto.insumos:
                 cursor.execute("""
                     INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
                     VALUES (%s, %s, %s)
                 """, (producto.id, insumo['insumo_id'], insumo['cantidad']))
-        
+
         conn.commit()
         return {"message": "Producto actualizado correctamente"}
-        
+
     except mysql.connector.Error as err:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(err))
+
     finally:
         cursor.close()
         conn.close()
+
 
 @router.delete("/api/{producto_id}", response_class=JSONResponse)
 def eliminar_producto(producto_id: int):

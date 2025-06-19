@@ -822,7 +822,7 @@ async function handleFileUpload(file, container) {
 
     if (result.success) {
       // Mostrar preview de la imagen
-      img.src = result.url;
+      img.src = result.url.startsWith('/static') ? result.url : `/static${result.url}`;
       hiddenInput.value = result.url;
       
       uploadContent.classList.add('hidden');
@@ -1053,7 +1053,7 @@ function cargarImagenEnContainer(container, url) {
   const hiddenInput = container.querySelector('input[type="hidden"]');
   const img = imagePreview.querySelector('img');
 
-  img.src = url;
+  img.src = url.startsWith('/static') ? url : `/static${url}`;
   hiddenInput.value = url;
   uploadContent.classList.add('hidden');
   imagePreview.classList.remove('hidden');
