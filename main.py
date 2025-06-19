@@ -28,8 +28,12 @@ from routers import (
     finanzas,
     ecomerce,
     image_router,
+    usuarios_jinja,
+    trabajadores_jinja,
 )
 
+from routers.config import trabajadores_acciones
+from routers.config import usuarios_acciones
 from routers.logistica import devoluciones
 from routers.logistica.bodega import facturas
 
@@ -44,6 +48,7 @@ from routers.config import (
 )
 
 from routers.auth import router as auth_router
+
 
 # App y configuración
 app = FastAPI()
@@ -172,12 +177,17 @@ app.include_router(ventas_maestra.router)
 app.include_router(dashboard.router)
 app.include_router(usuarios.router)
 app.include_router(configuracion.router)
+app.include_router(usuarios_jinja.router)
+app.include_router(trabajadores_jinja.router)
 
 # Routers de configuración
 app.include_router(config_clientes.router)
 app.include_router(config_insumos.router)
 app.include_router(config_proveedores.router)
 app.include_router(config_productos.router)
+
+app.include_router(trabajadores_acciones.router)
+app.include_router(usuarios_acciones.router)
 
 # Routers de logistica
 app.include_router(devoluciones.router)

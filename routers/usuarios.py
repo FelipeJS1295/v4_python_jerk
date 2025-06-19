@@ -1,11 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from db import conectar_mysql
 from schemas.usuario_schema import UsuarioLogin
 from utils.auth import hashear_contraseña, verificar_contraseña, crear_token
 from datetime import timedelta
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
+templates = Jinja2Templates(directory="templates")
 
 @router.post("/login")
 def login(datos: UsuarioLogin):
@@ -112,3 +115,16 @@ def verificar_email(email: str):
     finally:
         cursor.close()
         conn.close()
+
+@router.get("/configuracion/usuarios", response_class=HTMLResponse)
+def vista_usuarios(request: Request):
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT id, nombre_usuario, email, rol, activo, created_at FROM users ORDER BY created_at DESC")
+        usuarios = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+    
+    return templates.TemplateResponse("configuracion/usuarios.html", {"request": request, "usuarios": usuarios})

@@ -1132,12 +1132,36 @@ async function editarProducto(id) {
     'colores_hex', 'tiempo_entrega', 'descripcion_producto'
   ];
   
-  campos.forEach(campo => {
-    const elemento = document.getElementById(`producto-${campo.replace('_', '-')}`);
-    if (elemento) {
-      elemento.value = producto[campo] || '';
-    }
-  });
+const campoMap = {
+  id: 'producto-id',
+  sku: 'producto-sku',
+  nombre: 'producto-nombre',
+  tipo_producto: 'producto-tipo',
+  tipo_producto_venta: 'producto-tipo-venta',
+  sku_esqueleto: 'producto-sku-esqueleto',
+  sku_hites: 'producto-sku-hites',
+  sku_la_polar: 'producto-sku-polar',
+  descripcion_producto: 'producto-descripcion',
+  costo_costura: 'producto-costo-costura',
+  costo_tapiceria: 'producto-costo-tapiceria',
+  costo_armado: 'producto-costo-armado',
+  costo_corte: 'producto-costo-corte',
+  costo_esqueleteria: 'producto-costo-esqueleteria',
+  precio_venta: 'producto-precio-venta',
+  precio_descuento: 'producto-precio-descuento',
+  dimensiones: 'producto-dimensiones',
+  material: 'producto-material',
+  colores_disponibles: 'producto-colores',
+  colores_hex: 'producto-colores-hex',
+  tiempo_entrega: 'producto-tiempo-entrega'
+};
+
+Object.entries(campoMap).forEach(([campo, id]) => {
+  const elemento = document.getElementById(id);
+  if (elemento) {
+    elemento.value = producto[campo] || '';
+  }
+});
 
   // Cargar imágenes existentes
   const imageFields = [

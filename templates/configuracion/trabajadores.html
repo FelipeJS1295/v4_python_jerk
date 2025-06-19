@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Trabajadores{% endblock %}
+{% block header %}Gestión de Trabajadores{% endblock %}
+{% block breadcrumb %}Configuración > Trabajadores{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <div class="flex justify-between items-center">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-800">Trabajadores</h1>
+      <p class="text-slate-600 mt-1">Listado del personal registrado</p>
+    </div>
+    <a href="/configuracion/trabajadores/nuevo" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+      <i class="fas fa-user-cog mr-2"></i>Nuevo Trabajador
+    </a>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Nombre</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">RUT</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Teléfono</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Cargo</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-slate-200">
+        {% for t in trabajadores %}
+        <tr>
+          <td class="px-6 py-4">{{ t.nombres }} {{ t.apellidos }}</td>
+          <td class="px-6 py-4">{{ t.rut }}</td>
+          <td class="px-6 py-4">{{ t.telefono }}</td>
+          <td class="px-6 py-4">{{ t.rol or '—' }}</td>
+          <td class="px-6 py-4">
+            {% if t.estado == 'activo' %}
+              <span class="text-green-600 font-semibold text-sm">Activo</span>
+            {% else %}
+              <span class="text-red-600 font-semibold text-sm">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 text-right space-x-2">
+            <a href="/configuracion/trabajadores/{{ t.id }}/editar" class="text-yellow-600 hover:text-yellow-800 text-sm"><i class="fas fa-edit"></i></a>
+            <a href="/configuracion/trabajadores/{{ t.id }}/eliminar" class="text-red-600 hover:text-red-800 text-sm"><i class="fas fa-trash"></i></a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center py-6 text-slate-500">No hay trabajadores registrados</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

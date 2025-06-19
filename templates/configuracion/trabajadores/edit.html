@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Trabajador{% endblock %}
+{% block header %}Editar Trabajador{% endblock %}
+{% block breadcrumb %}Configuración > Trabajadores > Editar{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6 space-y-6">
+  <form method="post" action="/configuracion/trabajadores/{{ trabajador.id }}/editar">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Usuario asociado -->
+      <div>
+        <label class="text-sm font-medium text-slate-700">Usuario Asociado</label>
+        <select name="user_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="">Sin asignar</option>
+          {% for usuario in usuarios %}
+            <option value="{{ usuario.id }}" {% if usuario.id == trabajador.user_id %}selected{% endif %}>
+              {{ usuario.nombre_usuario }} ({{ usuario.email }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Nombres</label>
+        <input type="text" name="nombres" value="{{ trabajador.nombres }}" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Apellidos</label>
+        <input type="text" name="apellidos" value="{{ trabajador.apellidos }}" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">RUT</label>
+        <input type="text" name="rut" value="{{ trabajador.rut }}" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Teléfono</label>
+        <input type="text" name="telefono" value="{{ trabajador.telefono }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Dirección</label>
+        <input type="text" name="direccion" value="{{ trabajador.direccion }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <!-- AFP -->
+      <div>
+        <label class="text-sm font-medium text-slate-700">AFP</label>
+        <select name="afp" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="">Seleccionar AFP...</option>
+            <option value="AFP Capital">AFP Capital</option>
+            <option value="AFP Cuprum">AFP Cuprum</option>
+            <option value="AFP Habitat">AFP Habitat</option>
+            <option value="AFP Modelo">AFP Modelo</option>
+            <option value="AFP PlanVital">AFP PlanVital</option>
+            <option value="AFP Provida">AFP Provida</option>
+          {% for afp in afps %}
+            <option value="{{ afp }}" {% if trabajador.afp == afp %}selected{% endif %}>{{ afp }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Salud -->
+      <div>
+        <label class="text-sm font-medium text-slate-700">Salud</label>
+        <select name="salud" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="">Seleccionar salud...</option>
+            <option value="Fonasa">Fonasa</option>
+            <option value="Isapre Banmédica">Isapre Banmédica</option>
+            <option value="Isapre Colmena">Isapre Colmena</option>
+            <option value="Isapre Consalud">Isapre Consalud</option>
+            <option value="Isapre Cruz Blanca">Isapre Cruz Blanca</option>
+            <option value="Isapre Nueva Masvida">Isapre Nueva Masvida</option>
+            <option value="Isapre Vida Tres">Isapre Vida Tres</option>
+            <option value="Isapre Fundación">Isapre Fundación</option>
+            <option value="Isapre Fusat">Isapre Fusat</option>
+            <option value="Isapre San Lorenzo">Isapre San Lorenzo</option>
+          {% for entidad in salud %}
+            <option value="{{ entidad }}" {% if trabajador.salud == entidad %}selected{% endif %}>{{ entidad }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Sueldo</label>
+        <input type="number" step="0.01" name="sueldo" value="{{ trabajador.sueldo }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Fecha Ingreso</label>
+        <input type="date" name="fecha_ingreso" value="{{ trabajador.fecha_ingreso }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Talla Polera</label>
+        <input type="text" name="talla_polera" value="{{ trabajador.talla_polera }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Talla Pantalón</label>
+        <input type="text" name="talla_pantalon" value="{{ trabajador.talla_pantalon }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Talla Zapatos</label>
+        <input type="text" name="talla_zapatos" value="{{ trabajador.talla_zapatos }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <!-- Banco -->
+      <div>
+        <label class="text-sm font-medium text-slate-700">Banco</label>
+        <select name="banco" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="">Seleccionar banco...</option>
+        <option value="Banco de Chile">Banco de Chile</option>
+        <option value="Banco Internacional">Banco Internacional</option>
+        <option value="Scotiabank Chile">Scotiabank Chile</option>
+        <option value="Banco de Crédito e Inversiones (BCI)">Banco de Crédito e Inversiones (BCI)</option>
+        <option value="Banco BICE">Banco BICE</option>
+        <option value="HSBC Bank (Chile)">HSBC Bank (Chile)</option>
+        <option value="Banco Santander Chile">Banco Santander Chile</option>
+        <option value="Itaú Corpbanca">Itaú Corpbanca</option>
+        <option value="Banco Security">Banco Security</option>
+        <option value="Banco Falabella">Banco Falabella</option>
+        <option value="Banco Ripley">Banco Ripley</option>
+        <option value="Banco Consorcio">Banco Consorcio</option>
+        <option value="Banco del Estado de Chile (BancoEstado)">Banco del Estado de Chile (BancoEstado)</option>
+        <option value="Banco BBVA (Chile)">Banco BBVA (Chile)</option>
+        <option value="Banco BTG Pactual Chile">Banco BTG Pactual Chile</option>
+        <option value="Banco Edwards">Banco Edwards</option>
+        <option value="Tenpo">Tenpo</option>
+        <option value="Banco Cencosud">Banco Cencosud</option>
+        <option value="Banco París">Banco París</option>
+        <option value="Banca Ética Latinoamericana">Banca Ética Latinoamericana</option>
+          {% for banco in bancos %}
+            <option value="{{ banco }}" {% if trabajador.banco == banco %}selected{% endif %}>{{ banco }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Tipo Cuenta</label>
+        <select name="tipo_cuenta" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="">Seleccionar...</option>
+          <option value="Cuenta Corriente" {% if trabajador.tipo_cuenta == 'Cuenta Corriente' %}selected{% endif %}>Cuenta Corriente</option>
+          <option value="Vista" {% if trabajador.tipo_cuenta == 'Vista' %}selected{% endif %}>Vista</option>
+          <option value="Chequera Electrónica" {% if trabajador.tipo_cuenta == 'Chequera Electrónica' %}selected{% endif %}>Chequera Electrónica</option>
+          <option value="Cuenta RUT" {% if trabajador.tipo_cuenta == 'Cuenta RUT' %}selected{% endif %}>Cuenta RUT</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Número Cuenta</label>
+        <input type="text" name="numero_cuenta" value="{{ trabajador.numero_cuenta }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Estado</label>
+        <select name="estado" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+          <option value="activo" {% if trabajador.estado == 'activo' %}selected{% endif %}>Activo</option>
+          <option value="inactivo" {% if trabajador.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="pt-6 flex justify-end space-x-3">
+      <a href="/configuracion/trabajadores" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-700 hover:bg-slate-200">Cancelar</a>
+      <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Actualizar Trabajador</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,28 +1,21 @@
 from fastapi import APIRouter, Request
-from db import conectar_mysql
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from db import conectar_mysql
 
-router = APIRouter(prefix="/trabajadores", tags=["Trabajadores"])
+router = APIRouter()
 templates = Jinja2Templates(directory="templates")
-
-@router.get("/")
-def listar_trabajadores():
-    conn = conectar_mysql()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, nombres FROM trabajadores")
-    resultado = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return resultado
 
 @router.get("/configuracion/trabajadores", response_class=HTMLResponse)
 def vista_trabajadores(request: Request):
+    """Vista Jinja2 para gestionar trabajadores"""
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
+    
     try:
         cursor.execute("""
-            SELECT t.*, u.rol FROM trabajadores t
+            SELECT t.*, u.rol
+            FROM trabajadores t
             LEFT JOIN users u ON t.user_id = u.id
             ORDER BY t.created_at DESC
         """)
