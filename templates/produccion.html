@@ -9,6 +9,26 @@
   
   <!-- Panel de Acciones Principales -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+  <!-- Imprimir Precios Producción -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer relative group">
+    <div class="flex items-center space-x-4" onclick="toggleMenu()">
+      <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+        <i class="fas fa-print text-blue-600 text-xl"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-semibold text-slate-800">Imprimir Precios</h3>
+        <p class="text-sm text-slate-600">Costura, Tapicería o Esqueletería</p>
+      </div>
+    </div>
+
+    <!-- Submenú desplegable -->
+    <div id="submenu" class="absolute top-full left-0 mt-2 hidden group-hover:block bg-white border border-slate-200 rounded-xl shadow-lg w-52 z-50">
+      <button onclick="mostrarPrecios('costura')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Costura</button>
+      <button onclick="mostrarPrecios('tapiceria')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Tapicería</button>
+      <button onclick="mostrarPrecios('esqueleteria')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Esqueletería</button>
+    </div>
+  </div>
     
     <!-- Crear Producción Normal -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer" onclick="mostrarModal('modal-crear-produccion')">
@@ -256,6 +276,38 @@
     </div>
   </div>
 </div>
+
+<!-- Modal de Precios -->
+<div id="modal-precios" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center">
+  <div class="bg-white rounded-xl w-full max-w-3xl max-h-screen overflow-y-auto p-6 relative">
+    <!-- Botón cerrar -->
+    <button onclick="cerrarModal()" class="absolute top-4 right-4 text-gray-600 hover:text-black text-xl">&times;</button>
+
+    <!-- Título + Imprimir -->
+    <div class="flex justify-between items-center mb-4 sticky top-0 bg-white z-10">
+      <h2 id="titulo-tabla" class="text-xl font-bold text-gray-800">Precios Producción</h2>
+      <button onclick="imprimirTabla()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+        <i class="fas fa-print mr-1"></i> Imprimir
+      </button>
+    </div>
+
+    <!-- Contenido imprimible -->
+    <div id="contenido-imprimir">
+      <table class="w-full text-left border border-gray-300 rounded-lg overflow-hidden">
+        <thead class="bg-gray-200 text-gray-700 sticky top-12">
+          <tr>
+            <th class="px-4 py-2">Producto</th>
+            <th class="px-4 py-2">Costo</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body" class="text-gray-800">
+          <!-- Cuerpo dinámico -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 
 <script>
 let trabajadores = [];
@@ -1081,6 +1133,75 @@ function formatearFecha(fecha) {
 function formatearNumero(numero) {
   return new Intl.NumberFormat('es-CL').format(numero);
 }
+
+function toggleMenu() {
+  document.getElementById('submenu').classList.toggle('hidden');
+}
+
+async function mostrarPrecios(tipo) {
+  try {
+    const response = await fetch(`/produccion/precios/${tipo}`);
+    if (!response.ok) throw new Error("No se encontró el endpoint");
+
+    const data = await response.json();
+    const titulo = {
+      costura: 'Costura',
+      tapiceria: 'Tapicería',
+      esqueleteria: 'Esqueletería'
+    };
+
+    document.getElementById('titulo-tabla').innerText = `Lista de Precios - ${titulo[tipo]}`;
+    const tbody = document.getElementById('tabla-body');
+    tbody.innerHTML = '';
+
+    if (!Array.isArray(data) || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" class="px-4 py-2 text-center text-gray-500">No hay productos con costo definido.</td></tr>';
+    } else {
+      data.forEach(producto => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="px-4 py-2 border-t border-gray-300">${producto.nombre}</td>
+            <td class="px-4 py-2 border-t border-gray-300">$${producto.costo.toLocaleString()}</td>
+          </tr>
+        `;
+      });
+    }
+
+    document.getElementById('modal-precios').classList.remove('hidden');
+  } catch (error) {
+    console.error("Error al obtener precios:", error);
+    alert("Hubo un error al cargar los precios.");
+  }
+}
+
+function cerrarModal() {
+  document.getElementById('modal-precios').classList.add('hidden');
+}
+
+function imprimirTabla() {
+  const contenido = document.getElementById('contenido-imprimir').innerHTML;
+  const ventana = window.open('', '', 'width=800,height=600');
+  ventana.document.write(`
+    <html>
+      <head>
+        <title>Imprimir Precios Producción</title>
+        <style>
+          body { font-family: Arial; padding: 20px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #f4f4f4; }
+        </style>
+      </head>
+      <body>
+        ${contenido}
+      </body>
+    </html>
+  `);
+  ventana.document.close();
+  ventana.focus();
+  ventana.print();
+  ventana.close();
+}
 </script>
 
 <style>
@@ -1114,5 +1235,12 @@ function formatearNumero(numero) {
     font-size: 0.875rem;
   }
 }
+
+  #modal-precios .sticky {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 20;
+  }
 </style>
 {% endblock %}

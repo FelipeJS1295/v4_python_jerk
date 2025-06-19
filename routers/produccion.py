@@ -474,3 +474,27 @@ def eliminar_orden(id: int):
     conn.close()
 
     return {"mensaje": "Orden eliminada correctamente"}
+
+@router.get("/precios/{tipo}")
+def obtener_precios(tipo: str):
+    tipo_campo = {
+        "costura": "costo_costura",
+        "tapiceria": "costo_tapiceria",
+        "esqueleteria": "costo_esqueleteria"
+    }
+
+    if tipo not in tipo_campo:
+        return JSONResponse(content=[], status_code=400)
+
+    campo = tipo_campo[tipo]
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(f"""
+        SELECT nombre, {campo} as costo
+        FROM productos
+        WHERE {campo} IS NOT NULL AND {campo} > 0
+        ORDER BY nombre
+    """)
+    resultados = cursor.fetchall()
+    conn.close()
+    return resultados
