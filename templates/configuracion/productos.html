@@ -404,140 +404,17 @@
                 <span class="ml-2 text-sm font-normal text-slate-500">(hasta 10 imágenes)</span>
               </h4>
               
-            <!-- Galería de imágenes mejorada manteniendo la funcionalidad original -->
-            <div class="space-y-6">
-              <div class="border-t border-slate-200 pt-6">
-                <div class="flex items-center justify-between mb-6">
-                  <h4 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    Galería de Imágenes del Producto
-                  </h4>
-                  <span class="text-sm text-slate-500">Hasta 10 imágenes</span>
-                </div>
-                
-                <!-- Grid mejorado manteniendo la funcionalidad original -->
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="galeria-imagenes">
-                  {% for i in range(1, 11) %}
-                  <div class="group relative">
-                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 transition-all hover:border-slate-300 hover:shadow-sm">
-                      
-                      <!-- Header con número de imagen -->
-                      <div class="flex items-center justify-between mb-3">
-                        <label class="text-sm font-medium text-slate-600">Imagen {{ i }}</label>
-                        <div class="flex items-center gap-1">
-                          <!-- Indicador de estado -->
-                          <div id="status_{{ i }}" class="w-2 h-2 rounded-full bg-slate-300"></div>
-                        </div>
-                      </div>
-                      
-                      <!-- Input file mejorado -->
-                      <div class="relative mb-3">
-                        <input type="file" 
-                              accept="image/*" 
-                              onchange="subirImagen(this, {{ i }})"
-                              id="file_input_{{ i }}"
-                              class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                        
-                        <div class="flex items-center justify-center h-10 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors cursor-pointer">
-                          <svg class="w-4 h-4 text-slate-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                          </svg>
-                          <span class="text-sm text-slate-600 font-medium">Subir</span>
-                        </div>
-                      </div>
+        <!-- Galería de imágenes mejorada -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-medium text-gray-900">Imágenes del Producto</h4>
+            <span class="text-xs text-gray-500">Máximo 10 imágenes</span>
+          </div>
 
-                      <!-- Campo hidden original -->
-                      <input type="hidden" name="img_{{ i }}" id="img_{{ i }}">
-                      
-                      <!-- Preview mejorado -->
-                      <div class="relative">
-                        <img id="preview_img_{{ i }}" 
-                            src="/static/images/no-image.jpg"
-                            class="w-full h-24 object-cover rounded-md border border-slate-200 transition-all group-hover:shadow-sm"
-                            alt="Preview {{ i }}">
-                        
-                        <!-- Overlay con controles -->
-                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center">
-                          <div class="flex gap-2">
-                            <!-- Ver imagen -->
-                            <button type="button" 
-                                    onclick="verImagenCompleta({{ i }})"
-                                    class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-                                    title="Ver imagen completa">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                              </svg>
-                            </button>
-                            
-                            <!-- Eliminar imagen -->
-                            <button type="button" 
-                                    onclick="eliminarImagen({{ i }})"
-                                    class="w-8 h-8 bg-red-500/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-red-600/80 transition-colors"
-                                    title="Eliminar imagen">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <!-- Loading overlay -->
-                        <div id="loading_{{ i }}" class="absolute inset-0 bg-white/90 rounded-md hidden flex items-center justify-center">
-                          <div class="flex flex-col items-center gap-2">
-                            <svg class="w-5 h-5 animate-spin text-slate-600" fill="none" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
-                              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                            </svg>
-                            <span class="text-xs text-slate-600 font-medium">Subiendo...</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <!-- Info adicional -->
-                      <div class="mt-2 text-center">
-                        <div class="text-xs text-slate-400">JPG, PNG máx 5MB</div>
-                      </div>
-                    </div>
-                  </div>
-                  {% endfor %}
-                </div>
-                
-                <!-- Panel de información -->
-                <div class="mt-6 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div class="flex items-start gap-3">
-                    <svg class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <div class="text-sm text-slate-600">
-                      <div class="font-medium mb-1">Recomendaciones:</div>
-                      <ul class="text-slate-500 space-y-1">
-                        <li>• Usa imágenes de alta calidad (mínimo 800x600px)</li>
-                        <li>• La primera imagen será la imagen principal del producto</li>
-                        <li>• Incluye diferentes ángulos y detalles del producto</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Modal para ver imagen completa -->
-            <div id="modal-imagen-completa" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden">
-              <div class="flex items-center justify-center min-h-screen p-4">
-                <div class="relative max-w-4xl w-full">
-                  <button onclick="cerrarModalImagenCompleta()" 
-                          class="absolute top-4 right-4 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors z-10">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                  </button>
-                  <img id="imagen-modal-completa" src="" alt="" class="w-full h-auto rounded-lg max-h-[90vh] object-contain">
-                </div>
-              </div>
-            </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="galeria-imagenes">
+            <!-- Las imágenes se generarán dinámicamente -->
+          </div>
+        </div>
           
           <!-- Pestaña Insumos -->
           <div id="content-insumos" class="pestaña-content hidden">
@@ -1313,10 +1190,6 @@ async function subirImagen(inputFile, numero) {
   const file = inputFile.files[0];
   if (!file) return;
 
-  // Mostrar loading
-  document.getElementById(`loading_${numero}`).classList.remove('hidden');
-  document.getElementById(`status_${numero}`).className = 'w-2 h-2 rounded-full bg-yellow-400';
-
   const formData = new FormData();
   formData.append("file", file);
 
@@ -1330,127 +1203,202 @@ async function subirImagen(inputFile, numero) {
     if (response.ok && data.url) {
       document.getElementById(`preview_img_${numero}`).src = data.url;
       document.getElementById(`img_${numero}`).value = data.url;
-      
-      // Actualizar estado visual
-      document.getElementById(`status_${numero}`).className = 'w-2 h-2 rounded-full bg-green-400';
-      
-      // Mostrar mensaje de éxito
-      mostrarMensajeImagen(`Imagen ${numero} subida correctamente`, 'success');
     } else {
-      document.getElementById(`status_${numero}`).className = 'w-2 h-2 rounded-full bg-red-400';
-      mostrarMensajeImagen("Error al subir imagen", 'error');
+      alert("Error al subir imagen");
     }
   } catch (error) {
     console.error("Error al subir imagen:", error);
-    document.getElementById(`status_${numero}`).className = 'w-2 h-2 rounded-full bg-red-400';
-    mostrarMensajeImagen("Error al subir imagen", 'error');
-  } finally {
-    // Ocultar loading
-    document.getElementById(`loading_${numero}`).classList.add('hidden');
+    alert("Error al subir imagen");
   }
 }
 
-// Nuevas funciones para mejorar la experiencia
-function verImagenCompleta(numero) {
-  const img = document.getElementById(`preview_img_${numero}`);
-  if (img.src.includes('no-image.jpg')) {
-    mostrarMensajeImagen('No hay imagen para mostrar', 'info');
+// Generar galería de imágenes dinámicamente
+function generarGaleriaImagenes() {
+  const galeria = document.getElementById('galeria-imagenes');
+  galeria.innerHTML = '';
+  
+  for (let i = 1; i <= 10; i++) {
+    const contenedor = document.createElement('div');
+    contenedor.className = 'relative group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200';
+    
+    contenedor.innerHTML = `
+      <div class="aspect-square relative">
+        <!-- Preview de la imagen -->
+        <img id="preview_img_${i}" 
+             src="data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23f8fafc'/%3e%3ctext x='50%25' y='50%25' font-size='14' fill='%23cbd5e1' text-anchor='middle' dy='.3em'%3e${i}%3c/text%3e%3c/svg%3e"
+             alt="Imagen ${i}" 
+             class="w-full h-full object-cover">
+        
+        <!-- Overlay con acciones -->
+        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div class="flex gap-2">
+            <button type="button" onclick="eliminarImagen(${i})" class="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors">
+              <i class="fas fa-trash text-xs"></i>
+            </button>
+            <button type="button" onclick="verImagen(${i})" class="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors">
+              <i class="fas fa-eye text-xs"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Indicador de posición -->
+        <div class="absolute top-2 left-2 bg-gray-900 bg-opacity-75 text-white text-xs px-2 py-1 rounded-full">
+          ${i}
+        </div>
+      </div>
+      
+      <!-- Input file oculto -->
+      <input type="file" 
+             id="file_img_${i}"
+             accept="image/jpeg,image/png,image/webp" 
+             onchange="subirImagen(this, ${i})"
+             class="hidden">
+      
+      <!-- Input hidden para almacenar la URL -->
+      <input type="hidden" name="img_${i}" id="img_${i}">
+      
+      <!-- Botón de carga -->
+      <div class="p-3 border-t border-gray-100">
+        <button type="button" onclick="document.getElementById('file_img_${i}').click()" 
+                class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
+          <i class="fas fa-upload text-xs"></i>
+          <span>Subir imagen</span>
+        </button>
+      </div>
+    `;
+    
+    galeria.appendChild(contenedor);
+  }
+}
+
+// Función para subir imagen
+async function subirImagen(input, numeroImagen) {
+  const archivo = input.files[0];
+  if (!archivo) return;
+  
+  // Validar tipo de archivo
+  const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!tiposPermitidos.includes(archivo.type)) {
+    mostrarNotificacion('Solo se permiten archivos JPG, PNG y WebP', 'error');
     return;
   }
   
-  const modal = document.getElementById('modal-imagen-completa');
-  const modalImg = document.getElementById('imagen-modal-completa');
+  // Validar tamaño (máximo 5MB)
+  if (archivo.size > 5 * 1024 * 1024) {
+    mostrarNotificacion('La imagen no puede superar los 5MB', 'error');
+    return;
+  }
   
-  modalImg.src = img.src;
-  modal.classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-}
-
-function cerrarModalImagenCompleta() {
-  document.getElementById('modal-imagen-completa').classList.add('hidden');
-  document.body.style.overflow = 'auto';
-}
-
-function eliminarImagen(numero) {
-  if (confirm('¿Está seguro de que desea eliminar esta imagen?')) {
-    // Resetear a imagen por defecto
-    document.getElementById(`preview_img_${numero}`).src = '/static/images/no-image.jpg';
-    document.getElementById(`img_${numero}`).value = '';
-    document.getElementById(`file_input_${numero}`).value = '';
-    document.getElementById(`status_${numero}`).className = 'w-2 h-2 rounded-full bg-slate-300';
+  try {
+    // Mostrar loading
+    const preview = document.getElementById(`preview_img_${numeroImagen}`);
+    const contenedor = preview.closest('.relative');
+    contenedor.classList.add('opacity-50');
     
-    mostrarMensajeImagen(`Imagen ${numero} eliminada`, 'info');
+    // Crear FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append('imagen', archivo);
+    formData.append('posicion', numeroImagen);
+    
+    // Enviar a la API
+    const response = await fetch('/api/productos/subir-imagen', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (response.ok) {
+      const resultado = await response.json();
+      
+      // Actualizar preview
+      preview.src = resultado.url;
+      document.getElementById(`img_${numeroImagen}`).value = resultado.url;
+      
+      mostrarNotificacion('Imagen subida correctamente', 'success');
+    } else {
+      throw new Error('Error al subir la imagen');
+    }
+    
+  } catch (error) {
+    console.error('Error al subir imagen:', error);
+    mostrarNotificacion('Error al subir la imagen', 'error');
+  } finally {
+    // Quitar loading
+    const preview = document.getElementById(`preview_img_${numeroImagen}`);
+    const contenedor = preview.closest('.relative');
+    contenedor.classList.remove('opacity-50');
   }
 }
 
-function mostrarMensajeImagen(mensaje, tipo = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `fixed top-4 right-4 z-50 p-3 rounded-lg shadow-lg transform transition-all duration-300 text-sm ${
-    tipo === 'success' ? 'bg-green-500 text-white' : 
-    tipo === 'error' ? 'bg-red-500 text-white' : 
-    'bg-blue-500 text-white'
-  }`;
+// Función para eliminar imagen
+function eliminarImagen(numeroImagen) {
+  const preview = document.getElementById(`preview_img_${numeroImagen}`);
+  const hiddenInput = document.getElementById(`img_${numeroImagen}`);
+  const fileInput = document.getElementById(`file_img_${numeroImagen}`);
   
-  notification.innerHTML = `
-    <div class="flex items-center gap-2">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${
-          tipo === 'success' ? 'M5 13l4 4L19 7' : 
-          tipo === 'error' ? 'M6 18L18 6M6 6l12 12' : 
-          'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-        }"/>
-      </svg>
-      <span>${mensaje}</span>
+  // Resetear elementos
+  preview.src = `data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23f8fafc'/%3e%3ctext x='50%25' y='50%25' font-size='14' fill='%23cbd5e1' text-anchor='middle' dy='.3em'%3e${numeroImagen}%3c/text%3e%3c/svg%3e`;
+  hiddenInput.value = '';
+  fileInput.value = '';
+  
+  mostrarNotificacion('Imagen eliminada', 'info');
+}
+
+// Función para ver imagen en modal
+function verImagen(numeroImagen) {
+  const preview = document.getElementById(`preview_img_${numeroImagen}`);
+  if (preview.src.includes('data:image/svg+xml')) {
+    mostrarNotificacion('No hay imagen para mostrar', 'info');
+    return;
+  }
+  
+  // Crear modal para ver imagen
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+  modal.onclick = () => modal.remove();
+  
+  modal.innerHTML = `
+    <div class="relative max-w-4xl max-h-full p-4">
+      <img src="${preview.src}" alt="Imagen ${numeroImagen}" class="max-w-full max-h-full object-contain">
+      <button onclick="this.closest('.fixed').remove()" 
+              class="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full flex items-center justify-center transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
   `;
   
-  document.body.appendChild(notification);
+  document.body.appendChild(modal);
+}
+
+// Función auxiliar para mostrar notificaciones
+function mostrarNotificacion(mensaje, tipo = 'info') {
+  const colores = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    info: 'bg-blue-500',
+    warning: 'bg-yellow-500'
+  };
   
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 ${colores[tipo]} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+  notificacion.textContent = mensaje;
+  
+  document.body.appendChild(notificacion);
+  
+  // Mostrar
   setTimeout(() => {
-    notification.style.transform = 'translateX(100%)';
-    setTimeout(() => notification.remove(), 300);
+    notificacion.classList.remove('translate-x-full');
+  }, 100);
+  
+  // Ocultar después de 3 segundos
+  setTimeout(() => {
+    notificacion.classList.add('translate-x-full');
+    setTimeout(() => notificacion.remove(), 300);
   }, 3000);
 }
 
-// Cerrar modal con ESC
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    cerrarModalImagenCompleta();
-  }
-});
-
-// Cerrar modal al hacer click fuera
-document.getElementById('modal-imagen-completa').addEventListener('click', function(e) {
-  if (e.target === this) {
-    cerrarModalImagenCompleta();
-  }
-});
-
-// Drag and drop mejorado (opcional, no interfiere con la funcionalidad original)
-document.querySelectorAll('[id^="file_input_"]').forEach((input, index) => {
-  const numero = index + 1;
-  const container = input.closest('.group');
-  
-  container.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    this.classList.add('border-blue-300', 'bg-blue-50');
-  });
-  
-  container.addEventListener('dragleave', function(e) {
-    e.preventDefault();
-    this.classList.remove('border-blue-300', 'bg-blue-50');
-  });
-  
-  container.addEventListener('drop', function(e) {
-    e.preventDefault();
-    this.classList.remove('border-blue-300', 'bg-blue-50');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      input.files = files;
-      subirImagen(input, numero);
-    }
-  });
+// Inicializar galería cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+  generarGaleriaImagenes();
 });
 </script>
 
@@ -1511,95 +1459,6 @@ document.querySelectorAll('[id^="file_input_"]').forEach((input, index) => {
   .xl\:grid-cols-5 {
     grid-template-columns: repeat(2, 1fr);
   }
-}
-
-.group:hover .group-hover\:opacity-100 {
-  opacity: 1;
-}
-
-.group:hover .group-hover\:shadow-sm {
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-
-/* Estados de los indicadores */
-.bg-slate-300 { background-color: #cbd5e1; }
-.bg-yellow-400 { background-color: #facc15; }
-.bg-green-400 { background-color: #4ade80; }
-.bg-red-400 { background-color: #f87171; }
-
-/* Animaciones suaves */
-.transition-all {
-  transition: all 0.3s ease;
-}
-
-.transition-colors {
-  transition: color 0.3s ease, background-color 0.3s ease;
-}
-
-.transition-opacity {
-  transition: opacity 0.3s ease;
-}
-
-/* Modal styling */
-#modal-imagen-completa {
-  backdrop-filter: blur(8px);
-}
-
-#imagen-modal-completa {
-  animation: fadeInScale 0.3s ease-out;
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Loading spinner */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Hover effects para botones */
-button:hover {
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .md\:grid-cols-5 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .grid-cols-2 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Drag and drop visual feedback */
-.border-blue-300 {
-  border-color: #93c5fd;
-}
-
-.bg-blue-50 {
-  background-color: #eff6ff;
 }
 </style>
 
