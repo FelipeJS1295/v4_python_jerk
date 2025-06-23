@@ -495,7 +495,7 @@ let pestañaActiva = 'basico';
 document.addEventListener('DOMContentLoaded', function() {
   cargarInsumos();
   cargarProductos();
-  generarGaleriaImagenes(); // Solo una función de galería
+  inicializarUploadImagenes();
   
   // Event listeners
   document.getElementById('btn-guardar-producto').addEventListener('click', guardarProducto);
@@ -512,182 +512,193 @@ document.addEventListener('DOMContentLoaded', function() {
   // Cálculo automático de costos
   const camposCostos = ['producto-costo-costura', 'producto-costo-tapiceria', 'producto-costo-armado', 'producto-costo-corte', 'producto-costo-esqueleteria', 'producto-precio-venta'];
   camposCostos.forEach(id => {
-    const elemento = document.getElementById(id);
-    if (elemento) {
-      elemento.addEventListener('input', calcularResumenCostos);
-    }
+    document.getElementById(id).addEventListener('input', calcularResumenCostos);
   });
 });
 
-// SISTEMA DE IMÁGENES UNIFICADO
-function generarGaleriaImagenes() {
-  const galeria = document.getElementById('galeria-imagenes');
-  if (!galeria) return;
-  
-  galeria.innerHTML = '';
-  
-  for (let i = 1; i <= 10; i++) {
-    const contenedor = document.createElement('div');
-    contenedor.className = 'relative group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200';
-    
-    contenedor.innerHTML = `
-      <div class="aspect-square relative">
-        <img id="preview_img_${i}" 
-             src="data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23f8fafc'/%3e%3ctext x='50%25' y='50%25' font-size='14' fill='%23cbd5e1' text-anchor='middle' dy='.3em'%3e${i}%3c/text%3e%3c/svg%3e"
-             alt="Imagen ${i}" 
-             class="w-full h-full object-cover">
-        
-        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div class="flex gap-2">
-            <button type="button" onclick="eliminarImagen(${i})" class="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors">
-              <i class="fas fa-trash text-xs"></i>
-            </button>
-            <button type="button" onclick="verImagen(${i})" class="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors">
-              <i class="fas fa-eye text-xs"></i>
-            </button>
-          </div>
-        </div>
-        
-        <div class="absolute top-2 left-2 bg-gray-900 bg-opacity-75 text-white text-xs px-2 py-1 rounded-full">
-          ${i}
-        </div>
-      </div>
-      
-      <input type="file" 
-             id="file_img_${i}"
-             accept="image/jpeg,image/png,image/webp" 
-             onchange="subirImagen(this, ${i})"
-             class="hidden">
-      
-      <input type="hidden" name="img_${i}" id="img_${i}">
-      
-      <div class="p-3 border-t border-gray-100">
-        <button type="button" onclick="document.getElementById('file_img_${i}').click()" 
-                class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
-          <i class="fas fa-upload text-xs"></i>
-          <span>Subir imagen</span>
-        </button>
-      </div>
-    `;
-    
-    galeria.appendChild(contenedor);
-  }
-}
+// Función para inicializar la funcionalidad de upload de imágenes
+function inicializarUploadImagenes() {
+  document.querySelectorAll('.image-upload-container').forEach(container => {
+    const uploadArea = container.querySelector('.upload-area');
+    const fileInput = container.querySelector('.file-input');
+    const uploadContent = container.querySelector('.upload-content');
+    const imagePreview = container.querySelector('.image-preview');
+    const hiddenInput = container.querySelector('input[type="hidden"]');
+    const deleteButton = container.querySelector('.delete-image');
+    const field = container.dataset.field;
 
-async function subirImagen(input, numeroImagen) {
-  const archivo = input.files[0];
-  if (!archivo) return;
-  
-  // Validaciones
-  const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
-  if (!tiposPermitidos.includes(archivo.type)) {
-    mostrarNotificacion('Solo se permiten archivos JPG, PNG y WebP', 'error');
-    return;
-  }
-  
-  try {
-    const preview = document.getElementById(`preview_img_${numeroImagen}`);
-    const contenedor = preview?.closest('.relative');
-    if (contenedor) contenedor.classList.add('opacity-50');
-    
-    const formData = new FormData();
-    formData.append('file', archivo);
-    
-    const response = await fetch('/configuracion/productos/upload-imagen', {
-      method: 'POST',
-      body: formData
+    // Click para abrir selector de archivos
+    uploadArea.addEventListener('click', () => {
+      if (!imagePreview.classList.contains('hidden')) return;
+      fileInput.click();
     });
-    
-    if (response.ok) {
-      const resultado = await response.json();
-      
-      const previewElement = document.getElementById(`preview_img_${numeroImagen}`);
-      const hiddenInput = document.getElementById(`img_${numeroImagen}`);
-      
-      if (previewElement) previewElement.src = resultado.url;
-      if (hiddenInput) hiddenInput.value = resultado.url;
-      
-      mostrarNotificacion('Imagen subida correctamente', 'success');
-    } else {
-      throw new Error('Error al subir la imagen');
-    }
-    
-  } catch (error) {
-    console.error('Error al subir imagen:', error);
-    mostrarNotificacion('Error al subir la imagen', 'error');
-  } finally {
-    const preview = document.getElementById(`preview_img_${numeroImagen}`);
-    const contenedor = preview?.closest('.relative');
-    if (contenedor) contenedor.classList.remove('opacity-50');
-  }
-}
 
-function eliminarImagen(numeroImagen) {
-  const preview = document.getElementById(`preview_img_${numeroImagen}`);
-  const hiddenInput = document.getElementById(`img_${numeroImagen}`);
-  const fileInput = document.getElementById(`file_img_${numeroImagen}`);
-  
-  if (preview) {
-    preview.src = `data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23f8fafc'/%3e%3ctext x='50%25' y='50%25' font-size='14' fill='%23cbd5e1' text-anchor='middle' dy='.3em'%3e${numeroImagen}%3c/text%3e%3c/svg%3e`;
-  }
-  if (hiddenInput) hiddenInput.value = '';
-  if (fileInput) fileInput.value = '';
-  
-  mostrarNotificacion('Imagen eliminada', 'info');
-}
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('border-purple-500', 'bg-purple-50');
+    });
 
-function verImagen(numeroImagen) {
-  const preview = document.getElementById(`preview_img_${numeroImagen}`);
-  
-  if (!preview || preview.src.includes('data:image/svg+xml')) {
-    mostrarNotificacion('No hay imagen para mostrar', 'info');
-    return;
-  }
-  
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-  modal.onclick = () => modal.remove();
-  
-  modal.innerHTML = `
-    <div class="relative max-w-4xl max-h-full p-4">
-      <img src="${preview.src}" alt="Imagen ${numeroImagen}" class="max-w-full max-h-full object-contain">
-      <button onclick="this.closest('.fixed').remove()" 
-              class="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full flex items-center justify-center transition-colors">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-}
+    uploadArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('border-purple-500', 'bg-purple-50');
+    });
 
-function limpiarImagenes() {
-  for (let i = 1; i <= 10; i++) {
-    eliminarImagen(i);
-  }
-}
-
-function cargarImagenesExistentes(producto) {
-  const imageFields = [
-    'img_1', 'img_2', 'img_3', 'img_4', 'img_5', 
-    'img_6', 'img_7', 'img_8', 'img_9', 'img_10'
-  ];
-  
-  imageFields.forEach((field, index) => {
-    if (producto[field]) {
-      const numeroImagen = index + 1;
-      const preview = document.getElementById(`preview_img_${numeroImagen}`);
-      const hiddenInput = document.getElementById(`img_${numeroImagen}`);
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('border-purple-500', 'bg-purple-50');
       
-      if (preview && hiddenInput) {
-        preview.src = producto[field];
-        hiddenInput.value = producto[field];
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileUpload(files[0], container);
       }
+    });
+
+    // Selección de archivo
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileUpload(e.target.files[0], container);
+      }
+    });
+
+    // Eliminar imagen
+    if (deleteButton) {
+      deleteButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Preguntar al usuario si realmente quiere eliminar
+        if (confirm('¿Estás seguro de que quieres eliminar esta imagen?')) {
+          eliminarImagenDelServidor(container); // Esta función SÍ elimina del servidor
+        }
+      });
     }
   });
 }
 
-// RESTO DE FUNCIONES (sin cambios)
+// Función para manejar la subida de archivos
+async function handleFileUpload(file, container) {
+  // Validar tipo de archivo
+  if (!file.type.startsWith('image/')) {
+    mostrarMensaje('Solo se permiten archivos de imagen', 'error');
+    return;
+  }
+
+  // Validar tamaño (máximo 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    mostrarMensaje('La imagen es demasiado grande. Máximo 5MB', 'error');
+    return;
+  }
+
+  const uploadArea = container.querySelector('.upload-area');
+  const uploadContent = container.querySelector('.upload-content');
+  const imagePreview = container.querySelector('.image-preview');
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const img = imagePreview.querySelector('img');
+
+  // Mostrar estado de carga
+  uploadContent.innerHTML = '<i class="fas fa-spinner fa-spin text-2xl text-purple-500 mb-2"></i><p class="text-sm text-purple-600">Subiendo...</p>';
+
+  try {
+    // Crear FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('product_id', document.getElementById('producto-id').value || 'temp');
+
+    // Subir archivo al servidor
+    const response = await fetch('/configuracion/productos/upload-image', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al subir la imagen');
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Mostrar preview de la imagen
+      img.src = result.url.startsWith('/static') ? result.url : `/static${result.url}`;
+      hiddenInput.value = result.url;
+      
+      uploadContent.classList.add('hidden');
+      imagePreview.classList.remove('hidden');
+      
+      mostrarMensaje('Imagen subida correctamente', 'success');
+    } else {
+      throw new Error(result.message || 'Error al procesar la imagen');
+    }
+
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    mostrarMensaje('Error al subir la imagen: ' + error.message, 'error');
+    
+    // Restaurar estado original
+    uploadContent.innerHTML = `
+      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+    `;
+  }
+}
+
+// Función para eliminar imagen
+async function eliminarImagen(container) {
+  const uploadContent = container.querySelector('.upload-content');
+  const imagePreview = container.querySelector('.image-preview');
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const fileInput = container.querySelector('.file-input');
+  const img = imagePreview.querySelector('img');
+
+  // NO ELIMINAR DEL SERVIDOR automáticamente
+  // Solo limpiar la UI
+  console.log('🔄 Limpiando UI (sin eliminar del servidor):', hiddenInput.value);
+
+  // Resetear UI
+  hiddenInput.value = '';
+  fileInput.value = '';
+  img.src = '';
+  uploadContent.classList.remove('hidden');
+  imagePreview.classList.add('hidden');
+
+  // Restaurar contenido del upload área
+  if (uploadContent.querySelector('.fas.fa-plus')) {
+    uploadContent.innerHTML = `
+      <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
+      <p class="text-xs text-slate-600">Agregar</p>
+    `;
+  } else {
+    uploadContent.innerHTML = `
+      <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2"></i>
+      <p class="text-sm text-slate-600 mb-2">Arrastra una imagen o haz click para seleccionar</p>
+      <button type="button" class="text-xs text-purple-600 hover:text-purple-700">Examinar archivos</button>
+    `;
+  }
+}
+
+async function eliminarImagenDelServidor(container) {
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const url = hiddenInput.value;
+  
+  if (url && url.includes('/images/productos/')) {
+    try {
+      const filename = url.split('/').pop();
+      const response = await fetch(`/configuracion/productos/delete-image/${filename}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        console.log('✅ Imagen eliminada del servidor:', filename);
+      }
+    } catch (error) {
+      console.error('❌ Error eliminando del servidor:', error);
+    }
+  }
+  
+  // Después eliminar de la UI
+  eliminarImagen(container);
+}
+
 async function cargarInsumos() {
   try {
     const response = await fetch('/configuracion/insumos/api');
@@ -705,21 +716,19 @@ async function cargarProductos() {
     if (response.ok) {
       productos = await response.json();
       mostrarProductos(productos);
-      const totalElement = document.getElementById('total-productos');
-      if (totalElement) totalElement.textContent = productos.length;
+      document.getElementById('total-productos').textContent = productos.length;
     } else {
-      mostrarNotificacion('Error al cargar los productos', 'error');
+      console.error('Error cargando productos');
+      mostrarMensaje('Error al cargar los productos', 'error');
     }
   } catch (error) {
     console.error('Error:', error);
-    mostrarNotificacion('Error de conexión', 'error');
+    mostrarMensaje('Error de conexión', 'error');
   }
 }
 
 function mostrarProductos(productosFiltrados) {
   const tbody = document.getElementById('tabla-productos');
-  if (!tbody) return;
-  
   tbody.innerHTML = '';
   
   if (productosFiltrados.length === 0) {
@@ -777,40 +786,32 @@ function mostrarProductos(productosFiltrados) {
 }
 
 function cambiarPestaña(pestaña) {
+  // Ocultar todas las pestañas
   document.querySelectorAll('.pestaña-content').forEach(content => {
     content.classList.add('hidden');
   });
   
+  // Remover clases activas
   document.querySelectorAll('[id^="tab-"]').forEach(tab => {
     tab.className = 'pestaña-inactiva py-2 px-1 border-b-2 font-medium text-sm';
   });
   
-  const contentElement = document.getElementById(`content-${pestaña}`);
-  const tabElement = document.getElementById(`tab-${pestaña}`);
-  
-  if (contentElement) contentElement.classList.remove('hidden');
-  if (tabElement) tabElement.className = 'pestaña-activa py-2 px-1 border-b-2 font-medium text-sm';
+  // Mostrar pestaña activa
+  document.getElementById(`content-${pestaña}`).classList.remove('hidden');
+  document.getElementById(`tab-${pestaña}`).className = 'pestaña-activa py-2 px-1 border-b-2 font-medium text-sm';
   
   pestañaActiva = pestaña;
 }
 
 function mostrarModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (!modal) return;
-  
-  modal.classList.remove('hidden');
+  document.getElementById(modalId).classList.remove('hidden');
   
   if (modalId === 'modal-crear-producto') {
     if (!productoEditando) {
-      const modalTitulo = document.getElementById('modal-titulo');
-      const form = document.getElementById('form-producto');
-      const listaInsumos = document.getElementById('lista-insumos-producto');
-      
-      if (modalTitulo) modalTitulo.textContent = 'Crear Nuevo Producto';
-      if (form) form.reset();
-      if (document.getElementById('producto-id')) document.getElementById('producto-id').value = '';
-      if (listaInsumos) listaInsumos.innerHTML = '';
-      
+      document.getElementById('modal-titulo').textContent = 'Crear Nuevo Producto';
+      document.getElementById('form-producto').reset();
+      document.getElementById('producto-id').value = '';
+      document.getElementById('lista-insumos-producto').innerHTML = '';
       limpiarImagenes();
       cambiarPestaña('basico');
       calcularResumenCostos();
@@ -819,19 +820,12 @@ function mostrarModal(modalId) {
 }
 
 function cerrarModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (!modal) return;
-  
-  modal.classList.add('hidden');
+  document.getElementById(modalId).classList.add('hidden');
   
   if (modalId === 'modal-crear-producto') {
     productoEditando = null;
-    const form = document.getElementById('form-producto');
-    const listaInsumos = document.getElementById('lista-insumos-producto');
-    
-    if (form) form.reset();
-    if (listaInsumos) listaInsumos.innerHTML = '';
-    
+    document.getElementById('form-producto').reset();
+    document.getElementById('lista-insumos-producto').innerHTML = '';
     limpiarImagenes();
     cambiarPestaña('basico');
   }
@@ -841,10 +835,28 @@ function cerrarModal(modalId) {
   }
 }
 
+function limpiarImagenes() {
+  document.querySelectorAll('.image-upload-container').forEach(container => {
+    eliminarImagen(container); // Solo limpiar UI, NO eliminar del servidor
+  });
+}
+
+function cargarImagenEnContainer(container, url) {
+  if (!url) return;
+  
+  const uploadContent = container.querySelector('.upload-content');
+  const imagePreview = container.querySelector('.image-preview');
+  const hiddenInput = container.querySelector('input[type="hidden"]');
+  const img = imagePreview.querySelector('img');
+
+  img.src = url.startsWith('/static') ? url : `/static${url}`;
+  hiddenInput.value = url;
+  uploadContent.classList.add('hidden');
+  imagePreview.classList.remove('hidden');
+}
+
 function agregarInsumoProducto() {
   const contenedor = document.getElementById('lista-insumos-producto');
-  if (!contenedor) return;
-  
   const index = contenedor.children.length;
   
   const div = document.createElement('div');
@@ -871,49 +883,34 @@ function agregarInsumoProducto() {
 
 function eliminarInsumoProducto(index) {
   const contenedor = document.getElementById('lista-insumos-producto');
-  if (contenedor && contenedor.children[index]) {
+  if (contenedor.children[index]) {
     contenedor.children[index].remove();
   }
 }
 
 function calcularResumenCostos() {
-  const elementos = {
-    costoCostura: document.getElementById('producto-costo-costura'),
-    costoTapiceria: document.getElementById('producto-costo-tapiceria'),
-    costoArmado: document.getElementById('producto-costo-armado'),
-    costoCorte: document.getElementById('producto-costo-corte'),
-    costoEsqueleteria: document.getElementById('producto-costo-esqueleteria'),
-    precioVenta: document.getElementById('producto-precio-venta')
-  };
+  const costoCostura = parseFloat(document.getElementById('producto-costo-costura').value) || 0;
+  const costoTapiceria = parseFloat(document.getElementById('producto-costo-tapiceria').value) || 0;
+  const costoArmado = parseFloat(document.getElementById('producto-costo-armado').value) || 0;
+  const costoCorte = parseFloat(document.getElementById('producto-costo-corte').value) || 0;
+  const costoEsqueleteria = parseFloat(document.getElementById('producto-costo-esqueleteria').value) || 0;
+  const precioVenta = parseFloat(document.getElementById('producto-precio-venta').value) || 0;
   
-  const valores = {
-    costoCostura: parseFloat(elementos.costoCostura?.value) || 0,
-    costoTapiceria: parseFloat(elementos.costoTapiceria?.value) || 0,
-    costoArmado: parseFloat(elementos.costoArmado?.value) || 0,
-    costoCorte: parseFloat(elementos.costoCorte?.value) || 0,
-    costoEsqueleteria: parseFloat(elementos.costoEsqueleteria?.value) || 0,
-    precioVenta: parseFloat(elementos.precioVenta?.value) || 0
-  };
+  const totalCostos = costoCostura + costoTapiceria + costoArmado + costoCorte + costoEsqueleteria;
+  const margen = precioVenta - totalCostos;
   
-  const totalCostos = valores.costoCostura + valores.costoTapiceria + valores.costoArmado + valores.costoCorte + valores.costoEsqueleteria;
-  const margen = valores.precioVenta - totalCostos;
+  document.getElementById('total-costos').textContent = '$' + formatearNumero(totalCostos);
+  document.getElementById('precio-venta-display').textContent = '$' + formatearNumero(precioVenta);
+  document.getElementById('margen-producto').textContent = '$' + formatearNumero(margen);
   
-  const elementoTotalCostos = document.getElementById('total-costos');
-  const elementoPrecioVenta = document.getElementById('precio-venta-display');
+  // Cambiar color del margen
   const elementoMargen = document.getElementById('margen-producto');
-  
-  if (elementoTotalCostos) elementoTotalCostos.textContent = '$' + formatearNumero(totalCostos);
-  if (elementoPrecioVenta) elementoPrecioVenta.textContent = '$' + formatearNumero(valores.precioVenta);
-  if (elementoMargen) {
-    elementoMargen.textContent = '$' + formatearNumero(margen);
-    
-    if (margen < 0) {
-      elementoMargen.className = 'font-medium text-red-600 ml-2';
-    } else if (margen === 0) {
-      elementoMargen.className = 'font-medium text-slate-600 ml-2';
-    } else {
-      elementoMargen.className = 'font-medium text-green-600 ml-2';
-    }
+  if (margen < 0) {
+    elementoMargen.className = 'font-medium text-red-600 ml-2';
+  } else if (margen === 0) {
+    elementoMargen.className = 'font-medium text-slate-600 ml-2';
+  } else {
+    elementoMargen.className = 'font-medium text-green-600 ml-2';
   }
 }
 
@@ -923,68 +920,79 @@ async function editarProducto(id) {
   
   productoEditando = producto;
   
-  const campoMap = {
-    id: 'producto-id',
-    sku: 'producto-sku',
-    nombre: 'producto-nombre',
-    tipo_producto: 'producto-tipo',
-    tipo_producto_venta: 'producto-tipo-venta',
-    sku_esqueleto: 'producto-sku-esqueleto',
-    sku_hites: 'producto-sku-hites',
-    sku_la_polar: 'producto-sku-polar',
-    descripcion_producto: 'producto-descripcion',
-    costo_costura: 'producto-costo-costura',
-    costo_tapiceria: 'producto-costo-tapiceria',
-    costo_armado: 'producto-costo-armado',
-    costo_corte: 'producto-costo-corte',
-    costo_esqueleteria: 'producto-costo-esqueleteria',
-    precio_venta: 'producto-precio-venta',
-    precio_descuento: 'producto-precio-descuento',
-    dimensiones: 'producto-dimensiones',
-    material: 'producto-material',
-    colores_disponibles: 'producto-colores',
-    colores_hex: 'producto-colores-hex',
-    tiempo_entrega: 'producto-tiempo-entrega'
-  };
+  // Llenar todos los campos del formulario
+  const campos = [
+    'id', 'sku', 'nombre', 'tipo_producto', 'tipo_producto_venta', 'sku_esqueleto', 'sku_hites', 'sku_la_polar',
+    'costo_costura', 'costo_tapiceria', 'costo_armado', 'costo_corte', 'costo_esqueleteria',
+    'precio_venta', 'precio_descuento', 'dimensiones', 'material', 'colores_disponibles',
+    'colores_hex', 'tiempo_entrega', 'descripcion_producto'
+  ];
+  
+const campoMap = {
+  id: 'producto-id',
+  sku: 'producto-sku',
+  nombre: 'producto-nombre',
+  tipo_producto: 'producto-tipo',
+  tipo_producto_venta: 'producto-tipo-venta',
+  sku_esqueleto: 'producto-sku-esqueleto',
+  sku_hites: 'producto-sku-hites',
+  sku_la_polar: 'producto-sku-polar',
+  descripcion_producto: 'producto-descripcion',
+  costo_costura: 'producto-costo-costura',
+  costo_tapiceria: 'producto-costo-tapiceria',
+  costo_armado: 'producto-costo-armado',
+  costo_corte: 'producto-costo-corte',
+  costo_esqueleteria: 'producto-costo-esqueleteria',
+  precio_venta: 'producto-precio-venta',
+  precio_descuento: 'producto-precio-descuento',
+  dimensiones: 'producto-dimensiones',
+  material: 'producto-material',
+  colores_disponibles: 'producto-colores',
+  colores_hex: 'producto-colores-hex',
+  tiempo_entrega: 'producto-tiempo-entrega'
+};
 
-  Object.entries(campoMap).forEach(([campo, id]) => {
-    const elemento = document.getElementById(id);
-    if (elemento) {
-      elemento.value = producto[campo] || '';
-    }
-  });
+Object.entries(campoMap).forEach(([campo, id]) => {
+  const elemento = document.getElementById(id);
+  if (elemento) {
+    elemento.value = producto[campo] || '';
+  }
+});
 
   // Cargar imágenes existentes
-  cargarImagenesExistentes(producto);
+  const imageFields = [
+    'imagen_corte', 'imagen_tapizado', 'imagen_corte_esqueleto', 'imagen_esqueleto',
+    'img_1', 'img_2', 'img_3', 'img_4', 'img_5', 'img_6', 'img_7', 'img_8', 'img_9', 'img_10'
+  ];
+  
+  imageFields.forEach(field => {
+    if (producto[field]) {
+      const container = document.querySelector(`[data-field="${field}"]`);
+      if (container) {
+        cargarImagenEnContainer(container, producto[field]);
+      }
+    }
+  });
   
   // Cargar insumos del producto
   try {
     const response = await fetch(`/configuracion/productos/api/${producto.id}/insumos`);
     if (response.ok) {
       const insumosProducto = await response.json();
-      const listaInsumos = document.getElementById('lista-insumos-producto');
-      if (listaInsumos) listaInsumos.innerHTML = '';
+      document.getElementById('lista-insumos-producto').innerHTML = '';
       
       insumosProducto.forEach(insumoProducto => {
         agregarInsumoProducto();
-        const listaInsumosActualizada = document.getElementById('lista-insumos-producto');
-        if (listaInsumosActualizada && listaInsumosActualizada.lastElementChild) {
-          const ultimoInsumo = listaInsumosActualizada.lastElementChild;
-          const selectInsumo = ultimoInsumo.querySelector('[data-field="insumo_id"]');
-          const inputCantidad = ultimoInsumo.querySelector('[data-field="cantidad"]');
-          
-          if (selectInsumo) selectInsumo.value = insumoProducto.insumo_id;
-          if (inputCantidad) inputCantidad.value = insumoProducto.cantidad;
-        }
+        const ultimoInsumo = document.getElementById('lista-insumos-producto').lastElementChild;
+        ultimoInsumo.querySelector('[data-field="insumo_id"]').value = insumoProducto.insumo_id;
+        ultimoInsumo.querySelector('[data-field="cantidad"]').value = insumoProducto.cantidad;
       });
     }
   } catch (error) {
     console.error('Error cargando insumos del producto:', error);
   }
   
-  const modalTitulo = document.getElementById('modal-titulo');
-  if (modalTitulo) modalTitulo.textContent = 'Editar Producto';
-  
+  document.getElementById('modal-titulo').textContent = 'Editar Producto';
   calcularResumenCostos();
   mostrarModal('modal-crear-producto');
 }
@@ -995,27 +1003,22 @@ function eliminarProducto(id) {
   
   productoEliminar = producto;
   
-  const infoElement = document.getElementById('producto-eliminar-info');
-  if (infoElement) {
-    infoElement.innerHTML = `
-      <div class="text-sm">
-        <p><strong>SKU:</strong> ${producto.sku}</p>
-        <p><strong>Nombre:</strong> ${producto.nombre}</p>
-        <p><strong>Precio Venta:</strong> ${formatearNumero(producto.precio_venta || 0)}</p>
-      </div>
-    `;
-  }
+  document.getElementById('producto-eliminar-info').innerHTML = `
+    <div class="text-sm">
+      <p><strong>SKU:</strong> ${producto.sku}</p>
+      <p><strong>Nombre:</strong> ${producto.nombre}</p>
+      <p><strong>Precio Venta:</strong> ${formatearNumero(producto.precio_venta || 0)}</p>
+    </div>
+  `;
   
   mostrarModal('modal-confirmar-eliminar');
 }
 
 async function guardarProducto() {
-  const form = document.getElementById('form-producto');
-  if (!form) return;
-  
-  const formData = new FormData(form);
+  const formData = new FormData(document.getElementById('form-producto'));
   const productoData = {};
   
+  // Procesar campos del formulario
   for (let [key, value] of formData.entries()) {
     if (value.trim() !== '') {
       if (key === 'id') {
@@ -1039,30 +1042,29 @@ async function guardarProducto() {
   const insumos = [];
   const contenedorInsumos = document.getElementById('lista-insumos-producto');
   
-  if (contenedorInsumos) {
-    for (let i = 0; i < contenedorInsumos.children.length; i++) {
-      const div = contenedorInsumos.children[i];
-      const insumo = {};
-      
-      div.querySelectorAll('[data-field]').forEach(input => {
-        const field = input.getAttribute('data-field');
-        if (field === 'insumo_id') {
-          insumo[field] = parseInt(input.value);
-        } else if (field === 'cantidad') {
-          insumo[field] = parseFloat(input.value);
-        }
-      });
-      
-      if (insumo.insumo_id && insumo.cantidad) {
-        insumos.push(insumo);
+  for (let i = 0; i < contenedorInsumos.children.length; i++) {
+    const div = contenedorInsumos.children[i];
+    const insumo = {};
+    
+    div.querySelectorAll('[data-field]').forEach(input => {
+      const field = input.getAttribute('data-field');
+      if (field === 'insumo_id') {
+        insumo[field] = parseInt(input.value);
+      } else if (field === 'cantidad') {
+        insumo[field] = parseFloat(input.value);
       }
+    });
+    
+    if (insumo.insumo_id && insumo.cantidad) {
+      insumos.push(insumo);
     }
   }
   
   productoData.insumos = insumos;
   
+  // Validaciones
   if (!productoData.sku || !productoData.nombre) {
-    mostrarNotificacion('SKU y nombre son obligatorios', 'error');
+    mostrarMensaje('SKU y nombre son obligatorios', 'error');
     return;
   }
   
@@ -1088,15 +1090,15 @@ async function guardarProducto() {
     
     if (response.ok) {
       const mensaje = productoEditando ? 'Producto actualizado correctamente' : 'Producto creado correctamente';
-      mostrarNotificacion(mensaje, 'success');
+      mostrarMensaje(mensaje, 'success');
       cerrarModal('modal-crear-producto');
       cargarProductos();
     } else {
       const error = await response.json();
-      mostrarNotificacion('Error: ' + (error.detail || 'Error desconocido'), 'error');
+      mostrarMensaje('Error: ' + (error.detail || 'Error desconocido'), 'error');
     }
   } catch (error) {
-    mostrarNotificacion('Error de conexión: ' + error.message, 'error');
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
   }
 }
 
@@ -1109,22 +1111,22 @@ async function confirmarEliminarProducto() {
     });
     
     if (response.ok) {
-      mostrarNotificacion('Producto eliminado correctamente', 'success');
+      mostrarMensaje('Producto eliminado correctamente', 'success');
       cerrarModal('modal-confirmar-eliminar');
       cargarProductos();
     } else {
       const error = await response.json();
-      mostrarNotificacion('Error: ' + error.detail, 'error');
+      mostrarMensaje('Error: ' + error.detail, 'error');
     }
   } catch (error) {
-    mostrarNotificacion('Error de conexión: ' + error.message, 'error');
+    mostrarMensaje('Error de conexión: ' + error.message, 'error');
   }
 }
 
 function aplicarFiltros() {
-  const filtroNombre = document.getElementById('filtro-nombre')?.value.toLowerCase() || '';
-  const filtroSku = document.getElementById('filtro-sku')?.value.toLowerCase() || '';
-  const filtroTipo = document.getElementById('filtro-tipo')?.value || '';
+  const filtroNombre = document.getElementById('filtro-nombre').value.toLowerCase();
+  const filtroSku = document.getElementById('filtro-sku').value.toLowerCase();
+  const filtroTipo = document.getElementById('filtro-tipo').value;
   
   const productosFiltrados = productos.filter(producto => {
     const coincideNombre = !filtroNombre || (producto.nombre && producto.nombre.toLowerCase().includes(filtroNombre));
@@ -1138,14 +1140,9 @@ function aplicarFiltros() {
 }
 
 function limpiarFiltros() {
-  const filtroNombre = document.getElementById('filtro-nombre');
-  const filtroSku = document.getElementById('filtro-sku');
-  const filtroTipo = document.getElementById('filtro-tipo');
-  
-  if (filtroNombre) filtroNombre.value = '';
-  if (filtroSku) filtroSku.value = '';
-  if (filtroTipo) filtroTipo.value = '';
-  
+  document.getElementById('filtro-nombre').value = '';
+  document.getElementById('filtro-sku').value = '';
+  document.getElementById('filtro-tipo').value = '';
   mostrarProductos(productos);
 }
 
@@ -1171,6 +1168,228 @@ function obtenerColorTipo(tipo) {
   return colores[tipo] || 'bg-slate-100 text-slate-800';
 }
 
+function mostrarMensaje(mensaje, tipo) {
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300 ${
+    tipo === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+  }`;
+  notificacion.textContent = mensaje;
+  
+  document.body.appendChild(notificacion);
+  
+  setTimeout(() => {
+    notificacion.remove();
+  }, 3000);
+}
+
+function formatearNumero(numero) {
+  return new Intl.NumberFormat('es-CL').format(numero);
+}
+
+async function subirImagen(inputFile, numero) {
+  const file = inputFile.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch("/configuracion/productos/upload-imagen", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (response.ok && data.url) {
+      document.getElementById(`preview_img_${numero}`).src = data.url;
+      document.getElementById(`img_${numero}`).value = data.url;
+    } else {
+      alert("Error al subir imagen");
+    }
+  } catch (error) {
+    console.error("Error al subir imagen:", error);
+    alert("Error al subir imagen");
+  }
+}
+
+// Generar galería de imágenes dinámicamente
+function generarGaleriaImagenes() {
+  const galeria = document.getElementById('galeria-imagenes');
+  galeria.innerHTML = '';
+  
+  for (let i = 1; i <= 10; i++) {
+    const contenedor = document.createElement('div');
+    contenedor.className = 'relative group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200';
+    
+    contenedor.innerHTML = `
+      <div class="aspect-square relative">
+        <!-- Preview de la imagen -->
+        <img id="preview_img_${i}" 
+             src="data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23f8fafc'/%3e%3ctext x='50%25' y='50%25' font-size='14' fill='%23cbd5e1' text-anchor='middle' dy='.3em'%3e${i}%3c/text%3e%3c/svg%3e"
+             alt="Imagen ${i}" 
+             class="w-full h-full object-cover">
+        
+        <!-- Overlay con acciones -->
+        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <div class="flex gap-2">
+            <button type="button" onclick="eliminarImagen(${i})" class="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors">
+              <i class="fas fa-trash text-xs"></i>
+            </button>
+            <button type="button" onclick="verImagen(${i})" class="w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors">
+              <i class="fas fa-eye text-xs"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Indicador de posición -->
+        <div class="absolute top-2 left-2 bg-gray-900 bg-opacity-75 text-white text-xs px-2 py-1 rounded-full">
+          ${i}
+        </div>
+      </div>
+      
+      <!-- Input file oculto -->
+      <input type="file" 
+             id="file_img_${i}"
+             accept="image/jpeg,image/png,image/webp" 
+             onchange="subirImagen(this, ${i})"
+             class="hidden">
+      
+      <!-- Input hidden para almacenar la URL -->
+      <input type="hidden" name="img_${i}" id="img_${i}">
+      
+      <!-- Botón de carga -->
+      <div class="p-3 border-t border-gray-100">
+        <button type="button" onclick="document.getElementById('file_img_${i}').click()" 
+                class="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
+          <i class="fas fa-upload text-xs"></i>
+          <span>Subir imagen</span>
+        </button>
+      </div>
+    `;
+    
+    galeria.appendChild(contenedor);
+  }
+}
+
+// Función para subir imagen
+async function subirImagen(input, numeroImagen) {
+  const archivo = input.files[0];
+  if (!archivo) return;
+  
+  // Validar tipo de archivo
+  const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!tiposPermitidos.includes(archivo.type)) {
+    mostrarNotificacion('Solo se permiten archivos JPG, PNG y WebP', 'error');
+    return;
+  }
+  
+  // Validar tamaño (máximo 2MB)
+  if (archivo.size > 2 * 1024 * 1024) {
+    mostrarNotificacion('La imagen no puede superar los 2MB', 'error');
+    return;
+  }
+  
+  try {
+    // Mostrar loading
+    const preview = document.getElementById(`preview_img_${numeroImagen}`);
+    const contenedor = preview.closest('.relative');
+    contenedor.classList.add('opacity-50');
+    
+    // Crear FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append('file', archivo);
+    
+    // Enviar a la API - ruta corregida según tu backend
+    const response = await fetch('/configuracion/productos/upload-imagen', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (response.ok) {
+      const resultado = await response.json();
+      
+      // Actualizar preview - verificar que existe el elemento
+      const previewElement = document.getElementById(`preview_img_${numeroImagen}`);
+      const hiddenInput = document.getElementById(`img_${numeroImagen}`);
+      
+      if (previewElement) {
+        previewElement.src = resultado.url;
+      }
+      
+      if (hiddenInput) {
+        hiddenInput.value = resultado.url;
+      }
+      
+      mostrarNotificacion('Imagen subida correctamente', 'success');
+    } else {
+      throw new Error('Error al subir la imagen');
+    }
+    
+  } catch (error) {
+    console.error('Error al subir imagen:', error);
+    mostrarNotificacion('Error al subir la imagen', 'error');
+  } finally {
+    // Quitar loading - verificar que existe el elemento
+    const preview = document.getElementById(`preview_img_${numeroImagen}`);
+    if (preview) {
+      const contenedor = preview.closest('.relative');
+      if (contenedor) {
+        contenedor.classList.remove('opacity-50');
+      }
+    }
+  }
+}
+
+// Función para eliminar imagen
+function eliminarImagen(numeroImagen) {
+  const preview = document.getElementById(`preview_img_${numeroImagen}`);
+  const hiddenInput = document.getElementById(`img_${numeroImagen}`);
+  const fileInput = document.getElementById(`file_img_${numeroImagen}`);
+  
+  // Verificar que los elementos existan antes de modificarlos
+  if (preview) {
+    preview.src = `data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23f8fafc'/%3e%3ctext x='50%25' y='50%25' font-size='14' fill='%23cbd5e1' text-anchor='middle' dy='.3em'%3e${numeroImagen}%3c/text%3e%3c/svg%3e`;
+  }
+  
+  if (hiddenInput) {
+    hiddenInput.value = '';
+  }
+  
+  if (fileInput) {
+    fileInput.value = '';
+  }
+  
+  mostrarNotificacion('Imagen eliminada', 'info');
+}
+
+// Función para ver imagen en modal
+function verImagen(numeroImagen) {
+  const preview = document.getElementById(`preview_img_${numeroImagen}`);
+  
+  if (!preview || preview.src.includes('data:image/svg+xml')) {
+    mostrarNotificacion('No hay imagen para mostrar', 'info');
+    return;
+  }
+  
+  // Crear modal para ver imagen
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+  modal.onclick = () => modal.remove();
+  
+  modal.innerHTML = `
+    <div class="relative max-w-4xl max-h-full p-4">
+      <img src="${preview.src}" alt="Imagen ${numeroImagen}" class="max-w-full max-h-full object-contain">
+      <button onclick="this.closest('.fixed').remove()" 
+              class="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full flex items-center justify-center transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// Función auxiliar para mostrar notificaciones
 function mostrarNotificacion(mensaje, tipo = 'info') {
   const colores = {
     success: 'bg-green-500',
@@ -1185,19 +1404,22 @@ function mostrarNotificacion(mensaje, tipo = 'info') {
   
   document.body.appendChild(notificacion);
   
+  // Mostrar
   setTimeout(() => {
     notificacion.classList.remove('translate-x-full');
   }, 100);
   
+  // Ocultar después de 3 segundos
   setTimeout(() => {
     notificacion.classList.add('translate-x-full');
     setTimeout(() => notificacion.remove(), 300);
   }, 3000);
 }
 
-function formatearNumero(numero) {
-  return new Intl.NumberFormat('es-CL').format(numero);
-}
+// Inicializar galería cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+  generarGaleriaImagenes();
+});
 </script>
 
 <style>
