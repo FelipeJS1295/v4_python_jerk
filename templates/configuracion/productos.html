@@ -529,7 +529,10 @@ function inicializarUploadImagenes() {
 
     // Click para abrir selector de archivos
     uploadArea.addEventListener('click', () => {
-      if (!imagePreview.classList.contains('hidden')) return;
+      if (!imagePreview.classList.contains('hidden') && hiddenInput.value) {
+        mostrarNotificacion('Ya existe una imagen. Elimina primero para subir otra.', 'warning');
+        return;
+      }
       fileInput.click();
     });
 
@@ -836,21 +839,25 @@ function cerrarModal(modalId) {
 }
 
 function limpiarImagenes() {
-  document.querySelectorAll('.image-upload-container').forEach(container => {
-    eliminarImagen(container); // Solo limpiar UI, NO eliminar del servidor
-  });
+  if (!productoEditando) {
+    document.querySelectorAll('.image-upload-container').forEach(container => {
+      eliminarImagen(container);
+    });
+  }
 }
 
 function cargarImagenEnContainer(container, url) {
   if (!url) return;
-  
+
   const uploadContent = container.querySelector('.upload-content');
   const imagePreview = container.querySelector('.image-preview');
   const hiddenInput = container.querySelector('input[type="hidden"]');
   const img = imagePreview.querySelector('img');
 
-  img.src = url.startsWith('/static') ? url : `/static${url}`;
+  // ✅ Usar /imagenes/ como base si no es una URL completa
+  img.src = url.startsWith('http') ? url : url.startsWith('/') ? url : `/imagenes/${url}`;
   hiddenInput.value = url;
+
   uploadContent.classList.add('hidden');
   imagePreview.classList.remove('hidden');
 }
