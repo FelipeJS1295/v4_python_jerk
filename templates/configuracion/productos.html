@@ -1297,8 +1297,7 @@ async function subirImagen(input, numeroImagen) {
     
     // Crear FormData para enviar el archivo
     const formData = new FormData();
-    formData.append('imagen', archivo);
-    formData.append('posicion', numeroImagen);
+    formData.append('file', archivo);
     
     // Enviar a la API - ruta corregida según tu backend
     const response = await fetch('/configuracion/productos/upload-imagen', {
