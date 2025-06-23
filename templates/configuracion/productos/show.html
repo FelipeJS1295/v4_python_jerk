@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block title %}{{ producto.nombre }} - Detalles{% endblock %}
+
+{% block content %}
+<div class="bg-white">
+    <!-- Header -->
+    <div class="border-b border-gray-200 bg-white px-4 py-5 sm:px-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="/configuracion/productos/" class="text-gray-500 hover:text-gray-700 transition-colors">
+                    <i class="fas fa-arrow-left w-4 h-4"></i>
+                </a>
+                <h1 class="text-2xl font-semibold text-gray-900">{{ producto.nombre }}</h1>
+                <span class="text-sm text-gray-500">ID: {{ producto.id }}</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="/configuracion/productos/edit/{{ producto.id }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-edit w-4 h-4 mr-2"></i>
+                    Editar
+                </a>
+                <button onclick="eliminarProducto()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+                    <i class="fas fa-trash w-4 h-4 mr-2"></i>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal -->
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Galería de imágenes -->
+            <div class="lg:col-span-2">
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-6">Galería de Imágenes</h2>
+                    
+                    <!-- Imagen principal -->
+                    <div class="mb-6">
+                        {% if producto.img_1 %}
+                        <img id="imagenPrincipal" src="/static/imagenes/productos/{{ producto.img_1 }}" alt="{{ producto.nombre }}" 
+                             class="w-full h-80 object-cover rounded-lg border">
+                        {% else %}
+                        <div class="w-full h-80 bg-gray-200 rounded-lg border flex items-center justify-center">
+                            <div class="text-center">
+                                <i class="fas fa-image text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-500">Sin imagen principal</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Miniaturas -->
+                    <div class="grid grid-cols-5 gap-3">
+                        {% for i in range(1, 11) %}
+                        {% set img_field = 'img_' + i|string %}
+                        {% if producto[img_field] %}
+                        <button onclick="cambiarImagenPrincipal('/static/imagenes/productos/{{ producto[img_field] }}')"
+                                class="w-16 h-16 rounded border hover:border-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <img src="/static/imagenes/productos/{{ producto[img_field] }}" alt="Imagen {{ i }}" 
+                                 class="w-full h-full object-cover rounded">
+                        </button>
+                        {% else %}
+                        <div class="w-16 h-16 bg-gray-100 rounded border flex items-center justify-center">
+                            <i class="fas fa-plus text-gray-400 text-sm"></i>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Imágenes de proceso -->
+                {% if producto.imagen_corte or producto.imagen_lapizado or producto.imagen_corte_esqueleto or producto.imagen_esqueleto %}
+                <div class="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-6">Proceso de Fabricación</h2>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {% if producto.imagen_corte %}
+                        <div class="text-center">
+                            <img src="/static/imagenes/show/{{ producto.imagen_corte }}" alt="Corte" 
+                                 class="w-full h-32 object-cover rounded border mb-2">
+                            <span class="text-sm font-medium text-gray-700">Corte</span>
+                        </div>
+                        {% endif %}
+                        {% if producto.imagen_lapizado %}
+                        <div class="text-center">
+                            <img src="/static/imagenes/show/{{ producto.imagen_lapizado }}" alt="Lapizado" 
+                                 class="w-full h-32 object-cover rounded border mb-2">
+                            <span class="text-sm font-medium text-gray-700">Lapizado</span>
+                        </div>
+                        {% endif %}
+                        {% if producto.imagen_corte_esqueleto %}
+                        <div class="text-center">
+                            <img src="/static/imagenes/show/{{ producto.imagen_corte_esqueleto }}" alt="Corte Esqueleto" 
+                                 class="w-full h-32 object-cover rounded border mb-2">
+                            <span class="text-sm font-medium text-gray-700">Corte Esqueleto</span>
+                        </div>
+                        {% endif %}
+                        {% if producto.imagen_esqueleto %}
+                        <div class="text-center">
+                            <img src="/static/imagenes/show/{{ producto.imagen_esqueleto }}" alt="Esqueleto" 
+                                 class="w-full h-32 object-cover rounded border mb-2">
+                            <span class="text-sm font-medium text-gray-700">Esqueleto</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Información del producto -->
+            <div class="space-y-6">
+                <!-- Información básica -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Información General</h2>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">SKU</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.sku or '-' }}</dd>
+                        </div>
+                        {% if producto.tipo_producto %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Tipo</dt>
+                            <dd class="text-sm">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ producto.tipo_producto }}
+                                </span>
+                            </dd>
+                        </div>
+                        {% endif %}
+                        {% if producto.material %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Material</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.material }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if producto.dimensiones %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Dimensiones</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.dimensiones }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if producto.colores_disponibles %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Colores</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.colores_disponibles }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if producto.tiempo_entrega %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Tiempo de Entrega</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.tiempo_entrega }}</dd>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Visitas</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.visitas or 0 }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- Precios y costos -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Precios y Costos</h2>
+                    <dl class="space-y-3">
+                        {% if producto.precio_venta %}
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <dt class="text-sm font-medium text-gray-500">Precio de Venta</dt>
+                            <dd class="text-lg font-semibold text-green-600">${{ "{:,.0f}".format(producto.precio_venta) }}</dd>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="pt-2">
+                            <h3 class="text-sm font-medium text-gray-700 mb-2">Estructura de Costos</h3>
+                            <div class="space-y-2">
+                                {% if producto.costo_costura %}
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Costura:</span>
+                                    <span class="text-gray-900">${{ "{:,.0f}".format(producto.costo_costura) }}</span>
+                                </div>
+                                {% endif %}
+                                {% if producto.costo_lapiceria %}
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Lapicería:</span>
+                                    <span class="text-gray-900">${{ "{:,.0f}".format(producto.costo_lapiceria) }}</span>
+                                </div>
+                                {% endif %}
+                                {% if producto.costo_esqueleteria %}
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Esqueletería:</span>
+                                    <span class="text-gray-900">${{ "{:,.0f}".format(producto.costo_esqueleteria) }}</span>
+                                </div>
+                                {% endif %}
+                                {% if producto.costo_armado %}
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Armado:</span>
+                                    <span class="text-gray-900">${{ "{:,.0f}".format(producto.costo_armado) }}</span>
+                                </div>
+                                {% endif %}
+                                {% if producto.costo_corte %}
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Corte:</span>
+                                    <span class="text-gray-900">${{ "{:,.0f}".format(producto.costo_corte) }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% set costo_total = (producto.costo_costura or 0) + (producto.costo_lapiceria or 0) + (producto.costo_esqueleteria or 0) + (producto.costo_armado or 0) + (producto.costo_corte or 0) %}
+                                {% if costo_total > 0 %}
+                                <div class="flex justify-between text-sm font-medium pt-2 border-t border-gray-200">
+                                    <span class="text-gray-700">Total Costo:</span>
+                                    <span class="text-red-600">${{ "{:,.0f}".format(costo_total) }}</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if producto.precio_venta and costo_total > 0 %}
+                                {% set margen = producto.precio_venta - costo_total %}
+                                {% set porcentaje_margen = (margen / producto.precio_venta * 100) if producto.precio_venta > 0 else 0 %}
+                                <div class="flex justify-between text-sm font-medium">
+                                    <span class="text-gray-700">Margen:</span>
+                                    <span class="{% if margen > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                        ${{ "{:,.0f}".format(margen) }} ({{ "{:.1f}".format(porcentaje_margen) }}%)
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- SKUs adicionales -->
+                {% if producto.sku_esqueleto or producto.sku_hites or producto.sku_lapolar %}
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">SKUs Adicionales</h2>
+                    <dl class="space-y-3">
+                        {% if producto.sku_esqueleto %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">SKU Esqueleto</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.sku_esqueleto }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if producto.sku_hites %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">SKU Hites</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.sku_hites }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if producto.sku_lapolar %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">SKU La Polar</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.sku_lapolar }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+                {% endif %}
+
+                <!-- Descripción -->
+                {% if producto.descripcion_producto %}
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Descripción</h2>
+                    <p class="text-sm text-gray-700 leading-relaxed">{{ producto.descripcion_producto }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Información de auditoría -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Información de Sistema</h2>
+                    <dl class="space-y-3">
+                        {% if producto.created_at %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Fecha de Creación</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.created_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if producto.updated_at %}
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Última Modificación</dt>
+                            <dd class="text-sm text-gray-900">{{ producto.updated_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div id="modalEliminar" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mt-2">Eliminar Producto</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">¿Estás seguro de que quieres eliminar "{{ producto.nombre }}"? Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="flex items-center justify-center gap-4 mt-4">
+                <button onclick="cerrarModal()" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmarEliminacion()" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 transition-colors">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Cambiar imagen principal
+    function cambiarImagenPrincipal(src) {
+        const imagenPrincipal = document.getElementById('imagenPrincipal');
+        if (imagenPrincipal) {
+            imagenPrincipal.src = src;
+        }
+    }
+
+    // Eliminar producto
+    function eliminarProducto() {
+        document.getElementById('modalEliminar').classList.remove('hidden');
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalEliminar').classList.add('hidden');
+    }
+
+    async function confirmarEliminacion() {
+        try {
+            const response = await fetch(`/configuracion/productos/api/{{ producto.id }}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (response.ok) {
+                window.location.href = '/configuracion/productos/';
+            } else {
+                const error = await response.json();
+                alert('Error al eliminar: ' + error.detail);
+            }
+        } catch (error) {
+            alert('Error de conexión: ' + error.message);
+        }
+        
+        cerrarModal();
+    }
+
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('modalEliminar').addEventListener('click', function(e) {
+        if (e.target === this) {
+            cerrarModal();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Producto{% endblock %}
+
+{% block content %}
+<div class="bg-white">
+    <!-- Header -->
+    <div class="border-b border-gray-200 bg-white px-4 py-5 sm:px-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="/configuracion/productos/" class="text-gray-500 hover:text-gray-700 transition-colors">
+                    <i class="fas fa-arrow-left w-4 h-4"></i>
+                </a>
+                <h1 class="text-2xl font-semibold text-gray-900">Crear Producto</h1>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="/configuracion/productos/" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </a>
+                <button form="formProducto" type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save w-4 h-4 mr-2"></i>
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <form id="formProducto" action="/configuracion/productos/create" method="POST" class="space-y-8">
+            
+            <!-- Información Básica -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Información Básica</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU *</label>
+                        <input type="text" name="sku" id="sku" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Ingrese el SKU del producto">
+                    </div>
+                    <div>
+                        <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
+                        <input type="text" name="nombre" id="nombre" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Nombre del producto">
+                    </div>
+                    <div>
+                        <label for="tipo_producto" class="block text-sm font-medium text-gray-700 mb-2">Tipo de Producto</label>
+                        <select name="tipo_producto" id="tipo_producto" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="">Seleccionar tipo</option>
+                            <option value="Seccional">Seccional</option>
+                            <option value="Sofá">Sofá</option>
+                            <option value="Poltrona">Poltrona</option>
+                            <option value="Mesa">Mesa</option>
+                            <option value="Cama">Cama</option>
+                            <option value="Silla">Silla</option>
+                            <option value="Mueble">Mueble</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="material" class="block text-sm font-medium text-gray-700 mb-2">Material</label>
+                        <input type="text" name="material" id="material" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Material principal">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="descripcion_producto" class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                        <textarea name="descripcion_producto" id="descripcion_producto" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                  placeholder="Descripción detallada del producto"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Especificaciones -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Especificaciones</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="dimensiones" class="block text-sm font-medium text-gray-700 mb-2">Dimensiones</label>
+                        <input type="text" name="dimensiones" id="dimensiones" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Ej: 200x80x75 cm">
+                    </div>
+                    <div>
+                        <label for="colores_disponibles" class="block text-sm font-medium text-gray-700 mb-2">Colores Disponibles</label>
+                        <input type="text" name="colores_disponibles" id="colores_disponibles" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Ej: Negro, Gris, Beige">
+                    </div>
+                    <div>
+                        <label for="tiempo_entrega" class="block text-sm font-medium text-gray-700 mb-2">Tiempo de Entrega</label>
+                        <input type="text" name="tiempo_entrega" id="tiempo_entrega" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Ej: 2-3 semanas">
+                    </div>
+                    <div>
+                        <label for="precio_venta" class="block text-sm font-medium text-gray-700 mb-2">Precio de Venta</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="precio_venta" id="precio_venta" step="0.01" min="0"
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Costos -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Estructura de Costos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label for="costo_costura" class="block text-sm font-medium text-gray-700 mb-2">Costo Costura</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="costo_costura" id="costo_costura" step="0.01" min="0"
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="costo_lapiceria" class="block text-sm font-medium text-gray-700 mb-2">Costo Lapicería</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="costo_lapiceria" id="costo_lapiceria" step="0.01" min="0"
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="costo_esqueleteria" class="block text-sm font-medium text-gray-700 mb-2">Costo Esqueletería</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="costo_esqueleteria" id="costo_esqueleteria" step="0.01" min="0"
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="costo_armado" class="block text-sm font-medium text-gray-700 mb-2">Costo Armado</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="costo_armado" id="costo_armado" step="0.01" min="0"
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="costo_corte" class="block text-sm font-medium text-gray-700 mb-2">Costo Corte</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="costo_corte" id="costo_corte" step="0.01" min="0"
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Costo Total</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="text" id="costo_total" readonly
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-600"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de acción en mobile -->
+            <div class="flex flex-col sm:hidden space-y-3">
+                <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save w-4 h-4 mr-2"></i>
+                    Guardar Producto
+                </button>
+                <a href="/configuracion/productos/" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Calcular costo total automáticamente
+    function calcularCostoTotal() {
+        const costura = parseFloat(document.getElementById('costo_costura').value) || 0;
+        const lapiceria = parseFloat(document.getElementById('costo_lapiceria').value) || 0;
+        const esqueleteria = parseFloat(document.getElementById('costo_esqueleteria').value) || 0;
+        const armado = parseFloat(document.getElementById('costo_armado').value) || 0;
+        const corte = parseFloat(document.getElementById('costo_corte').value) || 0;
+        
+        const total = costura + lapiceria + esqueleteria + armado + corte;
+        document.getElementById('costo_total').value = total.toLocaleString('es-CL');
+    }
+
+    // Event listeners para calcular costo total
+    ['costo_costura', 'costo_lapiceria', 'costo_esqueleteria', 'costo_armado', 'costo_corte'].forEach(id => {
+        document.getElementById(id).addEventListener('input', calcularCostoTotal);
+    });
+
+    // Validación del formulario
+    document.getElementById('formProducto').addEventListener('submit', function(e) {
+        const sku = document.getElementById('sku').value.trim();
+        const nombre = document.getElementById('nombre').value.trim();
+        
+        if (!sku) {
+            e.preventDefault();
+            alert('El SKU es obligatorio');
+            document.getElementById('sku').focus();
+            return;
+        }
+        
+        if (!nombre) {
+            e.preventDefault();
+            alert('El nombre es obligatorio');
+            document.getElementById('nombre').focus();
+            return;
+        }
+    });
+</script>
+{% endblock %}
