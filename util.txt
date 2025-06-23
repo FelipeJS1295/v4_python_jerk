@@ -6,3 +6,75 @@
 
 # Para ver logs si hay problemas
 pm2 logs jerkhome-admin
+
+
+ngnix que funciona en jerkhome
+# /etc/nginx/sites-available/jerkhome.cl
+
+server {
+    listen 80;
+    server_name jerkhome.cl www.jerkhome.cl;
+
+    # Logs específicos para www.jerkhome.cl
+    access_log /var/log/nginx/jerkhome_access.log;
+    error_log /var/log/nginx/jerkhome_error.log;
+
+    # Proxy al nuevo e-commerce (puerto 8001)
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
+    }
+
+    # Servir archivos estáticos directamente desde nginx para mejor rendimiento
+    location /static/ {
+        alias /var/www/jerkhome/static/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Servir imágenes directamente desde nginx
+    location /images/ {
+        alias /var/www/v4_python_jerk/static/images/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+
+        # Configurar tipos MIME para imágenes
+        location ~* \.(jpg|jpeg|png|gif|ico|svg|webp)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+
+    # Configuración de compresión
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+}
+
+# Redirigir el antiguo e-commerce si es necesario
+server {
+    listen 80;
+    server_name admin.jerkhome.cl;
+
+    # Proxy al antiguo proyecto (puerto 8080)
+    location / {
+        proxy_pass http://127.0.0.1:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}

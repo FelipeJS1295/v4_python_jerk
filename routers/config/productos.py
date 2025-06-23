@@ -69,9 +69,10 @@ class ProductoUpdate(ProductoBase):
 # ---------------------------
 
 def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
-    if path and path.startswith("/static/"):
-        return path.replace("/static", "", 1)
-    return path
+    if path:
+        nombre_archivo = os.path.basename(path)
+        return f"/imagenes/{nombre_archivo}"
+    return None
 
 # RUTA PARA SERVIR EL TEMPLATE HTML
 @router.get("/", response_class=HTMLResponse)
@@ -94,14 +95,8 @@ def crear_producto(producto: ProductoCreate):
     conn = conectar_mysql()
     cursor = conn.cursor()
 
-    # Función para limpiar rutas
-    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
-        if path and path.startswith("/static/"):
-            return path.replace("/static", "", 1)
-        return path
-
     try:
-        # Limpiar campos de imagen
+        # 🔧 LIMPIAR RUTAS DE IMAGEN
         campos_imagen = [
             "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
             "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
@@ -110,39 +105,47 @@ def crear_producto(producto: ProductoCreate):
             valor = getattr(producto, campo)
             setattr(producto, campo, limpiar_ruta_imagen(valor))
 
-        # Insertar producto
+        # INSERTAR PRODUCTO
         cursor.execute("""
-            INSERT INTO productos (sku, nombre, tipo_producto, tipo_producto_venta, sku_esqueleto, sku_hites, sku_la_polar,
+            INSERT INTO productos (
+                sku, sku_esqueleto, sku_hites, sku_la_polar, nombre, esqueleto,
+                imagen_corte, imagen_tapizado, imagen_corte_esqueleto, imagen_esqueleto,
                 costo_costura, costo_tapiceria, costo_armado, costo_corte, costo_esqueleteria,
-                precio_venta, precio_descuento, dimensiones, material, colores_disponibles,
-                colores_hex, tiempo_entrega, imagen_corte, imagen_tapizado, imagen_corte_esqueleto,
-                imagen_esqueleto, img_1, img_2, img_3, img_4, img_5, img_6, img_7, img_8, img_9, img_10,
-                descripcion_producto)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                precio_venta, tipo_producto, descripcion_producto,
+                img_1, img_2, img_3, img_4, img_5, img_6, img_7, img_8, img_9, img_10,
+                precio_descuento, tipo_producto_venta, dimensiones, material,
+                colores_disponibles, tiempo_entrega, colores_hex
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            )
         """, (
-            producto.sku, producto.nombre, producto.tipo_producto, producto.tipo_producto_venta, producto.sku_esqueleto,
-            producto.sku_hites, producto.sku_la_polar, producto.costo_costura, producto.costo_tapiceria,
-            producto.costo_armado, producto.costo_corte, producto.costo_esqueleteria, producto.precio_venta,
-            producto.precio_descuento, producto.dimensiones, producto.material, producto.colores_disponibles,
-            producto.colores_hex, producto.tiempo_entrega, producto.imagen_corte, producto.imagen_tapizado,
-            producto.imagen_corte_esqueleto, producto.imagen_esqueleto, producto.img_1, producto.img_2,
-            producto.img_3, producto.img_4, producto.img_5, producto.img_6, producto.img_7, producto.img_8,
-            producto.img_9, producto.img_10, producto.descripcion_producto
+            producto.sku, producto.sku_esqueleto, producto.sku_hites, producto.sku_la_polar,
+            producto.nombre, producto.esqueleto, producto.imagen_corte, producto.imagen_tapizado,
+            producto.imagen_corte_esqueleto, producto.imagen_esqueleto, producto.costo_costura,
+            producto.costo_tapiceria, producto.costo_armado, producto.costo_corte,
+            producto.costo_esqueleteria, producto.precio_venta, producto.tipo_producto,
+            producto.descripcion_producto, producto.img_1, producto.img_2, producto.img_3,
+            producto.img_4, producto.img_5, producto.img_6, producto.img_7, producto.img_8,
+            producto.img_9, producto.img_10, producto.precio_descuento, producto.tipo_producto_venta,
+            producto.dimensiones, producto.material, producto.colores_disponibles,
+            producto.tiempo_entrega, producto.colores_hex
         ))
+
         producto_id = cursor.lastrowid
 
-        # Insertar insumos del producto
+        # Insertar insumos si vienen
         for insumo in producto.insumos:
             cursor.execute("""
                 INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
                 VALUES (%s, %s, %s)
-            """, (producto_id, insumo.insumo_id, insumo.cantidad))
+            """, (producto_id, insumo['insumo_id'], insumo['cantidad']))
 
         conn.commit()
-        return {"message": "Producto creado correctamente", "producto_id": producto_id}
+        return {"message": "Producto creado correctamente", "id": producto_id}
 
     except mysql.connector.Error as err:
+        conn.rollback()
         raise HTTPException(status_code=500, detail=str(err))
 
     finally:
@@ -155,14 +158,8 @@ def actualizar_producto(producto: ProductoUpdate):
     conn = conectar_mysql()
     cursor = conn.cursor()
 
-    # Función para limpiar ruta de imagen
-    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
-        if path and path.startswith("/static/"):
-            return path.replace("/static", "", 1)
-        return path
-
     try:
-        # Limpiar campos de imagen antes de guardar
+        # 🔧 LIMPIAR RUTAS DE IMAGEN
         campos_imagen = [
             "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
             "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
@@ -171,25 +168,28 @@ def actualizar_producto(producto: ProductoUpdate):
             valor = getattr(producto, campo)
             setattr(producto, campo, limpiar_ruta_imagen(valor))
 
-        # Actualizar producto
+        # ACTUALIZAR PRODUCTO
         cursor.execute("""
-            UPDATE productos SET sku=%s, nombre=%s, tipo_producto=%s, tipo_producto_venta=%s,
-            sku_esqueleto=%s, sku_hites=%s, sku_la_polar=%s, costo_costura=%s, costo_tapiceria=%s,
-            costo_armado=%s, costo_corte=%s, costo_esqueleteria=%s, precio_venta=%s, precio_descuento=%s,
-            dimensiones=%s, material=%s, colores_disponibles=%s, colores_hex=%s, tiempo_entrega=%s,
-            imagen_corte=%s, imagen_tapizado=%s, imagen_corte_esqueleto=%s, imagen_esqueleto=%s,
-            img_1=%s, img_2=%s, img_3=%s, img_4=%s, img_5=%s, img_6=%s, img_7=%s, img_8=%s, img_9=%s, img_10=%s,
-            descripcion_producto=%s
+            UPDATE productos SET
+                sku=%s, sku_esqueleto=%s, sku_hites=%s, sku_la_polar=%s, nombre=%s, esqueleto=%s,
+                imagen_corte=%s, imagen_tapizado=%s, imagen_corte_esqueleto=%s, imagen_esqueleto=%s,
+                costo_costura=%s, costo_tapiceria=%s, costo_armado=%s, costo_corte=%s, costo_esqueleteria=%s,
+                precio_venta=%s, tipo_producto=%s, descripcion_producto=%s,
+                img_1=%s, img_2=%s, img_3=%s, img_4=%s, img_5=%s, img_6=%s, img_7=%s, img_8=%s, img_9=%s, img_10=%s,
+                precio_descuento=%s, tipo_producto_venta=%s, dimensiones=%s, material=%s,
+                colores_disponibles=%s, tiempo_entrega=%s, colores_hex=%s
             WHERE id=%s
         """, (
-            producto.sku, producto.nombre, producto.tipo_producto, producto.tipo_producto_venta, producto.sku_esqueleto,
-            producto.sku_hites, producto.sku_la_polar, producto.costo_costura, producto.costo_tapiceria,
-            producto.costo_armado, producto.costo_corte, producto.costo_esqueleteria, producto.precio_venta,
-            producto.precio_descuento, producto.dimensiones, producto.material, producto.colores_disponibles,
-            producto.colores_hex, producto.tiempo_entrega, producto.imagen_corte, producto.imagen_tapizado,
-            producto.imagen_corte_esqueleto, producto.imagen_esqueleto, producto.img_1, producto.img_2,
-            producto.img_3, producto.img_4, producto.img_5, producto.img_6, producto.img_7, producto.img_8,
-            producto.img_9, producto.img_10, producto.descripcion_producto, producto.id
+            producto.sku, producto.sku_esqueleto, producto.sku_hites, producto.sku_la_polar,
+            producto.nombre, producto.esqueleto, producto.imagen_corte, producto.imagen_tapizado,
+            producto.imagen_corte_esqueleto, producto.imagen_esqueleto, producto.costo_costura,
+            producto.costo_tapiceria, producto.costo_armado, producto.costo_corte,
+            producto.costo_esqueleteria, producto.precio_venta, producto.tipo_producto,
+            producto.descripcion_producto, producto.img_1, producto.img_2, producto.img_3,
+            producto.img_4, producto.img_5, producto.img_6, producto.img_7, producto.img_8,
+            producto.img_9, producto.img_10, producto.precio_descuento, producto.tipo_producto_venta,
+            producto.dimensiones, producto.material, producto.colores_disponibles,
+            producto.tiempo_entrega, producto.colores_hex, producto.id
         ))
 
         # Actualizar insumos
@@ -198,12 +198,13 @@ def actualizar_producto(producto: ProductoUpdate):
             cursor.execute("""
                 INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
                 VALUES (%s, %s, %s)
-            """, (producto.id, insumo.insumo_id, insumo.cantidad))
+            """, (producto.id, insumo['insumo_id'], insumo['cantidad']))
 
         conn.commit()
         return {"message": "Producto actualizado correctamente"}
 
     except mysql.connector.Error as err:
+        conn.rollback()
         raise HTTPException(status_code=500, detail=str(err))
 
     finally:

@@ -64,9 +64,10 @@ class InsumoProducto(BaseModel):
 
 
 def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
-    if path and path.startswith("/static/"):
-        return path.replace("/static", "", 1)
-    return path
+    if path:
+        nombre_archivo = os.path.basename(path)
+        return f"/imagenes/{nombre_archivo}"
+    return None
 
 # RUTA PARA SERVIR EL TEMPLATE HTML
 @router.get("/", response_class=HTMLResponse)
@@ -122,14 +123,8 @@ def crear_producto(producto: ProductoCreate):
     conn = conectar_mysql()
     cursor = conn.cursor()
 
-    # Función para limpiar la ruta de imagen
-    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
-        if path and path.startswith("/static/"):
-            return path.replace("/static", "", 1)
-        return path
-
     try:
-        # Limpiar rutas si vienen con /static
+        # 🔧 LIMPIAR RUTAS DE IMAGEN
         campos_imagen = [
             "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
             "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
@@ -138,7 +133,7 @@ def crear_producto(producto: ProductoCreate):
             valor = getattr(producto, campo)
             setattr(producto, campo, limpiar_ruta_imagen(valor))
 
-        # Insertar producto
+        # INSERTAR PRODUCTO
         cursor.execute("""
             INSERT INTO productos (
                 sku, sku_esqueleto, sku_hites, sku_la_polar, nombre, esqueleto,
@@ -167,13 +162,12 @@ def crear_producto(producto: ProductoCreate):
 
         producto_id = cursor.lastrowid
 
-        # Insertar insumos si los hay
-        if producto.insumos:
-            for insumo in producto.insumos:
-                cursor.execute("""
-                    INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
-                    VALUES (%s, %s, %s)
-                """, (producto_id, insumo['insumo_id'], insumo['cantidad']))
+        # Insertar insumos si vienen
+        for insumo in producto.insumos:
+            cursor.execute("""
+                INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
+                VALUES (%s, %s, %s)
+            """, (producto_id, insumo['insumo_id'], insumo['cantidad']))
 
         conn.commit()
         return {"message": "Producto creado correctamente", "id": producto_id}
@@ -191,14 +185,8 @@ def actualizar_producto(producto: ProductoUpdate):
     conn = conectar_mysql()
     cursor = conn.cursor()
 
-    # Función local para limpiar la ruta de imagen
-    def limpiar_ruta_imagen(path: Optional[str]) -> Optional[str]:
-        if path and path.startswith("/static/"):
-            return path.replace("/static", "", 1)
-        return path
-
     try:
-        # Limpiar rutas si vienen con /static
+        # 🔧 LIMPIAR RUTAS DE IMAGEN
         campos_imagen = [
             "imagen_corte", "imagen_tapizado", "imagen_corte_esqueleto", "imagen_esqueleto",
             "img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8", "img_9", "img_10"
@@ -207,7 +195,7 @@ def actualizar_producto(producto: ProductoUpdate):
             valor = getattr(producto, campo)
             setattr(producto, campo, limpiar_ruta_imagen(valor))
 
-        # Actualizar producto
+        # ACTUALIZAR PRODUCTO
         cursor.execute("""
             UPDATE productos SET
                 sku=%s, sku_esqueleto=%s, sku_hites=%s, sku_la_polar=%s, nombre=%s, esqueleto=%s,
@@ -231,15 +219,13 @@ def actualizar_producto(producto: ProductoUpdate):
             producto.tiempo_entrega, producto.colores_hex, producto.id
         ))
 
-        # Actualizar insumos - eliminar existentes y crear nuevos
+        # Actualizar insumos
         cursor.execute("DELETE FROM producto_insumo WHERE producto_id = %s", (producto.id,))
-
-        if producto.insumos:
-            for insumo in producto.insumos:
-                cursor.execute("""
-                    INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
-                    VALUES (%s, %s, %s)
-                """, (producto.id, insumo['insumo_id'], insumo['cantidad']))
+        for insumo in producto.insumos:
+            cursor.execute("""
+                INSERT INTO producto_insumo (producto_id, insumo_id, cantidad)
+                VALUES (%s, %s, %s)
+            """, (producto.id, insumo['insumo_id'], insumo['cantidad']))
 
         conn.commit()
         return {"message": "Producto actualizado correctamente"}
