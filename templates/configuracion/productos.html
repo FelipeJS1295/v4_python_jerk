@@ -585,11 +585,6 @@ async function subirImagen(input, numeroImagen) {
     return;
   }
   
-  if (archivo.size > 2 * 1024 * 1024) {
-    mostrarNotificacion('La imagen no puede superar los 2MB', 'error');
-    return;
-  }
-  
   try {
     const preview = document.getElementById(`preview_img_${numeroImagen}`);
     const contenedor = preview?.closest('.relative');
