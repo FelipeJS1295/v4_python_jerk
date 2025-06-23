@@ -4,404 +4,201 @@
 
 {% block content %}
 <div class="bg-white">
-    <!-- Header -->
-    <div class="border-b border-gray-200 bg-white px-4 py-5 sm:px-6">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <a href="/configuracion/productos/" class="text-gray-500 hover:text-gray-700 transition-colors">
-                    <i class="fas fa-arrow-left w-4 h-4"></i>
-                </a>
-                <h1 class="text-2xl font-semibold text-gray-900">Editar Producto</h1>
-                <span class="text-sm text-gray-500">ID: {{ producto.id }}</span>
-            </div>
-            <div class="flex items-center space-x-3">
-                <a href="/configuracion/productos/" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    Cancelar
-                </a>
-                <button form="formProducto" type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-save w-4 h-4 mr-2"></i>
-                    Actualizar
-                </button>
-            </div>
+  <!-- Header -->
+  <div class="border-b border-gray-200 bg-white px-4 py-5 sm:px-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <a href="/configuracion/productos/" class="text-gray-500 hover:text-gray-700 transition-colors">
+          <i class="fas fa-arrow-left w-4 h-4"></i>
+        </a>
+        <h1 class="text-2xl font-semibold text-gray-900">Editar Producto</h1>
+        <span class="text-sm text-gray-500">ID: {{ producto.id }}</span>
+      </div>
+      <button form="formProducto" type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+        <i class="fas fa-save w-4 h-4 mr-2"></i> Guardar
+      </button>
+    </div>
+  </div>
+
+  <!-- Formulario -->
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <form id="formProducto" action="/configuracion/productos/edit/{{ producto.id }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+
+      <!-- Información Básica -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-6">Información Básica</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU *</label>
+            <input type="text" name="sku" id="sku" required value="{{ producto.sku or '' }}"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
+            <input type="text" name="nombre" id="nombre" required value="{{ producto.nombre or '' }}"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+          </div>
+          <div>
+            <label for="tipo_producto" class="block text-sm font-medium text-gray-700 mb-2">Tipo de Producto</label>
+            <select name="tipo_producto" id="tipo_producto"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+              <option value="">Seleccionar tipo</option>
+              {% for tipo in ['seccionales','sofas','poltronas','camas'] %}
+                <option value="{{ tipo }}" {% if producto.tipo_producto == tipo %}selected{% endif %}>{{ tipo }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="material" class="block text-sm font-medium text-gray-700 mb-2">Material</label>
+            <input type="text" name="material" id="material" value="{{ producto.material or '' }}"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+          </div>
+          <div class="md:col-span-2">
+            <label for="descripcion_producto" class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+            <textarea name="descripcion_producto" id="descripcion_producto" rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">{{ producto.descripcion_producto or '' }}</textarea>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- Formulario -->
-    <div class="max-w-4xl mx-auto px-4 py-8">
-        <form id="formProducto" action="/configuracion/productos/edit/{{ producto.id }}" method="POST" class="space-y-8">
-            
-            <!-- Información Básica -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Especificaciones</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="dimensiones" class="block text-sm font-medium text-gray-700 mb-2">Dimensiones</label>
-                        <input type="text" name="dimensiones" id="dimensiones" value="{{ producto.dimensiones or '' }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Ej: 200x80x75 cm">
-                    </div>
-                    <div>
-                        <label for="colores_disponibles" class="block text-sm font-medium text-gray-700 mb-2">Colores Disponibles</label>
-                        <input type="text" name="colores_disponibles" id="colores_disponibles" value="{{ producto.colores_disponibles or '' }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Ej: Negro, Gris, Beige">
-                    </div>
-                    <div>
-                        <label for="tiempo_entrega" class="block text-sm font-medium text-gray-700 mb-2">Tiempo de Entrega</label>
-                        <input type="text" name="tiempo_entrega" id="tiempo_entrega" value="{{ producto.tiempo_entrega or '' }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                               placeholder="Ej: 2-3 semanas">
-                    </div>
-                    <div>
-                        <label for="precio_venta" class="block text-sm font-medium text-gray-700 mb-2">Precio de Venta</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-gray-500">$</span>
-                            <input type="number" name="precio_venta" id="precio_venta" step="0.01" min="0" value="{{ producto.precio_venta or 0 }}"
-                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
+      <!-- SKUs adicionales -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-6">SKUs Adicionales</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {% for campo in ['sku_esqueleto', 'sku_hites', 'sku_lapolar'] %}
+          <div>
+            <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">{{ campo.replace('_', ' ')|title }}</label>
+            <input type="text" name="{{ campo }}" id="{{ campo }}" value="{{ producto[campo] or '' }}"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Imágenes de Proceso -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-6">Imágenes de Proceso</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for campo in ['imagen_corte', 'imagen_lapizado', 'imagen_corte_esqueleto', 'imagen_esqueleto'] %}
+            <div x-data="{ eliminada_{{ loop.index }}: false }">
+            <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">{{ campo.replace('_', ' ')|title }}</label>
+
+            {% if producto[campo] %}
+                <template x-if="!eliminada_{{ loop.index }}">
+                <div class="mb-2">
+                    <img src="{{ producto[campo] }}" alt="{{ campo }}" class="w-32 h-24 object-cover rounded border mb-2">
+                    <button type="button" @click="eliminada_{{ loop.index }} = true"
+                            class="text-red-600 text-sm hover:underline">Eliminar imagen</button>
+                    <input type="hidden" name="eliminar_{{ campo }}" value="1">
                 </div>
+                </template>
+            {% endif %}
+
+            <input type="file" name="{{ campo }}" id="{{ campo }}" accept="image/*"
+                    x-show="eliminada_{{ loop.index }} || !{{ 'true' if not producto[campo] else 'false' }}"
+                    class="w-full text-sm text-gray-700 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:py-2 file:px-4 file:rounded-md file:border-0">
             </div>
+            {% endfor %}
+        </div>
+      </div>
 
-            <!-- Costos -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Estructura de Costos</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div>
-                        <label for="costo_costura" class="block text-sm font-medium text-gray-700 mb-2">Costo Costura</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-gray-500">$</span>
-                            <input type="number" name="costo_costura" id="costo_costura" step="0.01" min="0" value="{{ producto.costo_costura or 0 }}"
-                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="costo_lapiceria" class="block text-sm font-medium text-gray-700 mb-2">Costo Lapicería</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-gray-500">$</span>
-                            <input type="number" name="costo_lapiceria" id="costo_lapiceria" step="0.01" min="0" value="{{ producto.costo_lapiceria or 0 }}"
-                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="costo_esqueleteria" class="block text-sm font-medium text-gray-700 mb-2">Costo Esqueletería</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-gray-500">$</span>
-                            <input type="number" name="costo_esqueleteria" id="costo_esqueleteria" step="0.01" min="0" value="{{ producto.costo_esqueleteria or 0 }}"
-                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="costo_armado" class="block text-sm font-medium text-gray-700 mb-2">Costo Armado</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-gray-500">$</span>
-                            <input type="number" name="costo_armado" id="costo_armado" step="0.01" min="0" value="{{ producto.costo_armado or 0 }}"
-                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="costo_corte" class="block text-sm font-medium text-gray-700 mb-2">Costo Corte</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-gray-500">$</span>
-                            <input type="number" name="costo_corte" id="costo_corte" step="0.01" min="0" value="{{ producto.costo_corte or 0 }}"
-                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Costo Total</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-gray-500">$</span>
-                            <input type="text" id="costo_total" readonly
-                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-600"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
+      <!-- Imágenes de Producto -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-6">Imágenes del Producto</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {% for i in range(1,11) %}
+          {% set campo = 'img_' ~ i %}
+            <div x-data="{ eliminada_{{ i }}: false }">
+            <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">Imagen {{ i }}</label>
+
+            {% if producto[campo] %}
+                <template x-if="!eliminada_{{ i }}">
+                <div class="mb-2">
+                    <img src="{{ producto[campo] }}" alt="{{ campo }}" class="w-full h-24 object-cover rounded border mb-2">
+                    <button type="button" @click="eliminada_{{ i }} = true"
+                            class="text-red-600 text-sm hover:underline">Eliminar imagen</button>
+                    <input type="hidden" name="eliminar_{{ campo }}" value="1">
                 </div>
+                </template>
+            {% endif %}
+
+            <input type="file" name="{{ campo }}" id="{{ campo }}" accept="image/*"
+                    x-show="eliminada_{{ i }} || !{{ 'true' if not producto[campo] else 'false' }}"
+                    class="w-full text-sm text-gray-700 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:py-2 file:px-4 file:rounded-md file:border-0">
             </div>
+          {% endfor %}
+        </div>
+      </div>
 
-            <!-- Gestión de Imágenes -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Imágenes del Producto</h2>
-                
-                <!-- Imágenes actuales -->
-                {% if producto.img_1 or producto.img_2 or producto.img_3 or producto.img_4 or producto.img_5 or producto.img_6 or producto.img_7 or producto.img_8 or producto.img_9 or producto.img_10 %}
-                <div class="mb-6">
-                    <h3 class="text-sm font-medium text-gray-700 mb-3">Imágenes Actuales</h3>
-                    <div class="grid grid-cols-5 gap-3">
-                        {% for i in range(1, 11) %}
-                        {% set img_field = 'img_' + i|string %}
-                        {% if producto[img_field] %}
-                        <div class="relative group">
-                            <img src="/static/imagenes/productos/{{ producto[img_field] }}" alt="Imagen {{ i }}" 
-                                 class="w-20 h-20 object-cover rounded border">
-                            <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
-                                <span class="text-white text-xs">Img {{ i }}</span>
-                            </div>
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
+      <!-- Especificaciones -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-6">Especificaciones</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {% for campo, label in {
+            'dimensiones': 'Dimensiones',
+            'colores_disponibles': 'Colores Disponibles',
+            'tiempo_entrega': 'Tiempo de Entrega',
+            'esqueleto': 'Esqueleto',
+            'colores_hex': 'Códigos de Colores (HEX)'
+          }.items() %}
+          <div>
+            <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">{{ label }}</label>
+            <input type="text" name="{{ campo }}" id="{{ campo }}" value="{{ producto[campo] or '' }}"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
 
-                <!-- Gestión de imágenes de show -->
-                {% if producto.imagen_corte or producto.imagen_lapizado or producto.imagen_corte_esqueleto or producto.imagen_esqueleto %}
-                <div class="mb-6">
-                    <h3 class="text-sm font-medium text-gray-700 mb-3">Imágenes de Proceso</h3>
-                    <div class="grid grid-cols-4 gap-3">
-                        {% if producto.imagen_corte %}
-                        <div class="text-center">
-                            <img src="/static/imagenes/show/{{ producto.imagen_corte }}" alt="Corte" 
-                                 class="w-20 h-20 object-cover rounded border mx-auto">
-                            <span class="text-xs text-gray-500 mt-1 block">Corte</span>
-                        </div>
-                        {% endif %}
-                        {% if producto.imagen_lapizado %}
-                        <div class="text-center">
-                            <img src="/static/imagenes/show/{{ producto.imagen_lapizado }}" alt="Lapizado" 
-                                 class="w-20 h-20 object-cover rounded border mx-auto">
-                            <span class="text-xs text-gray-500 mt-1 block">Lapizado</span>
-                        </div>
-                        {% endif %}
-                        {% if producto.imagen_corte_esqueleto %}
-                        <div class="text-center">
-                            <img src="/static/imagenes/show/{{ producto.imagen_corte_esqueleto }}" alt="Corte Esqueleto" 
-                                 class="w-20 h-20 object-cover rounded border mx-auto">
-                            <span class="text-xs text-gray-500 mt-1 block">C. Esqueleto</span>
-                        </div>
-                        {% endif %}
-                        {% if producto.imagen_esqueleto %}
-                        <div class="text-center">
-                            <img src="/static/imagenes/show/{{ producto.imagen_esqueleto }}" alt="Esqueleto" 
-                                 class="w-20 h-20 object-cover rounded border mx-auto">
-                            <span class="text-xs text-gray-500 mt-1 block">Esqueleto</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
+      <!-- Ventas -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-6">Ventas</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="tipo_producto_venta" class="block text-sm font-medium text-gray-700 mb-2">Tipo Producto Venta</label>
+            <select name="tipo_producto_venta" id="tipo_producto_venta"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+              <option value="">Seleccionar</option>
+              <option value="local" {% if producto.tipo_producto_venta == 'local' %}selected{% endif %}>Local</option>
+              <option value="externo" {% if producto.tipo_producto_venta == 'externo' %}selected{% endif %}>Externo</option>
+            </select>
+          </div>
+          <div>
+            <label for="producto_imagenes_venta_id" class="block text-sm font-medium text-gray-700 mb-2">ID Producto Imágenes Venta</label>
+            <input type="number" name="producto_imagenes_venta_id" id="producto_imagenes_venta_id" min="0" value="{{ producto.producto_imagenes_venta_id or '' }}"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+          </div>
+        </div>
+      </div>
 
-                <!-- Botones para gestionar imágenes -->
-                <div class="flex flex-wrap gap-3">
-                    <button type="button" onclick="abrirGestorImagenes('productos')" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <i class="fas fa-images w-4 h-4 mr-2"></i>
-                        Gestionar Imágenes Productos
-                    </button>
-                    <button type="button" onclick="abrirGestorImagenes('show')" class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <i class="fas fa-cogs w-4 h-4 mr-2"></i>
-                        Gestionar Imágenes Proceso
-                    </button>
-                </div>
+      <!-- Precios y Costos -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-6">Precios y Costos</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for campo, label in {
+            'precio_venta': 'Precio de Venta',
+            'precio_descuento': 'Precio con Descuento',
+            'costo_costura': 'Costo Costura',
+            'costo_lapiceria': 'Costo Lapicería',
+            'costo_esqueleteria': 'Costo Esqueletería',
+            'costo_armado': 'Costo Armado',
+            'costo_corte': 'Costo Corte'
+          }.items() %}
+          <div>
+            <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">{{ label }}</label>
+            <div class="relative">
+              {% if campo.startswith('precio') or campo.startswith('costo') %}
+              <span class="absolute left-3 top-2 text-gray-500">$</span>
+              {% endif %}
+              <input type="number" step="0.01" name="{{ campo }}" id="{{ campo }}" value="{{ producto[campo] or 0 }}"
+                class="w-full {% if campo.startswith('precio') or campo.startswith('costo') %}pl-8{% else %}pl-3{% endif %} pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
             </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
 
-            <!-- Botones de acción en mobile -->
-            <div class="flex flex-col sm:hidden space-y-3">
-                <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-save w-4 h-4 mr-2"></i>
-                    Actualizar Producto
-                </button>
-                <a href="/configuracion/productos/" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                    Cancelar
-                </a>
-            </div>
-        </form>
-    </div>
+    </form>
+  </div>
 </div>
-
-<script>
-    // Calcular costo total automáticamente
-    function calcularCostoTotal() {
-        const costura = parseFloat(document.getElementById('costo_costura').value) || 0;
-        const lapiceria = parseFloat(document.getElementById('costo_lapiceria').value) || 0;
-        const esqueleteria = parseFloat(document.getElementById('costo_esqueleteria').value) || 0;
-        const armado = parseFloat(document.getElementById('costo_armado').value) || 0;
-        const corte = parseFloat(document.getElementById('costo_corte').value) || 0;
-        
-        const total = costura + lapiceria + esqueleteria + armado + corte;
-        document.getElementById('costo_total').value = total.toLocaleString('es-CL');
-    }
-
-    // Event listeners para calcular costo total
-    ['costo_costura', 'costo_lapiceria', 'costo_esqueleteria', 'costo_armado', 'costo_corte'].forEach(id => {
-        document.getElementById(id).addEventListener('input', calcularCostoTotal);
-    });
-
-    // Calcular total inicial
-    calcularCostoTotal();
-
-    // Validación del formulario
-    document.getElementById('formProducto').addEventListener('submit', function(e) {
-        const sku = document.getElementById('sku').value.trim();
-        const nombre = document.getElementById('nombre').value.trim();
-        
-        if (!sku) {
-            e.preventDefault();
-            alert('El SKU es obligatorio');
-            document.getElementById('sku').focus();
-            return;
-        }
-        
-        if (!nombre) {
-            e.preventDefault();
-            alert('El nombre es obligatorio');
-            document.getElementById('nombre').focus();
-            return;
-        }
-    });
-
-    // Gestores de imágenes
-    function abrirGestorImagenes(tipo) {
-        const productoId = {{ producto.id }};
-        
-        if (tipo === 'productos') {
-            // Crear modal para subir imágenes de productos
-            crearModalImagenes('productos', productoId);
-        } else if (tipo === 'show') {
-            // Crear modal para subir imágenes de proceso
-            crearModalImagenes('show', productoId);
-        }
-    }
-
-    function crearModalImagenes(tipo, productoId) {
-        const modalHtml = `
-            <div id="modalImagenes" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
-                    <div class="mt-3">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-medium text-gray-900">
-                                ${tipo === 'productos' ? 'Gestionar Imágenes de Productos' : 'Gestionar Imágenes de Proceso'}
-                            </h3>
-                            <button onclick="cerrarModalImagenes()" class="text-gray-400 hover:text-gray-600">
-                                <i class="fas fa-times w-5 h-5"></i>
-                            </button>
-                        </div>
-                        
-                        <form id="formImagenes" enctype="multipart/form-data">
-                            ${tipo === 'productos' ? `
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 1</label>
-                                        <input type="file" name="img_1" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 2</label>
-                                        <input type="file" name="img_2" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 3</label>
-                                        <input type="file" name="img_3" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 4</label>
-                                        <input type="file" name="img_4" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 5</label>
-                                        <input type="file" name="img_5" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 6</label>
-                                        <input type="file" name="img_6" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 7</label>
-                                        <input type="file" name="img_7" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 8</label>
-                                        <input type="file" name="img_8" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 9</label>
-                                        <input type="file" name="img_9" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen 10</label>
-                                        <input type="file" name="img_10" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                </div>
-                            ` : `
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen Corte</label>
-                                        <input type="file" name="imagen_corte" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen Lapizado</label>
-                                        <input type="file" name="imagen_lapizado" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen Corte Esqueleto</label>
-                                        <input type="file" name="imagen_corte_esqueleto" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Imagen Esqueleto</label>
-                                        <input type="file" name="imagen_esqueleto" accept="image/*" class="w-full text-sm text-gray-500 border border-gray-300 rounded cursor-pointer">
-                                    </div>
-                                </div>
-                            `}
-                            
-                            <div class="flex items-center justify-end gap-4 mt-6">
-                                <button type="button" onclick="cerrarModalImagenes()" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 transition-colors">
-                                    Cancelar
-                                </button>
-                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-upload w-4 h-4 mr-2"></i>
-                                    Subir Imágenes
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        
-        // Agregar event listener al formulario
-        document.getElementById('formImagenes').addEventListener('submit', function(e) {
-            e.preventDefault();
-            subirImagenes(tipo, productoId, this);
-        });
-    }
-
-    function cerrarModalImagenes() {
-        const modal = document.getElementById('modalImagenes');
-        if (modal) {
-            modal.remove();
-        }
-    }
-
-    async function subirImagenes(tipo, productoId, form) {
-        const formData = new FormData(form);
-        const endpoint = tipo === 'productos' 
-            ? `/configuracion/productos/upload-images/${productoId}`
-            : `/configuracion/productos/upload-show-images/${productoId}`;
-        
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                alert('Imágenes subidas correctamente');
-                cerrarModalImagenes();
-                location.reload(); // Recargar para mostrar las nuevas imágenes
-            } else {
-                const error = await response.json();
-                alert('Error al subir imágenes: ' + error.detail);
-            }
-        } catch (error) {
-            alert('Error de conexión: ' + error.message);
-        }
-    }
-</script>
 {% endblock %}

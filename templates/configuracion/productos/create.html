@@ -50,13 +50,10 @@
                         <select name="tipo_producto" id="tipo_producto" 
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
                             <option value="">Seleccionar tipo</option>
-                            <option value="Seccional">Seccional</option>
-                            <option value="Sofá">Sofá</option>
-                            <option value="Poltrona">Poltrona</option>
-                            <option value="Mesa">Mesa</option>
-                            <option value="Cama">Cama</option>
-                            <option value="Silla">Silla</option>
-                            <option value="Mueble">Mueble</option>
+                            <option value="seccionales">Seccional</option>
+                            <option value="sofas">Sofá</option>
+                            <option value="poltronas">Poltrona</option>
+                            <option value="camas">Cama</option>
                         </select>
                     </div>
                     <div>
@@ -73,6 +70,73 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SKUs Adicionales -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">SKUs Adicionales</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="sku_esqueleto" class="block text-sm font-medium text-gray-700 mb-2">SKU Esqueleto</label>
+                        <input type="text" name="sku_esqueleto" id="sku_esqueleto" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="SKU del esqueleto">
+                    </div>
+                    <div>
+                        <label for="sku_hites" class="block text-sm font-medium text-gray-700 mb-2">SKU Hites</label>
+                        <input type="text" name="sku_hites" id="sku_hites" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="SKU para Hites">
+                    </div>
+                    <div>
+                        <label for="sku_lapolar" class="block text-sm font-medium text-gray-700 mb-2">SKU La Polar</label>
+                        <input type="text" name="sku_lapolar" id="sku_lapolar" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="SKU para La Polar">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Imágenes de Proceso -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Referencias de Imágenes de Proceso</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="imagen_corte" class="block text-sm font-medium text-gray-700 mb-2">Imagen Corte</label>
+                        <input type="file" name="imagen_corte" id="imagen_corte" accept="image/*"
+                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    <div>
+                        <label for="imagen_lapizado" class="block text-sm font-medium text-gray-700 mb-2">Imagen Lapizado</label>
+                        <input type="file" name="imagen_lapizado" id="imagen_lapizado" accept="image/*"
+                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    <div>
+                        <label for="imagen_corte_esqueleto" class="block text-sm font-medium text-gray-700 mb-2">Imagen Corte Esqueleto</label>
+                        <input type="file" name="imagen_corte_esqueleto" id="imagen_corte_esqueleto" accept="image/*"
+                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    <div>
+                        <label for="imagen_esqueleto" class="block text-sm font-medium text-gray-700 mb-2">Imagen Esqueleto</label>
+                        <input type="file" name="imagen_esqueleto" id="imagen_esqueleto" accept="image/*"
+                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referencias de Imágenes de Producto -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Referencias de Imágenes de Producto</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {% for i in range(1, 11) %}
+                    <div>
+                        <label for="img_{{ i }}" class="block text-sm font-medium text-gray-700 mb-2">Imagen {{ i }}</label>
+                        <input type="file" name="img_{{ i }}" id="img_{{ i }}" accept="image/*"
+                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
 
             <!-- Especificaciones -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
@@ -97,10 +161,60 @@
                                placeholder="Ej: 2-3 semanas">
                     </div>
                     <div>
+                        <label for="esqueleto" class="block text-sm font-medium text-gray-700 mb-2">Esqueleto</label>
+                        <input type="text" name="esqueleto" id="esqueleto" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Descripción del esqueleto">
+                    </div>
+                    <div>
+                        <label for="colores_hex" class="block text-sm font-medium text-gray-700 mb-2">Códigos de Colores (HEX)</label>
+                        <input type="text" name="colores_hex" id="colores_hex" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Ej: #000000,#808080,#F5F5DC">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Ventas -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Información de Ventas y Productos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="tipo_producto_venta" class="block text-sm font-medium text-gray-700 mb-2">Tipo Producto Venta</label>
+                        <select name="tipo_producto_venta" id="tipo_producto_venta" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="">Seleccionar</option>
+                            <option value="local">Local</option>
+                            <option value="externo">Externo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="producto_imagenes_venta_id" class="block text-sm font-medium text-gray-700 mb-2">ID Producto Imágenes Venta</label>
+                        <input type="number" name="producto_imagenes_venta_id" id="producto_imagenes_venta_id" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="ID de referencia">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Precios -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Precios</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
                         <label for="precio_venta" class="block text-sm font-medium text-gray-700 mb-2">Precio de Venta</label>
                         <div class="relative">
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="precio_venta" id="precio_venta" step="0.01" min="0"
+                                   class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="precio_descuento" class="block text-sm font-medium text-gray-700 mb-2">Precio con Descuento</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-gray-500">$</span>
+                            <input type="number" name="precio_descuento" id="precio_descuento" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                    placeholder="0.00">
                         </div>
@@ -169,6 +283,12 @@
                 </div>
             </div>
 
+            <!-- Metadatos adicionales -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Información Adicional</h2>
+                <p class="text-sm text-gray-600 mb-4">Los campos de visitas y usuario se manejan automáticamente por el sistema.</p>
+            </div>
+
             <!-- Botones de acción en mobile -->
             <div class="flex flex-col sm:hidden space-y-3">
                 <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
@@ -220,5 +340,33 @@
             return;
         }
     });
+
+    // Auto-generar SKU basado en nombre (opcional)
+    document.getElementById('nombre').addEventListener('input', function() {
+        const nombre = this.value.trim();
+        const skuField = document.getElementById('sku');
+        
+        if (nombre && !skuField.value) {
+            // Generar SKU automático: primeras 3 letras + número aleatorio
+            const sku = nombre.replace(/\s+/g, '').substring(0, 6).toUpperCase() + Math.floor(Math.random() * 1000);
+            skuField.value = sku;
+        }
+    });
+
+    // Calcular margen en tiempo real
+    function calcularMargen() {
+        const precioVenta = parseFloat(document.getElementById('precio_venta').value) || 0;
+        const costoTotal = parseFloat(document.getElementById('costo_total').value.replace(/[.,]/g, '')) || 0;
+        
+        if (precioVenta > 0 && costoTotal > 0) {
+            const margen = precioVenta - costoTotal;
+            const porcentaje = (margen / precioVenta) * 100;
+            
+            // Mostrar información de margen (podrías agregar un campo visual)
+            console.log(`Margen: $${margen.toLocaleString('es-CL')} (${porcentaje.toFixed(1)}%)`);
+        }
+    }
+
+    document.getElementById('precio_venta').addEventListener('input', calcularMargen);
 </script>
 {% endblock %}

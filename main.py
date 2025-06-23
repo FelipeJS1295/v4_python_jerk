@@ -44,7 +44,6 @@ from routers.config import (
     clientes as config_clientes,
     insumos as config_insumos,
     proveedores as config_proveedores,
-    productos as config_productos,
 )
 
 from routers.auth import router as auth_router
@@ -186,7 +185,6 @@ app.include_router(trabajadores_jinja.router)
 app.include_router(config_clientes.router)
 app.include_router(config_insumos.router)
 app.include_router(config_proveedores.router)
-app.include_router(config_productos.router)
 
 app.include_router(trabajadores_acciones.router)
 app.include_router(usuarios_acciones.router)

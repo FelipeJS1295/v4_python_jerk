@@ -13,8 +13,7 @@ from datetime import datetime
 router = APIRouter(prefix="/configuracion/productos", tags=["Productos"])
 
 # Configurar templates
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+templates = Jinja2Templates(directory="templates")
 
 # Rutas de imágenes
 PRODUCTOS_IMG_PATH = "/var/www/imagenes_jhk/productos"
@@ -23,7 +22,7 @@ SHOW_IMG_PATH = "/var/www/imagenes_jhk/show"
 # Crear directorios si no existen
 os.makedirs(PRODUCTOS_IMG_PATH, exist_ok=True)
 os.makedirs(SHOW_IMG_PATH, exist_ok=True)
-
+    
 # Esquemas Pydantic
 class ProductoBase(BaseModel):
     sku: Optional[str] = None
@@ -63,6 +62,9 @@ async def productos_index(request: Request):
     """Página principal de productos"""
     try:
         conn = conectar_mysql()
+        if not conn:
+            raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+            
         cursor = conn.cursor(dictionary=True)
         
         cursor.execute("""
@@ -79,10 +81,11 @@ async def productos_index(request: Request):
         
         return templates.TemplateResponse("configuracion/productos/index.html", {
             "request": request,
-            "productos": productos
+            "productos": productos or []
         })
         
     except Exception as e:
+        print(f"Error en productos_index: {str(e)}")  # Para debug
         raise HTTPException(status_code=500, detail=f"Error al obtener productos: {str(e)}")
 
 @router.get("/create", response_class=HTMLResponse)
@@ -339,7 +342,7 @@ async def subir_imagenes_producto(
                 with open(ruta_archivo, "wb") as buffer:
                     shutil.copyfileobj(archivo.file, buffer)
                 
-                rutas_guardadas[campo] = nombre_archivo
+                rutas_guardadas[campo] = f"/imagenes_jhk/productos/{nombre_archivo}"
         
         # Actualizar base de datos
         if rutas_guardadas:
@@ -390,7 +393,7 @@ async def subir_imagenes_show(
                 with open(ruta_archivo, "wb") as buffer:
                     shutil.copyfileobj(archivo.file, buffer)
                 
-                rutas_guardadas[campo] = nombre_archivo
+                rutas_guardadas[campo] = f"/imagenes_jhk/show/{nombre_archivo}"
         
         # Actualizar base de datos
         if rutas_guardadas:
@@ -414,13 +417,35 @@ async def crear_producto_form(
     request: Request,
     sku: str = Form(...),
     nombre: str = Form(...),
+    sku_esqueleto: str = Form(""),
+    sku_hites: str = Form(""),
+    sku_lapolar: str = Form(""),
+    esqueleto: str = Form(""),
+    imagen_corte: str = Form(""),
+    imagen_lapizado: str = Form(""),
+    imagen_corte_esqueleto: str = Form(""),
+    imagen_esqueleto: str = Form(""),
+    img_1: str = Form(""),
+    img_2: str = Form(""),
+    img_3: str = Form(""),
+    img_4: str = Form(""),
+    img_5: str = Form(""),
+    img_6: str = Form(""),
+    img_7: str = Form(""),
+    img_8: str = Form(""),
+    img_9: str = Form(""),
+    img_10: str = Form(""),
     tipo_producto: str = Form(""),
-    precio_venta: float = Form(0.0),
     descripcion_producto: str = Form(""),
     material: str = Form(""),
     colores_disponibles: str = Form(""),
     tiempo_entrega: str = Form(""),
     dimensiones: str = Form(""),
+    colores_hex: str = Form(""),
+    tipo_producto_venta: str = Form(""),
+    producto_imagenes_venta_id: int = Form(None),
+    precio_venta: float = Form(0.0),
+    precio_descuento: float = Form(0.0),
     costo_costura: float = Form(0.0),
     costo_lapiceria: float = Form(0.0),
     costo_esqueleteria: float = Form(0.0),
@@ -429,24 +454,37 @@ async def crear_producto_form(
 ):
     """Crear producto desde formulario HTML"""
     try:
-        producto = ProductoCreate(
-            sku=sku,
-            nombre=nombre,
-            tipo_producto=tipo_producto,
-            precio_venta=precio_venta,
-            descripcion_producto=descripcion_producto,
-            material=material,
-            colores_disponibles=colores_disponibles,
-            tiempo_entrega=tiempo_entrega,
-            dimensiones=dimensiones,
-            costo_costura=costo_costura,
-            costo_lapiceria=costo_lapiceria,
-            costo_esqueleteria=costo_esqueleteria,
-            costo_armado=costo_armado,
-            costo_corte=costo_corte
-        )
+        conn = conectar_mysql()
+        cursor = conn.cursor()
         
-        resultado = crear_producto_api(producto)
+        cursor.execute("""
+            INSERT INTO productos (
+                sku, sku_esqueleto, sku_hites, sku_lapolar, nombre, esqueleto,
+                imagen_corte, imagen_lapizado, imagen_corte_esqueleto, imagen_esqueleto,
+                img_1, img_2, img_3, img_4, img_5, img_6, img_7, img_8, img_9, img_10,
+                costo_costura, costo_lapiceria, costo_esqueleteria, costo_armado, costo_corte,
+                precio_venta, precio_descuento, tipo_producto, descripcion_producto, material, 
+                colores_disponibles, tiempo_entrega, dimensiones, colores_hex,
+                tipo_producto_venta, producto_imagenes_venta_id, created_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                %s, %s, %s, %s, %s, %s, %s
+            )
+        """, (
+            sku, sku_esqueleto, sku_hites, sku_lapolar, nombre, esqueleto,
+            imagen_corte, imagen_lapizado, imagen_corte_esqueleto, imagen_esqueleto,
+            img_1, img_2, img_3, img_4, img_5, img_6, img_7, img_8, img_9, img_10,
+            costo_costura, costo_lapiceria, costo_esqueleteria, costo_armado, costo_corte,
+            precio_venta, precio_descuento, tipo_producto, descripcion_producto, material,
+            colores_disponibles, tiempo_entrega, dimensiones, colores_hex,
+            tipo_producto_venta, producto_imagenes_venta_id, datetime.now()
+        ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
         return RedirectResponse(url="/configuracion/productos/", status_code=303)
         
     except Exception as e:
@@ -469,10 +507,79 @@ async def actualizar_producto_form(
     costo_lapiceria: float = Form(0.0),
     costo_esqueleteria: float = Form(0.0),
     costo_armado: float = Form(0.0),
-    costo_corte: float = Form(0.0)
+    costo_corte: float = Form(0.0),
+
+    eliminar_img_1: Optional[str] = Form(None),
+    eliminar_img_2: Optional[str] = Form(None),
+    eliminar_img_3: Optional[str] = Form(None),
+    eliminar_img_4: Optional[str] = Form(None),
+    eliminar_img_5: Optional[str] = Form(None),
+    eliminar_img_6: Optional[str] = Form(None),
+    eliminar_img_7: Optional[str] = Form(None),
+    eliminar_img_8: Optional[str] = Form(None),
+    eliminar_img_9: Optional[str] = Form(None),
+    eliminar_img_10: Optional[str] = Form(None),
+    eliminar_imagen_corte: Optional[str] = Form(None),
+    eliminar_imagen_lapizado: Optional[str] = Form(None),
+    eliminar_imagen_corte_esqueleto: Optional[str] = Form(None),
+    eliminar_imagen_esqueleto: Optional[str] = Form(None),
+
+    img_1: Optional[UploadFile] = File(None),
+    img_2: Optional[UploadFile] = File(None),
+    img_3: Optional[UploadFile] = File(None),
+    img_4: Optional[UploadFile] = File(None),
+    img_5: Optional[UploadFile] = File(None),
+    img_6: Optional[UploadFile] = File(None),
+    img_7: Optional[UploadFile] = File(None),
+    img_8: Optional[UploadFile] = File(None),
+    img_9: Optional[UploadFile] = File(None),
+    img_10: Optional[UploadFile] = File(None),
+    imagen_corte: Optional[UploadFile] = File(None),
+    imagen_lapizado: Optional[UploadFile] = File(None),
+    imagen_corte_esqueleto: Optional[UploadFile] = File(None),
+    imagen_esqueleto: Optional[UploadFile] = File(None)
 ):
-    """Actualizar producto desde formulario HTML"""
     try:
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT * FROM productos WHERE id = %s", (producto_id,))
+        producto_actual = cursor.fetchone()
+
+        if not producto_actual:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+        imagenes = {
+            "img_1": PRODUCTOS_IMG_PATH, "img_2": PRODUCTOS_IMG_PATH,
+            "img_3": PRODUCTOS_IMG_PATH, "img_4": PRODUCTOS_IMG_PATH,
+            "img_5": PRODUCTOS_IMG_PATH, "img_6": PRODUCTOS_IMG_PATH,
+            "img_7": PRODUCTOS_IMG_PATH, "img_8": PRODUCTOS_IMG_PATH,
+            "img_9": PRODUCTOS_IMG_PATH, "img_10": PRODUCTOS_IMG_PATH,
+            "imagen_corte": SHOW_IMG_PATH,
+            "imagen_lapizado": SHOW_IMG_PATH,
+            "imagen_corte_esqueleto": SHOW_IMG_PATH,
+            "imagen_esqueleto": SHOW_IMG_PATH
+        }
+
+        campos_a_eliminar = []
+
+        for campo, carpeta in imagenes.items():
+            eliminar_flag = locals().get(f"eliminar_{campo}")
+            nombre_archivo = producto_actual.get(campo)
+            if eliminar_flag and nombre_archivo:
+                ruta_completa = Path(carpeta) / Path(nombre_archivo).name
+                try:
+                    if ruta_completa.exists():
+                        ruta_completa.unlink()
+                except Exception as e:
+                    print(f"Error al eliminar {ruta_completa}: {str(e)}")
+                campos_a_eliminar.append(campo)
+
+        if campos_a_eliminar:
+            set_clause = ", ".join(f"{campo} = NULL" for campo in campos_a_eliminar)
+            cursor.execute(f"UPDATE productos SET {set_clause} WHERE id = %s", (producto_id,))
+            conn.commit()
+
         producto = ProductoUpdate(
             id=producto_id,
             sku=sku,
@@ -490,9 +597,41 @@ async def actualizar_producto_form(
             costo_armado=costo_armado,
             costo_corte=costo_corte
         )
-        
+
         actualizar_producto_api(producto_id, producto)
+
+        nuevas_imagenes = {
+            "img_1": img_1, "img_2": img_2, "img_3": img_3, "img_4": img_4,
+            "img_5": img_5, "img_6": img_6, "img_7": img_7, "img_8": img_8,
+            "img_9": img_9, "img_10": img_10,
+            "imagen_corte": imagen_corte,
+            "imagen_lapizado": imagen_lapizado,
+            "imagen_corte_esqueleto": imagen_corte_esqueleto,
+            "imagen_esqueleto": imagen_esqueleto
+        }
+
+        campos_actualizados = {}
+        for campo, archivo in nuevas_imagenes.items():
+            if archivo and archivo.filename:
+                extension = archivo.filename.split('.')[-1]
+                nombre_archivo = f"{producto_id}_{campo}.{extension}"
+                carpeta = imagenes[campo]
+                ruta_archivo = os.path.join(carpeta, nombre_archivo)
+                with open(ruta_archivo, "wb") as buffer:
+                    shutil.copyfileobj(archivo.file, buffer)
+                url_archivo = f"/imagenes_jhk/{'productos' if 'img_' in campo else 'show'}/{nombre_archivo}"
+                campos_actualizados[campo] = url_archivo
+
+        if campos_actualizados:
+            set_clause = ", ".join([f"{campo} = %s" for campo in campos_actualizados])
+            valores = list(campos_actualizados.values()) + [producto_id]
+            cursor.execute(f"UPDATE productos SET {set_clause} WHERE id = %s", valores)
+            conn.commit()
+
+        cursor.close()
+        conn.close()
+
         return RedirectResponse(url="/configuracion/productos/", status_code=303)
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar producto: {str(e)}")
