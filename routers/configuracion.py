@@ -13,10 +13,6 @@ async def configuracion_dashboard(request: Request):
 async def configuracion_clientes(request: Request):
     return templates.TemplateResponse("configuracion/clientes.html", {"request": request})
 
-@router.get("/configuracion/productos", response_class=HTMLResponse)
-async def configuracion_productos(request: Request):
-    return templates.TemplateResponse("configuracion/productos/index.html", {"request": request})
-
 @router.get("/configuracion/insumos", response_class=HTMLResponse)
 async def configuracion_insumos(request: Request):
     return templates.TemplateResponse("configuracion/insumos.html", {"request": request})

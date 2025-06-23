@@ -2,7 +2,17 @@
 
 {% block title %}Productos{% endblock %}
 
+
+
 {% block content %}
+
+<div>
+  <strong>Total productos recibidos:</strong> {{ productos|length }}
+  {% if productos is not defined %}
+    <div class="text-red-600 font-bold">❌ ERROR: La variable 'productos' no está definida</div>
+  {% endif %}
+</div>
+
 <div class="bg-white">
     <!-- Header -->
     <div class="border-b border-gray-200 bg-white px-4 py-5 sm:px-6">
