@@ -1300,8 +1300,8 @@ async function subirImagen(input, numeroImagen) {
     formData.append('imagen', archivo);
     formData.append('posicion', numeroImagen);
     
-    // Enviar a la API
-    const response = await fetch('/api/productos/subir-imagen', {
+    // Enviar a la API - ruta corregida según tu backend
+    const response = await fetch('/configuracion/productos/upload-imagen', {
       method: 'POST',
       body: formData
     });
