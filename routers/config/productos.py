@@ -6,6 +6,9 @@ from typing import Optional, List
 from db import conectar_mysql
 import mysql.connector
 import os
+from fastapi import UploadFile, File
+import uuid
+import shutil
 
 router = APIRouter(prefix="/configuracion/productos", tags=["Productos"])
 
@@ -247,3 +250,24 @@ def obtener_insumos_producto(producto_id: int):
     finally:
         cursor.close()
         conn.close()
+
+@router.post("/upload-imagen", response_class=JSONResponse)
+async def subir_imagen(file: UploadFile = File(...)):
+    try:
+        # Generar nombre único con extensión original
+        extension = os.path.splitext(file.filename)[1]
+        nombre_archivo = f"{uuid.uuid4().hex}{extension}"
+
+        # Ruta en el VPS
+        ruta_destino = f"/var/www/imagenes_jhk/productos/{nombre_archivo}"
+
+        # Guardar imagen
+        with open(ruta_destino, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Ruta pública (la que se usará en el frontend)
+        url_publica = f"/imagenes/productos/{nombre_archivo}"
+
+        return {"url": url_publica}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al subir imagen: {str(e)}")

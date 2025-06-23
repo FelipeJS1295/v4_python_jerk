@@ -63,9 +63,11 @@ app.add_middleware(
 
 # Archivos estáticos y templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
+# Montar carpeta externa de imágenes
+app.mount("/imagenes", StaticFiles(directory="/var/www/imagenes_jhk"), name="imagenes")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-app.mount("/images", StaticFiles(directory="static/images"), name="images")
+
 
 # ===== RUTA RAÍZ CON AUTENTICACIÓN =====
 @app.get("/")

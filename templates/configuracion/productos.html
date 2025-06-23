@@ -407,218 +407,21 @@
               <!-- Galería de imágenes -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="galeria-imagenes">
                 
-                <!-- Imagen 1 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 1</label>
-                  <div class="image-upload-container" data-field="img_1">
-                    <input type="hidden" name="img_1" id="producto-img-1">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                {% for i in range(1, 11) %}
+                  <div class="text-center">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Imagen {{ i }}</label>
+                    <input type="file" accept="image/*" onchange="subirImagen(this, {{ i }})"
+                          class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4
+                                  file:rounded-lg file:border-0 file:text-sm file:font-semibold
+                                  file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
 
-                <!-- Imagen 2 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 2</label>
-                  <div class="image-upload-container" data-field="img_2">
-                    <input type="hidden" name="img_2" id="producto-img-2">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
+                    <input type="hidden" name="img_{{ i }}" id="img_{{ i }}">
+                    <img id="preview_img_{{ i }}" src="/static/images/no-image.jpg"
+                        class="w-full h-24 object-cover mt-2 border rounded shadow-sm">
                   </div>
-                </div>
-
-                <!-- Imagen 3 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 3</label>
-                  <div class="image-upload-container" data-field="img_3">
-                    <input type="hidden" name="img_3" id="producto-img-3">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
-
-                <!-- Imagen 4 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 4</label>
-                  <div class="image-upload-container" data-field="img_4">
-                    <input type="hidden" name="img_4" id="producto-img-4">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
-
-                <!-- Imagen 5 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 5</label>
-                  <div class="image-upload-container" data-field="img_5">
-                    <input type="hidden" name="img_5" id="producto-img-5">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
-
-                <!-- Imagen 6 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 6</label>
-                  <div class="image-upload-container" data-field="img_6">
-                    <input type="hidden" name="img_6" id="producto-img-6">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
-
-                <!-- Imagen 7 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 7</label>
-                  <div class="image-upload-container" data-field="img_7">
-                    <input type="hidden" name="img_7" id="producto-img-7">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
-
-                <!-- Imagen 8 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 8</label>
-                  <div class="image-upload-container" data-field="img_8">
-                    <input type="hidden" name="img_8" id="producto-img-8">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
-
-                <!-- Imagen 9 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 9</label>
-                  <div class="image-upload-container" data-field="img_9">
-                    <input type="hidden" name="img_9" id="producto-img-9">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
-
-                <!-- Imagen 10 -->
-                <div class="border border-slate-200 rounded-lg p-3">
-                  <label class="block text-xs font-medium text-slate-600 mb-2">Imagen 10</label>
-                  <div class="image-upload-container" data-field="img_10">
-                    <input type="hidden" name="img_10" id="producto-img-10">
-                    <div class="upload-area border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer">
-                      <div class="upload-content">
-                        <i class="fas fa-plus text-2xl text-slate-400 mb-1"></i>
-                        <p class="text-xs text-slate-600">Agregar</p>
-                      </div>
-                      <div class="image-preview hidden">
-                        <img src="" alt="Preview" class="w-full h-20 object-cover rounded">
-                        <button type="button" class="text-xs text-red-600 hover:text-red-700 delete-image mt-1">
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" class="hidden file-input">
-                  </div>
-                </div>
+                {% endfor %}
               </div>
-            </div>
-          </div>
           
           <!-- Pestaña Insumos -->
           <div id="content-insumos" class="pestaña-content hidden">
@@ -1388,6 +1191,32 @@ function mostrarMensaje(mensaje, tipo) {
 
 function formatearNumero(numero) {
   return new Intl.NumberFormat('es-CL').format(numero);
+}
+
+async function subirImagen(inputFile, numero) {
+  const file = inputFile.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch("/configuracion/productos/upload-imagen", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (response.ok && data.url) {
+      document.getElementById(`preview_img_${numero}`).src = data.url;
+      document.getElementById(`img_${numero}`).value = data.url;
+    } else {
+      alert("Error al subir imagen");
+    }
+  } catch (error) {
+    console.error("Error al subir imagen:", error);
+    alert("Error al subir imagen");
+  }
 }
 </script>
 
