@@ -1186,32 +1186,6 @@ function formatearNumero(numero) {
   return new Intl.NumberFormat('es-CL').format(numero);
 }
 
-async function subirImagen(inputFile, numero) {
-  const file = inputFile.files[0];
-  if (!file) return;
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    const response = await fetch("/configuracion/productos/upload-imagen", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-    if (response.ok && data.url) {
-      document.getElementById(`preview_img_${numero}`).src = data.url;
-      document.getElementById(`img_${numero}`).value = data.url;
-    } else {
-      alert("Error al subir imagen");
-    }
-  } catch (error) {
-    console.error("Error al subir imagen:", error);
-    alert("Error al subir imagen");
-  }
-}
-
 // Generar galería de imágenes dinámicamente
 function generarGaleriaImagenes() {
   const galeria = document.getElementById('galeria-imagenes');
@@ -1284,8 +1258,8 @@ async function subirImagen(input, numeroImagen) {
   }
   
   // Validar tamaño (máximo 2MB)
-  if (archivo.size > 2 * 1024 * 1024) {
-    mostrarNotificacion('La imagen no puede superar los 2MB', 'error');
+  if (archivo.size > 3 * 1024 * 1024 * 1024) {
+    mostrarNotificacion('La imagen no puede superar los 3GB', 'error');
     return;
   }
   
