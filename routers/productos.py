@@ -520,7 +520,7 @@ async def crear_producto_form(
                 with open(ruta_archivo, "wb") as buffer:
                     shutil.copyfileobj(archivo.file, buffer)
                 
-                rutas_proceso[campo] = f"/imagenes_jhk/show/{nombre_archivo}"
+                rutas_proceso[campo] = f"/imagenes/show/{nombre_archivo}"
         
         # Procesar imágenes de producto
         imagenes_producto = {
@@ -540,7 +540,7 @@ async def crear_producto_form(
                 with open(ruta_archivo, "wb") as buffer:
                     shutil.copyfileobj(archivo.file, buffer)
                 
-                rutas_producto[campo] = f"/imagenes_jhk/productos/{nombre_archivo}"
+                rutas_producto[campo] = f"/imagenes/productos/{nombre_archivo}"
         
         # Actualizar base de datos con rutas de imágenes
         todas_las_rutas = {**rutas_proceso, **rutas_producto}
@@ -739,9 +739,9 @@ async def actualizar_producto_form(
                 
                 # Generar URL según el tipo de imagen
                 if 'img_' in campo:
-                    url_archivo = f"/imagenes_jhk/productos/{nombre_archivo}"
+                    url_archivo = f"/imagenes/productos/{nombre_archivo}"
                 else:
-                    url_archivo = f"/imagenes_jhk/show/{nombre_archivo}"
+                    url_archivo = f"/imagenes/show/{nombre_archivo}"
                 
                 campos_actualizados[campo] = url_archivo
 
@@ -760,3 +760,93 @@ async def actualizar_producto_form(
     except Exception as e:
         print(f"Error en actualizar_producto_form: {str(e)}")  # Para debug
         raise HTTPException(status_code=500, detail=f"Error al actualizar producto: {str(e)}")
+
+def corregir_rutas_imagenes():
+    """Corrige automáticamente las rutas de imágenes que usan /imagenes_jhk/ por /imagenes/"""
+    try:
+        conn = conectar_mysql()
+        cursor = conn.cursor()
+        
+        # Verificar si hay rutas que corregir
+        verificar_query = """
+            SELECT COUNT(*) as total FROM productos 
+            WHERE 
+                img_1 LIKE '/imagenes_jhk/%' OR
+                img_2 LIKE '/imagenes_jhk/%' OR
+                img_3 LIKE '/imagenes_jhk/%' OR
+                img_4 LIKE '/imagenes_jhk/%' OR
+                img_5 LIKE '/imagenes_jhk/%' OR
+                img_6 LIKE '/imagenes_jhk/%' OR
+                img_7 LIKE '/imagenes_jhk/%' OR
+                img_8 LIKE '/imagenes_jhk/%' OR
+                img_9 LIKE '/imagenes_jhk/%' OR
+                img_10 LIKE '/imagenes_jhk/%' OR
+                imagen_corte LIKE '/imagenes_jhk/%' OR
+                imagen_tapizado LIKE '/imagenes_jhk/%' OR
+                imagen_corte_esqueleto LIKE '/imagenes_jhk/%' OR
+                imagen_esqueleto LIKE '/imagenes_jhk/%'
+        """
+        
+        cursor.execute(verificar_query)
+        total_registros = cursor.fetchone()[0]
+        
+        if total_registros > 0:
+            print(f"🔄 Corrigiendo {total_registros} rutas de imágenes...")
+            
+            # Ejecutar la corrección
+            update_query = """
+                UPDATE productos 
+                SET 
+                    img_1 = REPLACE(img_1, '/imagenes_jhk/', '/imagenes/'),
+                    img_2 = REPLACE(img_2, '/imagenes_jhk/', '/imagenes/'),
+                    img_3 = REPLACE(img_3, '/imagenes_jhk/', '/imagenes/'),
+                    img_4 = REPLACE(img_4, '/imagenes_jhk/', '/imagenes/'),
+                    img_5 = REPLACE(img_5, '/imagenes_jhk/', '/imagenes/'),
+                    img_6 = REPLACE(img_6, '/imagenes_jhk/', '/imagenes/'),
+                    img_7 = REPLACE(img_7, '/imagenes_jhk/', '/imagenes/'),
+                    img_8 = REPLACE(img_8, '/imagenes_jhk/', '/imagenes/'),
+                    img_9 = REPLACE(img_9, '/imagenes_jhk/', '/imagenes/'),
+                    img_10 = REPLACE(img_10, '/imagenes_jhk/', '/imagenes/'),
+                    imagen_corte = REPLACE(imagen_corte, '/imagenes_jhk/', '/imagenes/'),
+                    imagen_tapizado = REPLACE(imagen_tapizado, '/imagenes_jhk/', '/imagenes/'),
+                    imagen_corte_esqueleto = REPLACE(imagen_corte_esqueleto, '/imagenes_jhk/', '/imagenes/'),
+                    imagen_esqueleto = REPLACE(imagen_esqueleto, '/imagenes_jhk/', '/imagenes/'),
+                    updated_at = NOW()
+                WHERE 
+                    img_1 LIKE '/imagenes_jhk/%' OR
+                    img_2 LIKE '/imagenes_jhk/%' OR
+                    img_3 LIKE '/imagenes_jhk/%' OR
+                    img_4 LIKE '/imagenes_jhk/%' OR
+                    img_5 LIKE '/imagenes_jhk/%' OR
+                    img_6 LIKE '/imagenes_jhk/%' OR
+                    img_7 LIKE '/imagenes_jhk/%' OR
+                    img_8 LIKE '/imagenes_jhk/%' OR
+                    img_9 LIKE '/imagenes_jhk/%' OR
+                    img_10 LIKE '/imagenes_jhk/%' OR
+                    imagen_corte LIKE '/imagenes_jhk/%' OR
+                    imagen_tapizado LIKE '/imagenes_jhk/%' OR
+                    imagen_corte_esqueleto LIKE '/imagenes_jhk/%' OR
+                    imagen_esqueleto LIKE '/imagenes_jhk/%'
+            """
+            
+            cursor.execute(update_query)
+            registros_actualizados = cursor.rowcount
+            conn.commit()
+            
+            print(f"✅ {registros_actualizados} rutas corregidas exitosamente")
+        
+        cursor.close()
+        conn.close()
+        
+    except Exception as e:
+        print(f"❌ Error al corregir rutas: {str(e)}")
+
+# Agregar esta ruta a productos.py
+@router.post("/corregir-rutas", response_class=JSONResponse)
+async def corregir_rutas_endpoint():
+    """Endpoint para corregir rutas de imágenes manualmente"""
+    try:
+        corregir_rutas_imagenes()
+        return {"message": "Rutas corregidas exitosamente", "status": "success"}
+    except Exception as e:
+        return {"message": f"Error al corregir rutas: {str(e)}", "status": "error"}

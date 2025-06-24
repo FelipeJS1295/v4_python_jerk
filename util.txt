@@ -79,3 +79,19 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 }
+
+
+
+SELECT 
+    id, 
+    nombre, 
+    img_1, 
+    img_2, 
+    img_3, 
+    imagen_corte, 
+    imagen_tapizado,
+    imagen_corte_esqueleto,
+    imagen_esqueleto
+FROM productos 
+WHERE img_1 IS NOT NULL OR imagen_corte IS NOT NULL
+LIMIT 100;
