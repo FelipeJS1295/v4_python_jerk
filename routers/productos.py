@@ -342,7 +342,7 @@ async def subir_imagenes_producto(
                 with open(ruta_archivo, "wb") as buffer:
                     shutil.copyfileobj(archivo.file, buffer)
                 
-                rutas_guardadas[campo] = f"/imagenes_jhk/productos/{nombre_archivo}"
+                rutas_guardadas[campo] = f"/imagenes/productos/{nombre_archivo}"
         
         # Actualizar base de datos
         if rutas_guardadas:
@@ -393,7 +393,7 @@ async def subir_imagenes_show(
                 with open(ruta_archivo, "wb") as buffer:
                     shutil.copyfileobj(archivo.file, buffer)
                 
-                rutas_guardadas[campo] = f"/imagenes_jhk/show/{nombre_archivo}"
+                rutas_guardadas[campo] = f"/imagenes/show/{nombre_archivo}"
         
         # Actualizar base de datos
         if rutas_guardadas:
