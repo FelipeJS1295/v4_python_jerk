@@ -44,7 +44,7 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
               <option value="">Seleccionar tipo</option>
               {% for tipo in ['seccionales','sofas','poltronas','camas'] %}
-                <option value="{{ tipo }}" {% if producto.tipo_producto == tipo %}selected{% endif %}>{{ tipo }}</option>
+                <option value="{{ tipo }}" {% if producto.tipo_producto == tipo %}selected{% endif %}>{{ tipo.title() }}</option>
               {% endfor %}
             </select>
           </div>
@@ -65,7 +65,7 @@
       <div class="bg-white border border-gray-200 rounded-lg p-6">
         <h2 class="text-lg font-medium text-gray-900 mb-6">SKUs Adicionales</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {% for campo in ['sku_esqueleto', 'sku_hites', 'sku_lapolar'] %}
+          {% for campo in ['sku_esqueleto', 'sku_hites', 'sku_la_polar'] %}
           <div>
             <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">{{ campo.replace('_', ' ')|title }}</label>
             <input type="text" name="{{ campo }}" id="{{ campo }}" value="{{ producto[campo] or '' }}"
@@ -80,23 +80,34 @@
         <h2 class="text-lg font-medium text-gray-900 mb-6">Imágenes de Proceso</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             {% for campo in ['imagen_corte', 'imagen_lapizado', 'imagen_corte_esqueleto', 'imagen_esqueleto'] %}
-            <div x-data="{ eliminada_{{ loop.index }}: false }">
+            <div>
             <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">{{ campo.replace('_', ' ')|title }}</label>
 
+            <!-- Imagen actual -->
             {% if producto[campo] %}
-                <template x-if="!eliminada_{{ loop.index }}">
-                <div class="mb-2">
+                <div id="current_{{ campo }}" class="mb-3">
                     <img src="{{ producto[campo] }}" alt="{{ campo }}" class="w-32 h-24 object-cover rounded border mb-2">
-                    <button type="button" @click="eliminada_{{ loop.index }} = true"
-                            class="text-red-600 text-sm hover:underline">Eliminar imagen</button>
-                    <input type="hidden" name="eliminar_{{ campo }}" value="1">
+                    <div class="flex space-x-2">
+                        <button type="button" onclick="eliminarImagenActual('{{ campo }}')"
+                                class="text-red-600 text-sm hover:underline">
+                            <i class="fas fa-trash mr-1"></i>Eliminar
+                        </button>
+                    </div>
+                    <input type="hidden" name="eliminar_{{ campo }}" id="eliminar_{{ campo }}" value="">
                 </div>
-                </template>
             {% endif %}
 
-            <input type="file" name="{{ campo }}" id="{{ campo }}" accept="image/*"
-                    x-show="eliminada_{{ loop.index }} || !{{ 'true' if not producto[campo] else 'false' }}"
-                    class="w-full text-sm text-gray-700 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:py-2 file:px-4 file:rounded-md file:border-0">
+            <!-- Campo para nueva imagen -->
+            <div class="space-y-3">
+                <input type="file" name="{{ campo }}" id="{{ campo }}" accept="image/*" onchange="previewImage(this, 'preview_{{ campo }}')"
+                        class="w-full text-sm text-gray-700 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:py-2 file:px-4 file:rounded-md file:border-0">
+                <div id="preview_{{ campo }}" class="hidden">
+                    <img class="w-32 h-24 object-cover rounded border">
+                    <button type="button" onclick="removePreview('{{ campo }}', 'preview_{{ campo }}')" class="text-red-600 text-sm hover:underline mt-1 block">
+                        <i class="fas fa-times mr-1"></i>Quitar nueva
+                    </button>
+                </div>
+            </div>
             </div>
             {% endfor %}
         </div>
@@ -108,23 +119,32 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {% for i in range(1,11) %}
           {% set campo = 'img_' ~ i %}
-            <div x-data="{ eliminada_{{ i }}: false }">
+            <div>
             <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">Imagen {{ i }}</label>
 
+            <!-- Imagen actual -->
             {% if producto[campo] %}
-                <template x-if="!eliminada_{{ i }}">
-                <div class="mb-2">
+                <div id="current_{{ campo }}" class="mb-3">
                     <img src="{{ producto[campo] }}" alt="{{ campo }}" class="w-full h-24 object-cover rounded border mb-2">
-                    <button type="button" @click="eliminada_{{ i }} = true"
-                            class="text-red-600 text-sm hover:underline">Eliminar imagen</button>
-                    <input type="hidden" name="eliminar_{{ campo }}" value="1">
+                    <button type="button" onclick="eliminarImagenActual('{{ campo }}')"
+                            class="text-red-600 text-sm hover:underline">
+                        <i class="fas fa-trash mr-1"></i>Eliminar
+                    </button>
+                    <input type="hidden" name="eliminar_{{ campo }}" id="eliminar_{{ campo }}" value="">
                 </div>
-                </template>
             {% endif %}
 
-            <input type="file" name="{{ campo }}" id="{{ campo }}" accept="image/*"
-                    x-show="eliminada_{{ i }} || !{{ 'true' if not producto[campo] else 'false' }}"
-                    class="w-full text-sm text-gray-700 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:py-2 file:px-4 file:rounded-md file:border-0">
+            <!-- Campo para nueva imagen -->
+            <div class="space-y-3">
+                <input type="file" name="{{ campo }}" id="{{ campo }}" accept="image/*" onchange="previewImage(this, 'preview_{{ campo }}')"
+                        class="w-full text-sm text-gray-700 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:py-2 file:px-4 file:rounded-md file:border-0">
+                <div id="preview_{{ campo }}" class="hidden">
+                    <img class="w-full h-24 object-cover rounded border">
+                    <button type="button" onclick="removePreview('{{ campo }}', 'preview_{{ campo }}')" class="text-red-600 text-sm hover:underline mt-1 block">
+                        <i class="fas fa-times mr-1"></i>Quitar nueva
+                    </button>
+                </div>
+            </div>
             </div>
           {% endfor %}
         </div>
@@ -152,7 +172,7 @@
 
       <!-- Ventas -->
       <div class="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 class="text-lg font-medium text-gray-900 mb-6">Ventas</h2>
+        <h2 class="text-lg font-medium text-gray-900 mb-6">Información de Ventas</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label for="tipo_producto_venta" class="block text-sm font-medium text-gray-700 mb-2">Tipo Producto Venta</label>
@@ -179,7 +199,7 @@
             'precio_venta': 'Precio de Venta',
             'precio_descuento': 'Precio con Descuento',
             'costo_costura': 'Costo Costura',
-            'costo_lapiceria': 'Costo Lapicería',
+            'costo_tapiceria': 'Costo Tapicería',
             'costo_esqueleteria': 'Costo Esqueletería',
             'costo_armado': 'Costo Armado',
             'costo_corte': 'Costo Corte'
@@ -187,18 +207,92 @@
           <div>
             <label for="{{ campo }}" class="block text-sm font-medium text-gray-700 mb-2">{{ label }}</label>
             <div class="relative">
-              {% if campo.startswith('precio') or campo.startswith('costo') %}
               <span class="absolute left-3 top-2 text-gray-500">$</span>
-              {% endif %}
               <input type="number" step="0.01" name="{{ campo }}" id="{{ campo }}" value="{{ producto[campo] or 0 }}"
-                class="w-full {% if campo.startswith('precio') or campo.startswith('costo') %}pl-8{% else %}pl-3{% endif %} pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
+                class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring focus:ring-blue-500">
             </div>
           </div>
           {% endfor %}
+          
+          <!-- Costo Total Calculado -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Costo Total</label>
+            <div class="relative">
+              <span class="absolute left-3 top-2 text-gray-500">$</span>
+              <input type="text" id="costo_total" readonly
+                     class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-600"
+                     placeholder="0.00">
+            </div>
+          </div>
         </div>
       </div>
 
     </form>
   </div>
 </div>
+
+<script>
+    // Función para previsualizar imágenes
+    function previewImage(input, previewId) {
+        const file = input.files[0];
+        const previewContainer = document.getElementById(previewId);
+        const img = previewContainer.querySelector('img');
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Función para quitar preview
+    function removePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const previewContainer = document.getElementById(previewId);
+        const img = previewContainer.querySelector('img');
+        
+        input.value = '';
+        img.src = '';
+        previewContainer.classList.add('hidden');
+    }
+
+    // Función para eliminar imagen actual
+    function eliminarImagenActual(campo) {
+        const currentContainer = document.getElementById(`current_${campo}`);
+        const eliminarInput = document.getElementById(`eliminar_${campo}`);
+        
+        if (currentContainer && eliminarInput) {
+            currentContainer.style.display = 'none';
+            eliminarInput.value = '1';
+        }
+    }
+
+    // Calcular costo total automáticamente
+    function calcularCostoTotal() {
+        const costura = parseFloat(document.getElementById('costo_costura').value) || 0;
+        const costo_tapiceria = parseFloat(document.getElementById('costo_tapiceria').value) || 0;
+        const esqueleteria = parseFloat(document.getElementById('costo_esqueleteria').value) || 0;
+        const armado = parseFloat(document.getElementById('costo_armado').value) || 0;
+        const corte = parseFloat(document.getElementById('costo_corte').value) || 0;
+        
+        const total = costura + costo_tapiceria + esqueleteria + armado + corte;
+        document.getElementById('costo_total').value = total.toLocaleString('es-CL');
+    }
+
+    // Event listeners para calcular costo total
+    ['costo_costura', 'costo_tapiceria', 'costo_esqueleteria', 'costo_armado', 'costo_corte'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', calcularCostoTotal);
+        }
+    });
+
+    // Calcular costo inicial al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        calcularCostoTotal();
+    });
+</script>
 {% endblock %}

@@ -228,7 +228,7 @@
                 </div>
 
                 <!-- SKUs adicionales -->
-                {% if producto.sku_esqueleto or producto.sku_hites or producto.sku_lapolar %}
+                {% if producto.sku_esqueleto or producto.sku_hites or producto.sku_la_polar %}
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
                     <h2 class="text-lg font-medium text-gray-900 mb-4">SKUs Adicionales</h2>
                     <dl class="space-y-3">
@@ -244,10 +244,10 @@
                             <dd class="text-sm text-gray-900">{{ producto.sku_hites }}</dd>
                         </div>
                         {% endif %}
-                        {% if producto.sku_lapolar %}
+                        {% if producto.sku_la_polar %}
                         <div>
                             <dt class="text-sm font-medium text-gray-500">SKU La Polar</dt>
-                            <dd class="text-sm text-gray-900">{{ producto.sku_lapolar }}</dd>
+                            <dd class="text-sm text-gray-900">{{ producto.sku_la_polar }}</dd>
                         </div>
                         {% endif %}
                     </dl>

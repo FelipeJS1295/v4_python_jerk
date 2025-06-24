@@ -27,7 +27,7 @@
 
     <!-- Formulario -->
     <div class="max-w-4xl mx-auto px-4 py-8">
-        <form id="formProducto" action="/configuracion/productos/create" method="POST" class="space-y-8">
+        <form id="formProducto" action="/configuracion/productos/create" method="POST" enctype="multipart/form-data" class="space-y-8">
             
             <!-- Información Básica -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
@@ -88,8 +88,8 @@
                                placeholder="SKU para Hites">
                     </div>
                     <div>
-                        <label for="sku_lapolar" class="block text-sm font-medium text-gray-700 mb-2">SKU La Polar</label>
-                        <input type="text" name="sku_lapolar" id="sku_lapolar" 
+                        <label for="sku_la_polar" class="block text-sm font-medium text-gray-700 mb-2">SKU La Polar</label>
+                        <input type="text" name="sku_la_polar" id="sku_la_polar" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                placeholder="SKU para La Polar">
                     </div>
@@ -98,45 +98,84 @@
 
             <!-- Información de Imágenes de Proceso -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Referencias de Imágenes de Proceso</h2>
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Imágenes de Proceso</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="imagen_corte" class="block text-sm font-medium text-gray-700 mb-2">Imagen Corte</label>
-                        <input type="file" name="imagen_corte" id="imagen_corte" accept="image/*"
-                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <div class="space-y-3">
+                            <input type="file" name="imagen_corte" id="imagen_corte" accept="image/*" onchange="previewImage(this, 'preview_imagen_corte')"
+                                class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                            <div id="preview_imagen_corte" class="hidden">
+                                <img class="w-32 h-24 object-cover rounded border">
+                                <button type="button" onclick="removePreview('imagen_corte', 'preview_imagen_corte')" class="text-red-600 text-sm hover:underline mt-1 block">
+                                    <i class="fas fa-times mr-1"></i>Quitar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label for="imagen_lapizado" class="block text-sm font-medium text-gray-700 mb-2">Imagen Lapizado</label>
-                        <input type="file" name="imagen_lapizado" id="imagen_lapizado" accept="image/*"
-                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <div class="space-y-3">
+                            <input type="file" name="imagen_lapizado" id="imagen_lapizado" accept="image/*" onchange="previewImage(this, 'preview_imagen_lapizado')"
+                                class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                            <div id="preview_imagen_lapizado" class="hidden">
+                                <img class="w-32 h-24 object-cover rounded border">
+                                <button type="button" onclick="removePreview('imagen_lapizado', 'preview_imagen_lapizado')" class="text-red-600 text-sm hover:underline mt-1 block">
+                                    <i class="fas fa-times mr-1"></i>Quitar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label for="imagen_corte_esqueleto" class="block text-sm font-medium text-gray-700 mb-2">Imagen Corte Esqueleto</label>
-                        <input type="file" name="imagen_corte_esqueleto" id="imagen_corte_esqueleto" accept="image/*"
-                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <div class="space-y-3">
+                            <input type="file" name="imagen_corte_esqueleto" id="imagen_corte_esqueleto" accept="image/*" onchange="previewImage(this, 'preview_imagen_corte_esqueleto')"
+                                class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                            <div id="preview_imagen_corte_esqueleto" class="hidden">
+                                <img class="w-32 h-24 object-cover rounded border">
+                                <button type="button" onclick="removePreview('imagen_corte_esqueleto', 'preview_imagen_corte_esqueleto')" class="text-red-600 text-sm hover:underline mt-1 block">
+                                    <i class="fas fa-times mr-1"></i>Quitar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label for="imagen_esqueleto" class="block text-sm font-medium text-gray-700 mb-2">Imagen Esqueleto</label>
-                        <input type="file" name="imagen_esqueleto" id="imagen_esqueleto" accept="image/*"
-                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <div class="space-y-3">
+                            <input type="file" name="imagen_esqueleto" id="imagen_esqueleto" accept="image/*" onchange="previewImage(this, 'preview_imagen_esqueleto')"
+                                class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                            <div id="preview_imagen_esqueleto" class="hidden">
+                                <img class="w-32 h-24 object-cover rounded border">
+                                <button type="button" onclick="removePreview('imagen_esqueleto', 'preview_imagen_esqueleto')" class="text-red-600 text-sm hover:underline mt-1 block">
+                                    <i class="fas fa-times mr-1"></i>Quitar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Referencias de Imágenes de Producto -->
+            <!-- Imágenes de Producto -->
             <div class="bg-white border border-gray-200 rounded-lg p-6 mt-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Referencias de Imágenes de Producto</h2>
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Imágenes del Producto</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     {% for i in range(1, 11) %}
                     <div>
                         <label for="img_{{ i }}" class="block text-sm font-medium text-gray-700 mb-2">Imagen {{ i }}</label>
-                        <input type="file" name="img_{{ i }}" id="img_{{ i }}" accept="image/*"
-                            class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <div class="space-y-3">
+                            <input type="file" name="img_{{ i }}" id="img_{{ i }}" accept="image/*" onchange="previewImage(this, 'preview_img_{{ i }}')"
+                                class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                            <div id="preview_img_{{ i }}" class="hidden">
+                                <img class="w-full h-24 object-cover rounded border">
+                                <button type="button" onclick="removePreview('img_{{ i }}', 'preview_img_{{ i }}')" class="text-red-600 text-sm hover:underline mt-1 block">
+                                    <i class="fas fa-times mr-1"></i>Quitar
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-
 
             <!-- Especificaciones -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
@@ -177,7 +216,7 @@
 
             <!-- Información de Ventas -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Información de Ventas y Productos</h2>
+                <h2 class="text-lg font-medium text-gray-900 mb-6">Información de Ventas</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="tipo_producto_venta" class="block text-sm font-medium text-gray-700 mb-2">Tipo Producto Venta</label>
@@ -207,7 +246,7 @@
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="precio_venta" id="precio_venta" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
+                                   placeholder="0.00" value="0">
                         </div>
                     </div>
                     <div>
@@ -216,7 +255,7 @@
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="precio_descuento" id="precio_descuento" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
+                                   placeholder="0.00" value="0">
                         </div>
                     </div>
                 </div>
@@ -232,7 +271,7 @@
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="costo_costura" id="costo_costura" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
+                                   placeholder="0.00" value="0">
                         </div>
                     </div>
                     <div>
@@ -241,7 +280,7 @@
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="costo_lapiceria" id="costo_lapiceria" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
+                                   placeholder="0.00" value="0">
                         </div>
                     </div>
                     <div>
@@ -250,7 +289,7 @@
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="costo_esqueleteria" id="costo_esqueleteria" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
+                                   placeholder="0.00" value="0">
                         </div>
                     </div>
                     <div>
@@ -259,7 +298,7 @@
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="costo_armado" id="costo_armado" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
+                                   placeholder="0.00" value="0">
                         </div>
                     </div>
                     <div>
@@ -268,7 +307,7 @@
                             <span class="absolute left-3 top-2 text-gray-500">$</span>
                             <input type="number" name="costo_corte" id="costo_corte" step="0.01" min="0"
                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="0.00">
+                                   placeholder="0.00" value="0">
                         </div>
                     </div>
                     <div>
@@ -281,12 +320,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Metadatos adicionales -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-6">Información Adicional</h2>
-                <p class="text-sm text-gray-600 mb-4">Los campos de visitas y usuario se manejan automáticamente por el sistema.</p>
             </div>
 
             <!-- Botones de acción en mobile -->
@@ -304,6 +337,33 @@
 </div>
 
 <script>
+    // Función para previsualizar imágenes
+    function previewImage(input, previewId) {
+        const file = input.files[0];
+        const previewContainer = document.getElementById(previewId);
+        const img = previewContainer.querySelector('img');
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                img.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Función para quitar preview
+    function removePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const previewContainer = document.getElementById(previewId);
+        const img = previewContainer.querySelector('img');
+        
+        input.value = '';
+        img.src = '';
+        previewContainer.classList.add('hidden');
+    }
+
     // Calcular costo total automáticamente
     function calcularCostoTotal() {
         const costura = parseFloat(document.getElementById('costo_costura').value) || 0;
@@ -321,7 +381,7 @@
         document.getElementById(id).addEventListener('input', calcularCostoTotal);
     });
 
-    // Validación del formulario
+    // Validación del formulario - Solo SKU y nombre son obligatorios
     document.getElementById('formProducto').addEventListener('submit', function(e) {
         const sku = document.getElementById('sku').value.trim();
         const nombre = document.getElementById('nombre').value.trim();
@@ -337,6 +397,14 @@
             e.preventDefault();
             alert('El nombre es obligatorio');
             document.getElementById('nombre').focus();
+            return;
+        }
+        
+        // Validación adicional: SKU no debe tener espacios
+        if (sku.includes(' ')) {
+            e.preventDefault();
+            alert('El SKU no puede contener espacios');
+            document.getElementById('sku').focus();
             return;
         }
     });
@@ -363,7 +431,7 @@
             const porcentaje = (margen / precioVenta) * 100;
             
             // Mostrar información de margen (podrías agregar un campo visual)
-            console.log(`Margen: $${margen.toLocaleString('es-CL')} (${porcentaje.toFixed(1)}%)`);
+            console.log(`Margen: ${margen.toLocaleString('es-CL')} (${porcentaje.toFixed(1)}%)`);
         }
     }
 

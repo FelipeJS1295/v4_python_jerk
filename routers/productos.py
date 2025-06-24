@@ -28,7 +28,7 @@ class ProductoBase(BaseModel):
     sku: Optional[str] = None
     sku_esqueleto: Optional[str] = None
     sku_hites: Optional[str] = None
-    sku_lapolar: Optional[str] = None
+    sku_la_polar: Optional[str] = None
     nombre: str
     esqueleto: Optional[str] = None
     imagen_corte: Optional[str] = None
@@ -36,7 +36,7 @@ class ProductoBase(BaseModel):
     imagen_corte_esqueleto: Optional[str] = None
     imagen_esqueleto: Optional[str] = None
     costo_costura: Optional[float] = 0.0
-    costo_lapiceria: Optional[float] = 0.0
+    costo_tapiceria: Optional[float] = 0.0
     costo_esqueleteria: Optional[float] = 0.0
     costo_armado: Optional[float] = 0.0
     costo_corte: Optional[float] = 0.0
@@ -153,9 +153,9 @@ def obtener_productos_api():
         
         cursor.execute("""
             SELECT 
-                id, sku, sku_esqueleto, sku_hites, sku_lapolar, nombre, 
+                id, sku, sku_esqueleto, sku_hites, sku_la_polar, nombre, 
                 esqueleto, imagen_corte, imagen_lapizado, imagen_corte_esqueleto, 
-                imagen_esqueleto, costo_costura, costo_lapiceria, costo_esqueleteria, 
+                imagen_esqueleto, costo_costura, costo_tapiceria, costo_esqueleteria, 
                 costo_armado, costo_corte, precio_venta, tipo_producto, 
                 descripcion_producto, material, colores_disponibles, tiempo_entrega, 
                 dimensiones, precio_descuento, visitas, created_at, updated_at,
@@ -203,19 +203,19 @@ def crear_producto_api(producto: ProductoCreate):
         
         cursor.execute("""
             INSERT INTO productos (
-                sku, sku_esqueleto, sku_hites, sku_lapolar, nombre, esqueleto,
+                sku, sku_esqueleto, sku_hites, sku_la_polar, nombre, esqueleto,
                 imagen_corte, imagen_lapizado, imagen_corte_esqueleto, imagen_esqueleto,
-                costo_costura, costo_lapiceria, costo_esqueleteria, costo_armado, costo_corte,
+                costo_costura, costo_tapiceria, costo_esqueleteria, costo_armado, costo_corte,
                 precio_venta, tipo_producto, descripcion_producto, material, colores_disponibles,
                 tiempo_entrega, dimensiones, precio_descuento, visitas, created_at
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
         """, (
-            producto.sku, producto.sku_esqueleto, producto.sku_hites, producto.sku_lapolar,
+            producto.sku, producto.sku_esqueleto, producto.sku_hites, producto.sku_la_polar,
             producto.nombre, producto.esqueleto, producto.imagen_corte, producto.imagen_lapizado,
             producto.imagen_corte_esqueleto, producto.imagen_esqueleto, producto.costo_costura,
-            producto.costo_lapiceria, producto.costo_esqueleteria, producto.costo_armado,
+            producto.costo_tapiceria, producto.costo_esqueleteria, producto.costo_armado,
             producto.costo_corte, producto.precio_venta, producto.tipo_producto,
             producto.descripcion_producto, producto.material, producto.colores_disponibles,
             producto.tiempo_entrega, producto.dimensiones, producto.precio_descuento,
@@ -243,20 +243,20 @@ def actualizar_producto_api(producto_id: int, producto: ProductoUpdate):
         
         cursor.execute("""
             UPDATE productos SET
-                sku = %s, sku_esqueleto = %s, sku_hites = %s, sku_lapolar = %s,
+                sku = %s, sku_esqueleto = %s, sku_hites = %s, sku_la_polar = %s,
                 nombre = %s, esqueleto = %s, imagen_corte = %s, imagen_lapizado = %s,
                 imagen_corte_esqueleto = %s, imagen_esqueleto = %s, costo_costura = %s,
-                costo_lapiceria = %s, costo_esqueleteria = %s, costo_armado = %s,
+                costo_tapiceria = %s, costo_esqueleteria = %s, costo_armado = %s,
                 costo_corte = %s, precio_venta = %s, tipo_producto = %s,
                 descripcion_producto = %s, material = %s, colores_disponibles = %s,
                 tiempo_entrega = %s, dimensiones = %s, precio_descuento = %s,
                 visitas = %s, updated_at = %s
             WHERE id = %s
         """, (
-            producto.sku, producto.sku_esqueleto, producto.sku_hites, producto.sku_lapolar,
+            producto.sku, producto.sku_esqueleto, producto.sku_hites, producto.sku_la_polar,
             producto.nombre, producto.esqueleto, producto.imagen_corte, producto.imagen_lapizado,
             producto.imagen_corte_esqueleto, producto.imagen_esqueleto, producto.costo_costura,
-            producto.costo_lapiceria, producto.costo_esqueleteria, producto.costo_armado,
+            producto.costo_tapiceria, producto.costo_esqueleteria, producto.costo_armado,
             producto.costo_corte, producto.precio_venta, producto.tipo_producto,
             producto.descripcion_producto, producto.material, producto.colores_disponibles,
             producto.tiempo_entrega, producto.dimensiones, producto.precio_descuento,
@@ -419,22 +419,8 @@ async def crear_producto_form(
     nombre: str = Form(...),
     sku_esqueleto: str = Form(""),
     sku_hites: str = Form(""),
-    sku_lapolar: str = Form(""),
+    sku_la_polar: str = Form(""),
     esqueleto: str = Form(""),
-    imagen_corte: str = Form(""),
-    imagen_lapizado: str = Form(""),
-    imagen_corte_esqueleto: str = Form(""),
-    imagen_esqueleto: str = Form(""),
-    img_1: str = Form(""),
-    img_2: str = Form(""),
-    img_3: str = Form(""),
-    img_4: str = Form(""),
-    img_5: str = Form(""),
-    img_6: str = Form(""),
-    img_7: str = Form(""),
-    img_8: str = Form(""),
-    img_9: str = Form(""),
-    img_10: str = Form(""),
     tipo_producto: str = Form(""),
     descripcion_producto: str = Form(""),
     material: str = Form(""),
@@ -443,45 +429,129 @@ async def crear_producto_form(
     dimensiones: str = Form(""),
     colores_hex: str = Form(""),
     tipo_producto_venta: str = Form(""),
-    producto_imagenes_venta_id: int = Form(None),
-    precio_venta: float = Form(0.0),
-    precio_descuento: float = Form(0.0),
-    costo_costura: float = Form(0.0),
-    costo_lapiceria: float = Form(0.0),
-    costo_esqueleteria: float = Form(0.0),
-    costo_armado: float = Form(0.0),
-    costo_corte: float = Form(0.0)
+    producto_imagenes_venta_id: Optional[str] = Form(""),
+    precio_venta: Optional[float] = Form(None),
+    precio_descuento: Optional[float] = Form(None),
+    costo_costura: Optional[float] = Form(None),
+    costo_tapiceria: Optional[float] = Form(None),
+    costo_esqueleteria: Optional[float] = Form(None),
+    costo_armado: Optional[float] = Form(None),
+    costo_corte: Optional[float] = Form(None),
+    
+    # Imágenes de proceso
+    imagen_corte: Optional[UploadFile] = File(None),
+    imagen_lapizado: Optional[UploadFile] = File(None),
+    imagen_corte_esqueleto: Optional[UploadFile] = File(None),
+    imagen_esqueleto: Optional[UploadFile] = File(None),
+    
+    # Imágenes de producto
+    img_1: Optional[UploadFile] = File(None),
+    img_2: Optional[UploadFile] = File(None),
+    img_3: Optional[UploadFile] = File(None),
+    img_4: Optional[UploadFile] = File(None),
+    img_5: Optional[UploadFile] = File(None),
+    img_6: Optional[UploadFile] = File(None),
+    img_7: Optional[UploadFile] = File(None),
+    img_8: Optional[UploadFile] = File(None),
+    img_9: Optional[UploadFile] = File(None),
+    img_10: Optional[UploadFile] = File(None)
 ):
-    """Crear producto desde formulario HTML"""
+    """Crear producto desde formulario HTML con manejo de archivos"""
     try:
         conn = conectar_mysql()
         cursor = conn.cursor()
         
+        # Procesar valores numéricos (convertir None a 0 si es necesario)
+        precio_venta_final = precio_venta if precio_venta is not None else 0.0
+        precio_descuento_final = precio_descuento if precio_descuento is not None else 0.0
+        costo_costura_final = costo_costura if costo_costura is not None else 0.0
+        costo_tapiceria_final = costo_tapiceria if costo_tapiceria is not None else 0.0
+        costo_esqueleteria_final = costo_esqueleteria if costo_esqueleteria is not None else 0.0
+        costo_armado_final = costo_armado if costo_armado is not None else 0.0
+        costo_corte_final = costo_corte if costo_corte is not None else 0.0
+
+        # Procesar producto_imagenes_venta_id
+        producto_imagenes_venta_id_final = None
+        if producto_imagenes_venta_id and producto_imagenes_venta_id.strip():
+            try:
+                producto_imagenes_venta_id_final = int(producto_imagenes_venta_id)
+            except ValueError:
+                producto_imagenes_venta_id_final = None
+
+        # Insertar producto básico primero
         cursor.execute("""
             INSERT INTO productos (
-                sku, sku_esqueleto, sku_hites, sku_lapolar, nombre, esqueleto,
-                imagen_corte, imagen_lapizado, imagen_corte_esqueleto, imagen_esqueleto,
-                img_1, img_2, img_3, img_4, img_5, img_6, img_7, img_8, img_9, img_10,
-                costo_costura, costo_lapiceria, costo_esqueleteria, costo_armado, costo_corte,
-                precio_venta, precio_descuento, tipo_producto, descripcion_producto, material, 
+                sku, sku_esqueleto, sku_hites, sku_la_polar, nombre, esqueleto,
+                costo_costura, costo_tapiceria, costo_esqueleteria, costo_armado, costo_corte,
+                precio_venta, precio_descuento, tipo_producto, descripcion_producto, material,
                 colores_disponibles, tiempo_entrega, dimensiones, colores_hex,
-                tipo_producto_venta, producto_imagenes_venta_id, created_at
+                tipo_producto_venta, producto_imagenes_venta_id, visitas, created_at
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             )
         """, (
-            sku, sku_esqueleto, sku_hites, sku_lapolar, nombre, esqueleto,
-            imagen_corte, imagen_lapizado, imagen_corte_esqueleto, imagen_esqueleto,
-            img_1, img_2, img_3, img_4, img_5, img_6, img_7, img_8, img_9, img_10,
-            costo_costura, costo_lapiceria, costo_esqueleteria, costo_armado, costo_corte,
-            precio_venta, precio_descuento, tipo_producto, descripcion_producto, material,
+            sku, sku_esqueleto, sku_hites, sku_la_polar, nombre, esqueleto,
+            costo_costura_final, costo_tapiceria_final, costo_esqueleteria_final, costo_armado_final, costo_corte_final,
+            precio_venta_final, precio_descuento_final, tipo_producto, descripcion_producto, material,
             colores_disponibles, tiempo_entrega, dimensiones, colores_hex,
-            tipo_producto_venta, producto_imagenes_venta_id, datetime.now()
+            tipo_producto_venta, producto_imagenes_venta_id_final, 0, datetime.now()
         ))
         
+        producto_id = cursor.lastrowid
         conn.commit()
+        
+        # Procesar imágenes de proceso
+        imagenes_proceso = {
+            'imagen_corte': imagen_corte,
+            'imagen_lapizado': imagen_lapizado,
+            'imagen_corte_esqueleto': imagen_corte_esqueleto,
+            'imagen_esqueleto': imagen_esqueleto
+        }
+        
+        rutas_proceso = {}
+        for campo, archivo in imagenes_proceso.items():
+            if archivo and archivo.filename:
+                # Generar nombre único
+                extension = archivo.filename.split('.')[-1]
+                nombre_archivo = f"{producto_id}_{campo}.{extension}"
+                ruta_archivo = os.path.join(SHOW_IMG_PATH, nombre_archivo)
+                
+                # Guardar archivo
+                with open(ruta_archivo, "wb") as buffer:
+                    shutil.copyfileobj(archivo.file, buffer)
+                
+                rutas_proceso[campo] = f"/imagenes_jhk/show/{nombre_archivo}"
+        
+        # Procesar imágenes de producto
+        imagenes_producto = {
+            'img_1': img_1, 'img_2': img_2, 'img_3': img_3, 'img_4': img_4, 'img_5': img_5,
+            'img_6': img_6, 'img_7': img_7, 'img_8': img_8, 'img_9': img_9, 'img_10': img_10
+        }
+        
+        rutas_producto = {}
+        for campo, archivo in imagenes_producto.items():
+            if archivo and archivo.filename:
+                # Generar nombre único
+                extension = archivo.filename.split('.')[-1]
+                nombre_archivo = f"{producto_id}_{campo}.{extension}"
+                ruta_archivo = os.path.join(PRODUCTOS_IMG_PATH, nombre_archivo)
+                
+                # Guardar archivo
+                with open(ruta_archivo, "wb") as buffer:
+                    shutil.copyfileobj(archivo.file, buffer)
+                
+                rutas_producto[campo] = f"/imagenes_jhk/productos/{nombre_archivo}"
+        
+        # Actualizar base de datos con rutas de imágenes
+        todas_las_rutas = {**rutas_proceso, **rutas_producto}
+        
+        if todas_las_rutas:
+            set_clause = ", ".join([f"{campo} = %s" for campo in todas_las_rutas.keys()])
+            valores = list(todas_las_rutas.values()) + [producto_id]
+            
+            cursor.execute(f"UPDATE productos SET {set_clause} WHERE id = %s", valores)
+            conn.commit()
+        
         cursor.close()
         conn.close()
         
@@ -497,18 +567,27 @@ async def actualizar_producto_form(
     sku: str = Form(...),
     nombre: str = Form(...),
     tipo_producto: str = Form(""),
-    precio_venta: float = Form(0.0),
+    precio_venta: Optional[float] = Form(None),
     descripcion_producto: str = Form(""),
     material: str = Form(""),
     colores_disponibles: str = Form(""),
     tiempo_entrega: str = Form(""),
     dimensiones: str = Form(""),
-    costo_costura: float = Form(0.0),
-    costo_lapiceria: float = Form(0.0),
-    costo_esqueleteria: float = Form(0.0),
-    costo_armado: float = Form(0.0),
-    costo_corte: float = Form(0.0),
+    costo_costura: Optional[float] = Form(None),
+    costo_tapiceria: Optional[float] = Form(None),
+    costo_esqueleteria: Optional[float] = Form(None),
+    costo_armado: Optional[float] = Form(None),
+    costo_corte: Optional[float] = Form(None),
+    precio_descuento: Optional[float] = Form(None),
+    sku_esqueleto: str = Form(""),
+    sku_hites: str = Form(""),
+    sku_la_polar: str = Form(""),
+    esqueleto: str = Form(""),
+    colores_hex: str = Form(""),
+    tipo_producto_venta: str = Form(""),
+    producto_imagenes_venta_id: Optional[str] = Form(""),
 
+    # Campos para eliminar imágenes
     eliminar_img_1: Optional[str] = Form(None),
     eliminar_img_2: Optional[str] = Form(None),
     eliminar_img_3: Optional[str] = Form(None),
@@ -524,6 +603,7 @@ async def actualizar_producto_form(
     eliminar_imagen_corte_esqueleto: Optional[str] = Form(None),
     eliminar_imagen_esqueleto: Optional[str] = Form(None),
 
+    # Nuevas imágenes
     img_1: Optional[UploadFile] = File(None),
     img_2: Optional[UploadFile] = File(None),
     img_3: Optional[UploadFile] = File(None),
@@ -539,17 +619,20 @@ async def actualizar_producto_form(
     imagen_corte_esqueleto: Optional[UploadFile] = File(None),
     imagen_esqueleto: Optional[UploadFile] = File(None)
 ):
+    """Actualizar producto desde formulario HTML con manejo completo de archivos"""
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
 
+        # Obtener producto actual
         cursor.execute("SELECT * FROM productos WHERE id = %s", (producto_id,))
         producto_actual = cursor.fetchone()
 
         if not producto_actual:
             raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-        imagenes = {
+        # Mapeo de campos de imagen y sus carpetas
+        imagenes_config = {
             "img_1": PRODUCTOS_IMG_PATH, "img_2": PRODUCTOS_IMG_PATH,
             "img_3": PRODUCTOS_IMG_PATH, "img_4": PRODUCTOS_IMG_PATH,
             "img_5": PRODUCTOS_IMG_PATH, "img_6": PRODUCTOS_IMG_PATH,
@@ -561,67 +644,108 @@ async def actualizar_producto_form(
             "imagen_esqueleto": SHOW_IMG_PATH
         }
 
+        # Procesar eliminaciones de imágenes
         campos_a_eliminar = []
+        eliminar_flags = {
+            'img_1': eliminar_img_1, 'img_2': eliminar_img_2, 'img_3': eliminar_img_3,
+            'img_4': eliminar_img_4, 'img_5': eliminar_img_5, 'img_6': eliminar_img_6,
+            'img_7': eliminar_img_7, 'img_8': eliminar_img_8, 'img_9': eliminar_img_9,
+            'img_10': eliminar_img_10, 'imagen_corte': eliminar_imagen_corte,
+            'imagen_lapizado': eliminar_imagen_lapizado, 
+            'imagen_corte_esqueleto': eliminar_imagen_corte_esqueleto,
+            'imagen_esqueleto': eliminar_imagen_esqueleto
+        }
 
-        for campo, carpeta in imagenes.items():
-            eliminar_flag = locals().get(f"eliminar_{campo}")
-            nombre_archivo = producto_actual.get(campo)
-            if eliminar_flag and nombre_archivo:
-                ruta_completa = Path(carpeta) / Path(nombre_archivo).name
-                try:
-                    if ruta_completa.exists():
-                        ruta_completa.unlink()
-                except Exception as e:
-                    print(f"Error al eliminar {ruta_completa}: {str(e)}")
+        for campo, eliminar_flag in eliminar_flags.items():
+            if eliminar_flag and producto_actual.get(campo):
+                carpeta = imagenes_config[campo]
+                nombre_archivo = producto_actual[campo]
+                if nombre_archivo:
+                    # Extraer solo el nombre del archivo de la URL
+                    nombre_archivo_limpio = nombre_archivo.split('/')[-1]
+                    ruta_completa = Path(carpeta) / nombre_archivo_limpio
+                    try:
+                        if ruta_completa.exists():
+                            ruta_completa.unlink()
+                    except Exception as e:
+                        print(f"Error al eliminar {ruta_completa}: {str(e)}")
                 campos_a_eliminar.append(campo)
 
+        # Eliminar referencias en base de datos
         if campos_a_eliminar:
             set_clause = ", ".join(f"{campo} = NULL" for campo in campos_a_eliminar)
             cursor.execute(f"UPDATE productos SET {set_clause} WHERE id = %s", (producto_id,))
             conn.commit()
 
-        producto = ProductoUpdate(
-            id=producto_id,
-            sku=sku,
-            nombre=nombre,
-            tipo_producto=tipo_producto,
-            precio_venta=precio_venta,
-            descripcion_producto=descripcion_producto,
-            material=material,
-            colores_disponibles=colores_disponibles,
-            tiempo_entrega=tiempo_entrega,
-            dimensiones=dimensiones,
-            costo_costura=costo_costura,
-            costo_lapiceria=costo_lapiceria,
-            costo_esqueleteria=costo_esqueleteria,
-            costo_armado=costo_armado,
-            costo_corte=costo_corte
-        )
+        # Procesar valores numéricos (convertir None a 0 si es necesario)
+        precio_venta_final = precio_venta if precio_venta is not None else 0.0
+        precio_descuento_final = precio_descuento if precio_descuento is not None else 0.0
+        costo_costura_final = costo_costura if costo_costura is not None else 0.0
+        costo_tapiceria_final = costo_tapiceria if costo_tapiceria is not None else 0.0
+        costo_esqueleteria_final = costo_esqueleteria if costo_esqueleteria is not None else 0.0
+        costo_armado_final = costo_armado if costo_armado is not None else 0.0
+        costo_corte_final = costo_corte if costo_corte is not None else 0.0
 
-        actualizar_producto_api(producto_id, producto)
+        # Procesar producto_imagenes_venta_id
+        producto_imagenes_venta_id_final = None
+        if producto_imagenes_venta_id and producto_imagenes_venta_id.strip():
+            try:
+                producto_imagenes_venta_id_final = int(producto_imagenes_venta_id)
+            except ValueError:
+                producto_imagenes_venta_id_final = None
 
+        # Actualizar datos básicos del producto
+        cursor.execute("""
+            UPDATE productos SET
+                sku = %s, nombre = %s, tipo_producto = %s, precio_venta = %s,
+                descripcion_producto = %s, material = %s, colores_disponibles = %s,
+                tiempo_entrega = %s, dimensiones = %s, costo_costura = %s,
+                costo_tapiceria = %s, costo_esqueleteria = %s, costo_armado = %s,
+                costo_corte = %s, precio_descuento = %s, sku_esqueleto = %s,
+                sku_hites = %s, sku_la_polar = %s, esqueleto = %s, colores_hex = %s,
+                tipo_producto_venta = %s, producto_imagenes_venta_id = %s, updated_at = %s
+            WHERE id = %s
+        """, (
+            sku, nombre, tipo_producto, precio_venta_final, descripcion_producto, material,
+            colores_disponibles, tiempo_entrega, dimensiones, costo_costura_final,
+            costo_tapiceria_final, costo_esqueleteria_final, costo_armado_final, costo_corte_final,
+            precio_descuento_final, sku_esqueleto, sku_hites, sku_la_polar, esqueleto,
+            colores_hex, tipo_producto_venta, producto_imagenes_venta_id_final,
+            datetime.now(), producto_id
+        ))
+        conn.commit()
+
+        # Procesar nuevas imágenes
         nuevas_imagenes = {
             "img_1": img_1, "img_2": img_2, "img_3": img_3, "img_4": img_4,
             "img_5": img_5, "img_6": img_6, "img_7": img_7, "img_8": img_8,
-            "img_9": img_9, "img_10": img_10,
-            "imagen_corte": imagen_corte,
-            "imagen_lapizado": imagen_lapizado,
-            "imagen_corte_esqueleto": imagen_corte_esqueleto,
+            "img_9": img_9, "img_10": img_10, "imagen_corte": imagen_corte,
+            "imagen_lapizado": imagen_lapizado, "imagen_corte_esqueleto": imagen_corte_esqueleto,
             "imagen_esqueleto": imagen_esqueleto
         }
 
         campos_actualizados = {}
         for campo, archivo in nuevas_imagenes.items():
             if archivo and archivo.filename:
-                extension = archivo.filename.split('.')[-1]
+                # Generar nombre único
+                extension = archivo.filename.split('.')[-1].lower()
                 nombre_archivo = f"{producto_id}_{campo}.{extension}"
-                carpeta = imagenes[campo]
+                carpeta = imagenes_config[campo]
                 ruta_archivo = os.path.join(carpeta, nombre_archivo)
+                
+                # Guardar archivo
                 with open(ruta_archivo, "wb") as buffer:
                     shutil.copyfileobj(archivo.file, buffer)
-                url_archivo = f"/imagenes_jhk/{'productos' if 'img_' in campo else 'show'}/{nombre_archivo}"
+                
+                # Generar URL según el tipo de imagen
+                if 'img_' in campo:
+                    url_archivo = f"/imagenes_jhk/productos/{nombre_archivo}"
+                else:
+                    url_archivo = f"/imagenes_jhk/show/{nombre_archivo}"
+                
                 campos_actualizados[campo] = url_archivo
 
+        # Actualizar rutas de nuevas imágenes en base de datos
         if campos_actualizados:
             set_clause = ", ".join([f"{campo} = %s" for campo in campos_actualizados])
             valores = list(campos_actualizados.values()) + [producto_id]
@@ -634,4 +758,5 @@ async def actualizar_producto_form(
         return RedirectResponse(url="/configuracion/productos/", status_code=303)
 
     except Exception as e:
+        print(f"Error en actualizar_producto_form: {str(e)}")  # Para debug
         raise HTTPException(status_code=500, detail=f"Error al actualizar producto: {str(e)}")
