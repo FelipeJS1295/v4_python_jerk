@@ -784,3 +784,127 @@ async def cargar_ventas_hites(request: Request):
 @router.get("/cargar/manual", response_class=HTMLResponse)
 async def cargar_ventas_manual(request: Request):
     return templates.TemplateResponse("ventas/cargar/manual.html", {"request": request})
+
+@router.get("/descargar/excel")
+async def descargar_excel_ventas(
+    cliente: str = "",
+    orden: str = "",
+    desde: str = "",
+    hasta: str = "",
+    estado: str = ""
+):
+    """Descargar Excel con datos de ventas aplicando los mismos filtros que la tabla"""
+    
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Construir filtros (misma lógica que en vista_ventas)
+        filtros = []
+        params = []
+
+        if cliente:
+            filtros.append("c.nombre LIKE %s")
+            params.append(f"%{cliente}%")
+        if orden:
+            filtros.append("vr.numero_orden LIKE %s")
+            params.append(f"%{orden}%")
+        if desde:
+            filtros.append("vr.fecha_entrega >= %s")
+            params.append(desde)
+        if hasta:
+            filtros.append("vr.fecha_entrega <= %s")
+            params.append(hasta)
+        if estado:
+            filtros.append("vr.estado = %s")
+            params.append(estado)
+
+        where_clause = "WHERE " + " AND ".join(filtros) if filtros else ""
+
+        # Query para obtener los datos del Excel
+        query = f"""
+            SELECT 
+                c.nombre as cliente_nombre,
+                vr.fecha_compra,
+                vr.producto,
+                vr.precio_cliente
+            FROM ventas_retail vr
+            JOIN clientes c ON vr.cliente_id = c.id
+            {where_clause}
+            ORDER BY vr.fecha_compra DESC, c.nombre
+        """
+        
+        cursor.execute(query, params)
+        datos = cursor.fetchall()
+        
+        if not datos:
+            raise HTTPException(status_code=404, detail="No se encontraron datos para exportar")
+        
+        # Crear DataFrame con pandas
+        df = pd.DataFrame(datos)
+        
+        # Renombrar columnas para que sean más legibles
+        df.columns = ['Cliente', 'Fecha Compra', 'Producto', 'Precio Cliente']
+        
+        # Formatear fecha si es necesario
+        if 'Fecha Compra' in df.columns:
+            df['Fecha Compra'] = pd.to_datetime(df['Fecha Compra']).dt.strftime('%d/%m/%Y')
+        
+        # Formatear precio como moneda chilena
+        if 'Precio Cliente' in df.columns:
+            df['Precio Cliente'] = df['Precio Cliente'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else "$0")
+        
+        # Crear archivo Excel en memoria
+        output = io.BytesIO()
+        
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # Escribir datos principales
+            df.to_excel(writer, sheet_name='Ventas', index=False)
+            
+            # Obtener el workbook y worksheet para formato
+            workbook = writer.book
+            worksheet = writer.sheets['Ventas']
+            
+            # Aplicar formato a las columnas
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                
+                # Ajustar ancho de columna
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            # Crear hoja de resumen si hay datos
+            if len(datos) > 0:
+                # Resumen por cliente
+                resumen_cliente = df.groupby('Cliente').agg({
+                    'Producto': 'count',
+                    'Precio Cliente': lambda x: len(x)  # Contar registros
+                }).reset_index()
+                resumen_cliente.columns = ['Cliente', 'Total Productos', 'Total Ventas']
+                resumen_cliente.to_excel(writer, sheet_name='Resumen por Cliente', index=False)
+        
+        output.seek(0)
+        
+        # Generar nombre de archivo con fecha
+        fecha_actual = datetime.now().strftime('%Y%m%d_%H%M%S')
+        nombre_archivo = f"ventas_export_{fecha_actual}.xlsx"
+        
+        return StreamingResponse(
+            io.BytesIO(output.read()),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar Excel: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()

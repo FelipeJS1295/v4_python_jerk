@@ -76,6 +76,12 @@
           Eliminar
         </button>
         
+        <!-- Botón Descargar Ventas -->
+        <button id="btn-descargar-ventas" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors">
+          <i class="fas fa-download mr-1"></i>
+          Descargar Ventas
+        </button>
+        
         <!-- Dropdown para cargar ventas -->
         <div class="relative inline-block text-left">
           <button type="button" class="inline-flex justify-center px-4 py-2 bg-white text-sm font-medium text-slate-700 border border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 transition-colors" id="menu-button">
@@ -258,6 +264,34 @@ async function eliminarVentasMasivo() {
   }
 }
 
+// Función para descargar ventas con filtros aplicados
+function descargarVentas() {
+  // Obtener los valores de los filtros del formulario
+  const form = document.getElementById('filtros-form');
+  const formData = new FormData(form);
+  
+  // Construir URL con parámetros
+  const params = new URLSearchParams();
+  
+  // Agregar filtros si tienen valores
+  if (formData.get('cliente')) params.append('cliente', formData.get('cliente'));
+  if (formData.get('orden')) params.append('orden', formData.get('orden'));
+  if (formData.get('desde')) params.append('desde', formData.get('desde'));
+  if (formData.get('hasta')) params.append('hasta', formData.get('hasta'));
+  if (formData.get('estado')) params.append('estado', formData.get('estado'));
+  
+  // Crear URL de descarga
+  const url = `/ventas/descargar/excel?${params.toString()}`;
+  
+  // Crear enlace temporal y hacer clic para descargar
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'ventas.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // Función para ordenar tabla
 function ordenarTabla(campo) {
   if (campoOrden === campo) {
@@ -341,6 +375,12 @@ function initEventListeners() {
   const btnEliminarVentas = document.getElementById('btn-eliminar-ventas');
   if (btnEliminarVentas) {
     btnEliminarVentas.addEventListener('click', eliminarVentasMasivo);
+  }
+  
+  // Event listener para descargar ventas
+  const btnDescargarVentas = document.getElementById('btn-descargar-ventas');
+  if (btnDescargarVentas) {
+    btnDescargarVentas.addEventListener('click', descargarVentas);
   }
   
   // Event listener para select all
