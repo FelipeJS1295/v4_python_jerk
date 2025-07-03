@@ -11,6 +11,12 @@ from mysql.connector import connect
 from fastapi import UploadFile, File
 import io
 from datetime import datetime, date
+import traceback
+from fastapi import Request, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import json
+
 
 router = APIRouter(prefix="/finanzas", tags=["Finanzas"])
 
@@ -1124,84 +1130,175 @@ def detalle_cheques_por_fecha(request: Request, fecha: str):
 
 # Agregar esta ruta al final de finanzas.py, antes del último comentario
 
-@router.post("/cheques/{pago_id}/eliminar")
-def eliminar_cheque_post(pago_id: int):
-    """Eliminar un cheque específico - usando POST para mayor compatibilidad"""
-    conn = None
-    cursor = None
+@router.post("/cheques/{pago_id}/eliminar-con-error")
+def eliminar_cheque_con_error_directo(request: Request, pago_id: int):
+    """Eliminar cheque y mostrar error específico si falla"""
     
+    error_info = {
+        "pago_id": pago_id,
+        "paso": "inicio",
+        "error": None,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    try:
+        # Paso 1: Conexión
+        error_info["paso"] = "conectando_mysql"
+        conn = conectar_mysql()
+        
+        # Paso 2: Cursor
+        error_info["paso"] = "creando_cursor"
+        cursor = conn.cursor(dictionary=True)
+        
+        # Paso 3: Verificar existencia
+        error_info["paso"] = "verificando_existencia"
+        cursor.execute("SELECT id, tipo, factura_id FROM pagos_factura WHERE id = %s", (pago_id,))
+        cheque = cursor.fetchone()
+        
+        if not cheque:
+            error_info["error"] = f"Cheque {pago_id} no encontrado"
+            error_info["detalles"] = "El cheque no existe en la base de datos"
+            cursor.close()
+            conn.close()
+            return mostrar_error_html(request, error_info)
+        
+        error_info["cheque_encontrado"] = cheque
+        
+        # Paso 4: Eliminación
+        error_info["paso"] = "eliminando"
+        cursor.execute("DELETE FROM pagos_factura WHERE id = %s", (pago_id,))
+        filas_afectadas = cursor.rowcount
+        error_info["filas_afectadas"] = filas_afectadas
+        
+        if filas_afectadas == 0:
+            error_info["error"] = "No se eliminó ninguna fila"
+            error_info["detalles"] = "El comando DELETE no afectó ninguna fila"
+            cursor.close()
+            conn.close()
+            return mostrar_error_html(request, error_info)
+        
+        # Paso 5: Commit
+        error_info["paso"] = "commit"
+        conn.commit()
+        
+        # Paso 6: Cerrar
+        cursor.close()
+        conn.close()
+        
+        # Éxito - redirigir
+        return RedirectResponse(url="/finanzas/cheques?success=eliminado_ok", status_code=303)
+        
+    except Exception as e:
+        error_info["error"] = str(e)
+        error_info["tipo_error"] = type(e).__name__
+        error_info["detalles"] = f"Error en paso: {error_info['paso']}"
+        
+        # Detalles específicos de MySQL
+        if hasattr(e, 'errno'):
+            error_info["mysql_errno"] = e.errno
+        if hasattr(e, 'msg'):
+            error_info["mysql_msg"] = e.msg
+            
+        # Intentar cerrar conexiones
+        try:
+            if 'conn' in locals():
+                conn.rollback()
+                conn.close()
+        except:
+            pass
+            
+        return mostrar_error_html(request, error_info)
+
+def mostrar_error_html(request: Request, error_info: dict):
+    """Función auxiliar para mostrar errores en HTML"""
+    
+    import json
+    
+    error_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Error Eliminación Cheque</title>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f8fafc; }}
+            .container {{ max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+            .header {{ background: #dc2626; color: white; padding: 20px; border-radius: 12px 12px 0 0; }}
+            .content {{ padding: 20px; }}
+            .error-box {{ background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin: 15px 0; }}
+            .info-box {{ background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 15px; margin: 15px 0; }}
+            .json-box {{ background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin: 15px 0; font-family: monospace; }}
+            .btn {{ display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px; margin-top: 20px; }}
+            pre {{ margin: 0; white-space: pre-wrap; font-size: 14px; }}
+            .step {{ color: #059669; font-weight: bold; }}
+            .error-text {{ color: #dc2626; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚨 Error al Eliminar Cheque #{error_info.get('pago_id', 'N/A')}</h1>
+                <p>Timestamp: {error_info.get('timestamp', 'N/A')}</p>
+            </div>
+            
+            <div class="content">
+                <div class="error-box">
+                    <h3>❌ Error Principal:</h3>
+                    <p class="error-text">{error_info.get('error', 'Error desconocido')}</p>
+                    <p><strong>Paso donde falló:</strong> <span class="step">{error_info.get('paso', 'N/A')}</span></p>
+                </div>
+                
+                <div class="info-box">
+                    <h3>📋 Detalles de la Operación:</h3>
+                    <p><strong>ID del Cheque:</strong> {error_info.get('pago_id', 'N/A')}</p>
+                    <p><strong>Último paso exitoso:</strong> {error_info.get('paso', 'N/A')}</p>
+                    {"<p><strong>Filas afectadas:</strong> " + str(error_info.get('filas_afectadas', 'N/A')) + "</p>" if 'filas_afectadas' in error_info else ""}
+                </div>
+                
+                <div class="json-box">
+                    <h3>🔍 Información Técnica Completa:</h3>
+                    <pre>{json.dumps(error_info, indent=2, default=str, ensure_ascii=False)}</pre>
+                </div>
+                
+                <a href="/finanzas/cheques" class="btn">← Volver a Gestión de Cheques</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=error_html, status_code=500)
+
+@router.get("/cheques/{pago_id}/test-connection")
+def test_connection(pago_id: int):
+    """Probar solo la conexión y consulta básica"""
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
         
-        # Verificar que el cheque existe
-        cursor.execute("""
-            SELECT p.factura_id, p.monto, f.total as total_factura
-            FROM pagos_factura p
-            JOIN facturas_compra f ON f.id = p.factura_id
-            WHERE p.id = %s AND p.tipo = 'cheque'
-        """, (pago_id,))
+        # Probar consulta simple
+        cursor.execute("SELECT 1 as test")
+        test_result = cursor.fetchone()
         
-        cheque_info = cursor.fetchone()
+        # Probar consulta del cheque
+        cursor.execute("SELECT * FROM pagos_factura WHERE id = %s", (pago_id,))
+        cheque = cursor.fetchone()
         
-        if not cheque_info:
-            return RedirectResponse(url="/finanzas/cheques?error=cheque_no_encontrado", status_code=303)
+        cursor.close()
+        conn.close()
         
-        factura_id = cheque_info["factura_id"]
-        
-        # Eliminar el cheque
-        cursor.execute("DELETE FROM pagos_factura WHERE id = %s AND p.tipo = 'cheque'", (pago_id,))
-        
-        if cursor.rowcount == 0:
-            return RedirectResponse(url="/finanzas/cheques?error=cheque_no_eliminado", status_code=303)
-        
-        # Obtener información actualizada de la factura
-        cursor.execute("SELECT total, fecha_vencimiento FROM facturas_compra WHERE id = %s", (factura_id,))
-        factura = cursor.fetchone()
-        
-        if factura:
-            # Calcular nuevo total pagado
-            cursor.execute("SELECT COALESCE(SUM(monto), 0) as total_pagado FROM pagos_factura WHERE factura_id = %s", (factura_id,))
-            resultado = cursor.fetchone()
-            total_pagado = int(resultado["total_pagado"]) if resultado and resultado["total_pagado"] else 0
-            
-            # Calcular faltante
-            faltante = int(factura["total"]) - total_pagado
-            
-            # Determinar nuevo estado de la factura
-            if faltante <= 0:
-                nuevo_estado = "pagada"
-            else:
-                dias_vencido = calcular_dias_vencido(factura["fecha_vencimiento"])
-                if dias_vencido > 0:
-                    nuevo_estado = "vencida"
-                else:
-                    nuevo_estado = "pendiente"
-            
-            # Actualizar estado de la factura
-            cursor.execute("""
-                UPDATE facturas_compra 
-                SET estado = %s, updated_at = NOW() 
-                WHERE id = %s
-            """, (nuevo_estado, factura_id))
-        
-        conn.commit()
-        return RedirectResponse(url="/finanzas/cheques?success=cheque_eliminado", status_code=303)
+        return {
+            "status": "success",
+            "test_query": test_result,
+            "cheque_found": cheque,
+            "pago_id": pago_id
+        }
         
     except Exception as e:
-        print(f"Error al eliminar cheque: {str(e)}")  # Para debug en logs del VPS
-        if conn:
-            conn.rollback()
-        return RedirectResponse(url="/finanzas/cheques?error=error_eliminacion", status_code=303)
-    
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-# También mantener la versión GET como alternativa
-@router.get("/cheques/{pago_id}/eliminar")
-def eliminar_cheque_get(pago_id: int):
-    """Eliminar un cheque específico - versión GET para compatibilidad"""
-    return eliminar_cheque_post(pago_id)
+        return {
+            "status": "error",
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "traceback": traceback.format_exc(),
+            "pago_id": pago_id
+        }
