@@ -1,12 +1,15 @@
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
-from fastapi import Request
 from pydantic import BaseModel
 from typing import Optional
 from db import conectar_mysql
 from datetime import datetime, timedelta
+import logging
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 templates = Jinja2Templates(directory="templates")
@@ -19,106 +22,35 @@ class ComparacionRequest(BaseModel):
     periodo_a: Periodo
     periodo_b: Periodo
 
-def calcular_ventas(conn, desde, hasta):
-    cursor = conn.cursor(dictionary=True)
-    
-    query = f"""
-        SELECT 
-            v.precio,
-            v.costo_despacho,
-            v.unidades,
-            c.porcentaje_comision
-        FROM ventas_retail v
-        JOIN clientes c ON v.cliente_id = c.id
-        WHERE v.fecha_compra BETWEEN %s AND %s
-    """
-    cursor.execute(query, (desde, hasta))
-    rows = cursor.fetchall()
+def safe_float(value, default=0.0):
+    """Convertir valor a float de forma segura"""
+    try:
+        return float(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
 
-    total_unidades = 0
-    total_vendido = 0
-    total_neto = 0
-
-    for row in rows:
-        unidades = row.get("unidades") or 0
-        precio = row.get("precio") or 0
-        despacho = row.get("costo_despacho") or 0
-        comision = row.get("porcentaje_comision") or 0
-
-        total_unidades += unidades
-        total_vendido += precio
-
-        # Calcular neto: descontar IVA, despacho, comisión
-        iva = precio * 0.19
-        comision_monto = precio * (comision / 100)
-        neto = precio - despacho - iva - comision_monto
-
-        total_neto += neto
-
-    return {
-        "unidades": total_unidades,
-        "total": round(total_vendido, 2),
-        "neto": round(total_neto, 2)
-    }
+def safe_int(value, default=0):
+    """Convertir valor a int de forma segura"""
+    try:
+        return int(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
 
 @router.get("/", response_class=HTMLResponse)
 def vista_dashboard(request: Request):
     """Vista principal del dashboard"""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
-
-@router.get("/totales", response_class=JSONResponse)
-def obtener_totales_generales():
     try:
-        conn = conectar_mysql()
-        cursor = conn.cursor(dictionary=True)
-
-        query = """
-            SELECT 
-                v.precio,
-                v.costo_despacho,
-                v.unidades,
-                c.porcentaje_comision
-            FROM ventas_retail v
-            JOIN clientes c ON v.cliente_id = c.id
-        """
-        cursor.execute(query)
-        rows = cursor.fetchall()
-
-        total_unidades = 0
-        total_vendido = 0
-        total_neto = 0
-
-        for row in rows:
-            unidades = row.get("unidades") or 0
-            precio = float(row.get("precio") or 0)
-            despacho = float(row.get("costo_despacho") or 0)
-            comision = float(row.get("porcentaje_comision") or 0)
-
-            iva = precio * 0.19
-            comision_monto = precio * (comision / 100)
-            neto = precio - despacho - iva - comision_monto
-
-            total_unidades += unidades
-            total_vendido += precio
-            total_neto += neto
-
-        return {
-            "unidades": total_unidades,
-            "total": round(total_vendido, 2),
-            "neto": round(total_neto, 2)
-        }
-
+        return templates.TemplateResponse("dashboard.html", {"request": request})
     except Exception as e:
-        print("❌ ERROR EN /totales:", e)
-        raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
-
-    finally:
-        if 'conn' in locals():
-            conn.close()
+        logger.error(f"Error en vista dashboard: {e}")
+        raise HTTPException(status_code=500, detail="Error al cargar la vista del dashboard")
 
 @router.get("/kpis", response_class=JSONResponse)
-def obtener_kpis(fecha_desde: str = "", fecha_hasta: str = ""):
+def obtener_kpis(fecha_desde: Optional[str] = None, fecha_hasta: Optional[str] = None):
     """Obtener KPIs principales del dashboard con filtros de fecha"""
+    conn = None
+    cursor = None
+    
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
@@ -136,46 +68,63 @@ def obtener_kpis(fecha_desde: str = "", fecha_hasta: str = ""):
             
         where_clause = "WHERE " + " AND ".join(filtros) if filtros else ""
 
-        # Total de ventas con filtros
+        # Query para obtener totales de ventas
         query_totales = f"""
             SELECT 
                 COUNT(*) as total_ordenes,
-                SUM(v.precio) as total_ventas,
-                SUM(v.unidades) as total_unidades,
-                SUM(v.precio - v.costo_despacho - (v.precio * 0.19) - (v.precio * c.porcentaje_comision / 100)) as margen_neto
+                COALESCE(SUM(v.precio), 0) as total_ventas,
+                COALESCE(SUM(v.unidades), 0) as total_unidades,
+                COALESCE(SUM(
+                    v.precio - 
+                    COALESCE(v.costo_despacho, 0) - 
+                    (v.precio * 0.19) - 
+                    (v.precio * COALESCE(c.porcentaje_comision, 0) / 100)
+                ), 0) as margen_neto
             FROM ventas_retail v
-            JOIN clientes c ON v.cliente_id = c.id
+            LEFT JOIN clientes c ON v.cliente_id = c.id
             {where_clause}
         """
+        
+        logger.info(f"Ejecutando query KPIs: {query_totales} con parámetros: {params}")
+        
         cursor.execute(query_totales, params)
         totales = cursor.fetchone()
 
-        # Facturas pendientes (sin filtro de fecha ya que es estado actual)
+        # Facturas pendientes (sin filtro de fecha)
         cursor.execute("""
             SELECT COUNT(*) as facturas_pendientes
             FROM facturas_compra
             WHERE estado = 'pendiente'
         """)
-        facturas_pendientes = cursor.fetchone()
+        facturas_result = cursor.fetchone()
 
-        return {
-            "total_ventas": round(totales["total_ventas"] or 0, 2),
-            "total_unidades": totales["total_unidades"] or 0,
-            "total_ordenes": totales["total_ordenes"] or 0,
-            "margen_neto": round(totales["margen_neto"] or 0, 2),
-            "facturas_pendientes": facturas_pendientes["facturas_pendientes"] or 0
+        # Validar y convertir resultados
+        resultado = {
+            "total_ventas": safe_float(totales["total_ventas"]),
+            "total_unidades": safe_int(totales["total_unidades"]),
+            "total_ordenes": safe_int(totales["total_ordenes"]),
+            "margen_neto": safe_float(totales["margen_neto"]),
+            "facturas_pendientes": safe_int(facturas_result["facturas_pendientes"] if facturas_result else 0)
         }
+        
+        logger.info(f"KPIs calculados: {resultado}")
+        return resultado
 
     except Exception as e:
-        print("❌ ERROR EN /kpis:", e)
-        raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
+        logger.error(f"Error en /kpis: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno en el cálculo de KPIs: {str(e)}")
     finally:
-        if 'conn' in locals():
+        if cursor:
+            cursor.close()
+        if conn:
             conn.close()
 
 @router.get("/ventas-tendencia", response_class=JSONResponse)
-def obtener_tendencia_ventas(dias: int = 7):
+def obtener_tendencia_ventas(dias: int = 30):
     """Obtener tendencia de ventas por día"""
+    conn = None
+    cursor = None
+    
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
@@ -187,12 +136,12 @@ def obtener_tendencia_ventas(dias: int = 7):
         query = """
             SELECT 
                 DATE(v.fecha_compra) as fecha,
-                SUM(v.precio) as total_dia,
+                COALESCE(SUM(v.precio), 0) as total_dia,
                 COUNT(*) as ordenes_dia
             FROM ventas_retail v
             WHERE v.fecha_compra >= %s AND v.fecha_compra <= %s
             GROUP BY DATE(v.fecha_compra)
-            ORDER BY fecha
+            ORDER BY fecha ASC
         """
         
         cursor.execute(query, (fecha_inicio.date(), fecha_fin.date()))
@@ -205,8 +154,8 @@ def obtener_tendencia_ventas(dias: int = 7):
 
         for row in resultados:
             fechas.append(row["fecha"].strftime("%d/%m"))
-            ventas.append(float(row["total_dia"] or 0))
-            ordenes.append(row["ordenes_dia"] or 0)
+            ventas.append(safe_float(row["total_dia"]))
+            ordenes.append(safe_int(row["ordenes_dia"]))
 
         return {
             "fechas": fechas,
@@ -215,15 +164,20 @@ def obtener_tendencia_ventas(dias: int = 7):
         }
 
     except Exception as e:
-        print("❌ ERROR EN /ventas-tendencia:", e)
-        raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
+        logger.error(f"Error en /ventas-tendencia: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener tendencia de ventas: {str(e)}")
     finally:
-        if 'conn' in locals():
+        if cursor:
+            cursor.close()
+        if conn:
             conn.close()
 
 @router.get("/top-clientes", response_class=JSONResponse)
-def obtener_top_clientes(limite: int = 5, fecha_desde: str = "", fecha_hasta: str = ""):
+def obtener_top_clientes(limite: int = 5, fecha_desde: Optional[str] = None, fecha_hasta: Optional[str] = None):
     """Obtener top clientes por volumen de ventas"""
+    conn = None
+    cursor = None
+    
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
@@ -244,52 +198,54 @@ def obtener_top_clientes(limite: int = 5, fecha_desde: str = "", fecha_hasta: st
 
         query = f"""
             SELECT 
-                c.nombre,
-                SUM(v.precio) as total_ventas,
+                COALESCE(c.nombre, 'Cliente Desconocido') as nombre,
+                COALESCE(SUM(v.precio), 0) as total_ventas,
                 COUNT(*) as total_ordenes
             FROM ventas_retail v
-            JOIN clientes c ON v.cliente_id = c.id
+            LEFT JOIN clientes c ON v.cliente_id = c.id
             {where_clause}
             GROUP BY c.id, c.nombre
+            HAVING total_ventas > 0
             ORDER BY total_ventas DESC
             LIMIT %s
         """
         
-        print(f"📊 Query top clientes: {query}")
-        print(f"📊 Parámetros: {params}")
+        logger.info(f"Query top clientes: {query} con parámetros: {params}")
         
         cursor.execute(query, params)
         resultados = cursor.fetchall()
-        
-        print(f"📊 Clientes encontrados: {len(resultados)}")
 
         clientes = []
         for row in resultados:
             clientes.append({
-                "nombre": row["nombre"],
-                "total_ventas": round(float(row["total_ventas"] or 0), 2),
-                "total_ordenes": row["total_ordenes"] or 0
+                "nombre": row["nombre"] or "Cliente Desconocido",
+                "total_ventas": safe_float(row["total_ventas"]),
+                "total_ordenes": safe_int(row["total_ordenes"])
             })
 
         return {"clientes": clientes}
 
     except Exception as e:
-        print("❌ ERROR EN /top-clientes:", e)
-        raise HTTPException(status_code=500, detail=f"Error interno en el cálculo: {str(e)}")
+        logger.error(f"Error en /top-clientes: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener top clientes: {str(e)}")
     finally:
-        if 'conn' in locals():
+        if cursor:
             cursor.close()
+        if conn:
             conn.close()
 
 @router.get("/productos-mensuales", response_class=JSONResponse)
-def obtener_productos_mensuales(fecha_desde: str = "", fecha_hasta: str = "", limite: int = 5):
+def obtener_productos_mensuales(fecha_desde: Optional[str] = None, fecha_hasta: Optional[str] = None, limite: int = 5):
     """Obtener productos más vendidos agrupados por mes"""
+    conn = None
+    cursor = None
+    
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
 
         # Construir filtros de fecha
-        filtros = ["v.producto IS NOT NULL", "v.producto != ''"]
+        filtros = ["v.producto IS NOT NULL", "v.producto != ''", "TRIM(v.producto) != ''"]
         params = []
         
         if fecha_desde:
@@ -304,23 +260,21 @@ def obtener_productos_mensuales(fecha_desde: str = "", fecha_hasta: str = "", li
         query = f"""
             SELECT 
                 DATE_FORMAT(v.fecha_compra, '%Y-%m') as mes,
-                v.producto,
-                SUM(v.unidades) as total_unidades,
-                SUM(v.precio) as total_ventas,
+                TRIM(v.producto) as producto,
+                COALESCE(SUM(v.unidades), 0) as total_unidades,
+                COALESCE(SUM(v.precio), 0) as total_ventas,
                 COUNT(*) as total_ordenes
             FROM ventas_retail v
             {where_clause}
-            GROUP BY DATE_FORMAT(v.fecha_compra, '%Y-%m'), v.producto
+            GROUP BY DATE_FORMAT(v.fecha_compra, '%Y-%m'), TRIM(v.producto)
+            HAVING total_unidades > 0
             ORDER BY mes DESC, total_unidades DESC
         """
         
-        print(f"📊 Query productos mensuales: {query}")
-        print(f"📊 Parámetros: {params}")
+        logger.info(f"Query productos mensuales: {query} con parámetros: {params}")
         
         cursor.execute(query, params)
         resultados = cursor.fetchall()
-        
-        print(f"📊 Resultados encontrados: {len(resultados)}")
 
         # Organizar datos por mes
         datos_por_mes = {}
@@ -332,25 +286,28 @@ def obtener_productos_mensuales(fecha_desde: str = "", fecha_hasta: str = "", li
             if len(datos_por_mes[mes]) < limite:
                 datos_por_mes[mes].append({
                     "producto": row["producto"],
-                    "total_unidades": row["total_unidades"] or 0,
-                    "total_ventas": round(float(row["total_ventas"] or 0), 2),
-                    "total_ordenes": row["total_ordenes"] or 0
+                    "total_unidades": safe_int(row["total_unidades"]),
+                    "total_ventas": safe_float(row["total_ventas"]),
+                    "total_ordenes": safe_int(row["total_ordenes"])
                 })
 
-        print(f"📊 Datos organizados por mes: {datos_por_mes}")
         return {"datos_por_mes": datos_por_mes}
 
     except Exception as e:
-        print("❌ ERROR EN /productos-mensuales:", e)
-        raise HTTPException(status_code=500, detail=f"Error interno en el cálculo: {str(e)}")
+        logger.error(f"Error en /productos-mensuales: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener productos mensuales: {str(e)}")
     finally:
-        if 'conn' in locals():
+        if cursor:
             cursor.close()
+        if conn:
             conn.close()
 
 @router.get("/calendario-cheques", response_class=JSONResponse)
-def obtener_calendario_cheques(año: int = None, mes: int = None):
+def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = None):
     """Obtener calendario de cheques combinando pagos_factura y tabla cheques"""
+    conn = None
+    cursor = None
+    
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
@@ -361,65 +318,105 @@ def obtener_calendario_cheques(año: int = None, mes: int = None):
             año = año or hoy.year
             mes = mes or hoy.month
 
-        # Query combinada usando UNION para mezclar ambas tablas
-        query = """
-            -- Cheques del sistema actual (pagos_factura)
-            SELECT 
-                DATE(pf.fecha) as fecha_cheque,
-                COUNT(*) as cantidad_cheques,
-                SUM(pf.monto) as monto_total,
-                'sistema' as origen
-            FROM pagos_factura pf
-            WHERE pf.tipo = 'cheque' 
-            AND YEAR(pf.fecha) = %s 
-            AND MONTH(pf.fecha) = %s
-            GROUP BY DATE(pf.fecha)
-            
-            UNION ALL
-            
-            -- Cheques de la tabla temporal
-            SELECT 
-                DATE(c.fecha_cheque) as fecha_cheque,
-                COUNT(*) as cantidad_cheques,
-                SUM(c.monto) as monto_total,
-                'temporal' as origen
-            FROM cheques c
-            WHERE YEAR(c.fecha_cheque) = %s 
-            AND MONTH(c.fecha_cheque) = %s
-            GROUP BY DATE(c.fecha_cheque)
-        """
+        # Verificar que las tablas existan antes de hacer la consulta
+        cursor.execute("SHOW TABLES LIKE 'pagos_factura'")
+        tabla_pagos_existe = cursor.fetchone() is not None
         
-        cursor.execute(query, (año, mes, año, mes))
-        resultados = cursor.fetchall()
+        cursor.execute("SHOW TABLES LIKE 'cheques'")
+        tabla_cheques_existe = cursor.fetchone() is not None
 
-        # Agrupar por fecha combinando ambos orígenes
         dias_con_cheques = {}
-        
-        for resultado in resultados:
-            dia = resultado["fecha_cheque"].day
-            
-            if dia not in dias_con_cheques:
-                dias_con_cheques[dia] = {
-                    "cantidad": 0,
-                    "monto": 0,
-                    "detalles": {
-                        "sistema": {"cantidad": 0, "monto": 0},
-                        "temporal": {"cantidad": 0, "monto": 0}
-                    }
-                }
-            
-            # Sumar totales
-            dias_con_cheques[dia]["cantidad"] += resultado["cantidad_cheques"]
-            dias_con_cheques[dia]["monto"] += float(resultado["monto_total"] or 0)
-            
-            # Guardar detalles por origen
-            origen = resultado["origen"]
-            dias_con_cheques[dia]["detalles"][origen]["cantidad"] = resultado["cantidad_cheques"]
-            dias_con_cheques[dia]["detalles"][origen]["monto"] = float(resultado["monto_total"] or 0)
+
+        # Query para pagos_factura si existe
+        if tabla_pagos_existe:
+            try:
+                query_sistema = """
+                    SELECT 
+                        DAY(pf.fecha) as dia,
+                        COUNT(*) as cantidad_cheques,
+                        COALESCE(SUM(pf.monto), 0) as monto_total
+                    FROM pagos_factura pf
+                    WHERE pf.tipo = 'cheque' 
+                    AND YEAR(pf.fecha) = %s 
+                    AND MONTH(pf.fecha) = %s
+                    GROUP BY DAY(pf.fecha)
+                """
+                
+                cursor.execute(query_sistema, (año, mes))
+                resultados_sistema = cursor.fetchall()
+                
+                for resultado in resultados_sistema:
+                    dia = resultado["dia"]
+                    if dia not in dias_con_cheques:
+                        dias_con_cheques[dia] = {
+                            "cantidad": 0,
+                            "monto": 0,
+                            "detalles": {
+                                "sistema": {"cantidad": 0, "monto": 0},
+                                "temporal": {"cantidad": 0, "monto": 0}
+                            }
+                        }
+                    
+                    cantidad = safe_int(resultado["cantidad_cheques"])
+                    monto = safe_float(resultado["monto_total"])
+                    
+                    dias_con_cheques[dia]["cantidad"] += cantidad
+                    dias_con_cheques[dia]["monto"] += monto
+                    dias_con_cheques[dia]["detalles"]["sistema"]["cantidad"] = cantidad
+                    dias_con_cheques[dia]["detalles"]["sistema"]["monto"] = monto
+                    
+            except Exception as e:
+                logger.warning(f"Error consultando pagos_factura: {e}")
+
+        # Query para tabla cheques si existe
+        if tabla_cheques_existe:
+            try:
+                query_temporal = """
+                    SELECT 
+                        DAY(c.fecha_cheque) as dia,
+                        COUNT(*) as cantidad_cheques,
+                        COALESCE(SUM(c.monto), 0) as monto_total
+                    FROM cheques c
+                    WHERE YEAR(c.fecha_cheque) = %s 
+                    AND MONTH(c.fecha_cheque) = %s
+                    GROUP BY DAY(c.fecha_cheque)
+                """
+                
+                cursor.execute(query_temporal, (año, mes))
+                resultados_temporal = cursor.fetchall()
+                
+                for resultado in resultados_temporal:
+                    dia = resultado["dia"]
+                    if dia not in dias_con_cheques:
+                        dias_con_cheques[dia] = {
+                            "cantidad": 0,
+                            "monto": 0,
+                            "detalles": {
+                                "sistema": {"cantidad": 0, "monto": 0},
+                                "temporal": {"cantidad": 0, "monto": 0}
+                            }
+                        }
+                    
+                    cantidad = safe_int(resultado["cantidad_cheques"])
+                    monto = safe_float(resultado["monto_total"])
+                    
+                    dias_con_cheques[dia]["cantidad"] += cantidad
+                    dias_con_cheques[dia]["monto"] += monto
+                    dias_con_cheques[dia]["detalles"]["temporal"]["cantidad"] = cantidad
+                    dias_con_cheques[dia]["detalles"]["temporal"]["monto"] = monto
+                    
+            except Exception as e:
+                logger.warning(f"Error consultando tabla cheques: {e}")
 
         # Redondear montos
         for dia in dias_con_cheques:
             dias_con_cheques[dia]["monto"] = round(dias_con_cheques[dia]["monto"], 2)
+            dias_con_cheques[dia]["detalles"]["sistema"]["monto"] = round(
+                dias_con_cheques[dia]["detalles"]["sistema"]["monto"], 2
+            )
+            dias_con_cheques[dia]["detalles"]["temporal"]["monto"] = round(
+                dias_con_cheques[dia]["detalles"]["temporal"]["monto"], 2
+            )
 
         return {
             "año": año,
@@ -428,139 +425,214 @@ def obtener_calendario_cheques(año: int = None, mes: int = None):
         }
 
     except Exception as e:
-        print("❌ ERROR EN /calendario-cheques:", e)
-        raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
+        logger.error(f"Error en /calendario-cheques: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener calendario de cheques: {str(e)}")
     finally:
-        if 'conn' in locals():
+        if cursor:
             cursor.close()
+        if conn:
             conn.close()
 
 @router.get("/calendario-cheques/detalle", response_class=JSONResponse)
 def obtener_detalle_dia_cheques(año: int, mes: int, dia: int):
     """Obtener detalle de cheques para un día específico"""
+    conn = None
+    cursor = None
+    
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
         
         fecha_especifica = f"{año}-{mes:02d}-{dia:02d}"
+        todos_cheques = []
         
-        # Cheques del sistema actual
-        cursor.execute("""
-            SELECT 
-                pf.numero as numero_cheque,
-                pf.monto,
-                p.nombre as proveedor,
-                pf.estado,
-                'Sistema Actual' as origen
-            FROM pagos_factura pf
-            JOIN facturas_compra f ON f.id = pf.factura_id
-            JOIN proveedores p ON f.proveedor_id = p.id
-            WHERE pf.tipo = 'cheque' 
-            AND DATE(pf.fecha) = %s
-            ORDER BY pf.numero
-        """, (fecha_especifica,))
+        # Verificar que las tablas existan
+        cursor.execute("SHOW TABLES LIKE 'pagos_factura'")
+        if cursor.fetchone():
+            try:
+                cursor.execute("""
+                    SELECT 
+                        COALESCE(pf.numero, 'N/A') as numero_cheque,
+                        COALESCE(pf.monto, 0) as monto,
+                        COALESCE(p.nombre, 'Proveedor Desconocido') as proveedor,
+                        COALESCE(pf.estado, 'N/A') as estado,
+                        'Sistema Actual' as origen
+                    FROM pagos_factura pf
+                    LEFT JOIN facturas_compra f ON f.id = pf.factura_id
+                    LEFT JOIN proveedores p ON f.proveedor_id = p.id
+                    WHERE pf.tipo = 'cheque' 
+                    AND DATE(pf.fecha) = %s
+                    ORDER BY pf.numero
+                """, (fecha_especifica,))
+                
+                cheques_sistema = cursor.fetchall()
+                todos_cheques.extend(cheques_sistema)
+                
+            except Exception as e:
+                logger.warning(f"Error consultando detalle pagos_factura: {e}")
         
-        cheques_sistema = cursor.fetchall()
+        # Tabla cheques temporal
+        cursor.execute("SHOW TABLES LIKE 'cheques'")
+        if cursor.fetchone():
+            try:
+                cursor.execute("""
+                    SELECT 
+                        COALESCE(c.numero_cheque, 'N/A') as numero_cheque,
+                        COALESCE(c.monto, 0) as monto,
+                        COALESCE(p.nombre, 'Proveedor Desconocido') as proveedor,
+                        'Pendiente' as estado,
+                        'Tabla Temporal' as origen
+                    FROM cheques c
+                    LEFT JOIN proveedores p ON c.proveedor_id = p.id
+                    WHERE DATE(c.fecha_cheque) = %s
+                    ORDER BY c.numero_cheque
+                """, (fecha_especifica,))
+                
+                cheques_temporal = cursor.fetchall()
+                todos_cheques.extend(cheques_temporal)
+                
+            except Exception as e:
+                logger.warning(f"Error consultando detalle tabla cheques: {e}")
         
-        # Cheques de tabla temporal
-        cursor.execute("""
-            SELECT 
-                c.numero_cheque,
-                c.monto,
-                p.nombre as proveedor,
-                'Pendiente' as estado,
-                'Tabla Temporal' as origen
-            FROM cheques c
-            JOIN proveedores p ON c.proveedor_id = p.id
-            WHERE DATE(c.fecha_cheque) = %s
-            ORDER BY c.numero_cheque
-        """, (fecha_especifica,))
+        # Procesar resultados
+        cheques_procesados = []
+        total_monto = 0
         
-        cheques_temporal = cursor.fetchall()
-        
-        # Combinar ambos resultados
-        todos_cheques = cheques_sistema + cheques_temporal
+        for cheque in todos_cheques:
+            monto = safe_float(cheque["monto"])
+            total_monto += monto
+            
+            cheques_procesados.append({
+                "numero_cheque": cheque["numero_cheque"],
+                "monto": monto,
+                "proveedor": cheque["proveedor"],
+                "estado": cheque["estado"],
+                "origen": cheque["origen"]
+            })
         
         return {
             "fecha": fecha_especifica,
-            "total_cheques": len(todos_cheques),
-            "total_monto": sum(float(c["monto"]) for c in todos_cheques),
-            "cheques": todos_cheques,
-            "resumen": {
-                "sistema": len(cheques_sistema),
-                "temporal": len(cheques_temporal)
-            }
+            "total_cheques": len(cheques_procesados),
+            "total_monto": round(total_monto, 2),
+            "cheques": cheques_procesados
         }
         
     except Exception as e:
-        print("❌ ERROR EN /calendario-cheques/detalle:", e)
-        raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
+        logger.error(f"Error en /calendario-cheques/detalle: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener detalle de cheques: {str(e)}")
     finally:
-        if 'conn' in locals():
+        if cursor:
             cursor.close()
+        if conn:
             conn.close()
 
 @router.get("/resumen-financiero", response_class=JSONResponse)
 def obtener_resumen_financiero():
     """Obtener resumen financiero con facturas y pagos"""
+    conn = None
+    cursor = None
+    
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
 
+        resumen = {}
+
         # Facturas por estado
-        cursor.execute("""
-            SELECT 
-                estado,
-                COUNT(*) as cantidad,
-                SUM(total) as monto_total
-            FROM facturas_compra
-            GROUP BY estado
-        """)
-        facturas = cursor.fetchall()
+        try:
+            cursor.execute("""
+                SELECT 
+                    COALESCE(estado, 'Sin Estado') as estado,
+                    COUNT(*) as cantidad,
+                    COALESCE(SUM(total), 0) as monto_total
+                FROM facturas_compra
+                GROUP BY estado
+            """)
+            resumen["facturas"] = cursor.fetchall()
+        except Exception as e:
+            logger.warning(f"Error consultando facturas: {e}")
+            resumen["facturas"] = []
 
         # Devoluciones
-        cursor.execute("""
-            SELECT 
-                COUNT(*) as total_devoluciones,
-                SUM(monto_indemnizacion) as monto_devoluciones
-            FROM devoluciones
-        """)
-        devoluciones = cursor.fetchone()
+        try:
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_devoluciones,
+                    COALESCE(SUM(monto_indemnizacion), 0) as monto_devoluciones
+                FROM devoluciones
+            """)
+            devoluciones = cursor.fetchone()
+            resumen["devoluciones"] = {
+                "total": safe_int(devoluciones["total_devoluciones"] if devoluciones else 0),
+                "monto": safe_float(devoluciones["monto_devoluciones"] if devoluciones else 0)
+            }
+        except Exception as e:
+            logger.warning(f"Error consultando devoluciones: {e}")
+            resumen["devoluciones"] = {"total": 0, "monto": 0}
 
         # Órdenes de producción
-        cursor.execute("""
-            SELECT 
-                tipo,
-                COUNT(*) as cantidad,
-                SUM(precio_reparacion) as costo_total
-            FROM produccion
-            GROUP BY tipo
-        """)
-        produccion = cursor.fetchall()
+        try:
+            cursor.execute("""
+                SELECT 
+                    COALESCE(tipo, 'Sin Tipo') as tipo,
+                    COUNT(*) as cantidad,
+                    COALESCE(SUM(precio_reparacion), 0) as costo_total
+                FROM produccion
+                GROUP BY tipo
+            """)
+            resumen["produccion"] = cursor.fetchall()
+        except Exception as e:
+            logger.warning(f"Error consultando producción: {e}")
+            resumen["produccion"] = []
 
-        return {
-            "facturas": facturas,
-            "devoluciones": {
-                "total": devoluciones["total_devoluciones"] or 0,
-                "monto": round(float(devoluciones["monto_devoluciones"] or 0), 2)
-            },
-            "produccion": produccion
-        }
+        return resumen
 
     except Exception as e:
-        print("❌ ERROR EN /resumen-financiero:", e)
-        raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
+        logger.error(f"Error en /resumen-financiero: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener resumen financiero: {str(e)}")
     finally:
-        if 'conn' in locals():
+        if cursor:
+            cursor.close()
+        if conn:
             conn.close()
 
 @router.post("/comparar-ventas", response_class=JSONResponse)
 def comparar_ventas(request: ComparacionRequest):
-    conn = conectar_mysql()
-
+    """Comparar ventas entre dos períodos"""
+    conn = None
+    cursor = None
+    
     try:
-        periodo_a = calcular_ventas(conn, request.periodo_a.desde, request.periodo_a.hasta)
-        periodo_b = calcular_ventas(conn, request.periodo_b.desde, request.periodo_b.hasta)
+        conn = conectar_mysql()
+        
+        def calcular_ventas_periodo(desde, hasta):
+            cursor = conn.cursor(dictionary=True)
+            
+            query = """
+                SELECT 
+                    COALESCE(SUM(v.precio), 0) as total_vendido,
+                    COALESCE(SUM(v.unidades), 0) as total_unidades,
+                    COALESCE(SUM(
+                        v.precio - 
+                        COALESCE(v.costo_despacho, 0) - 
+                        (v.precio * 0.19) - 
+                        (v.precio * COALESCE(c.porcentaje_comision, 0) / 100)
+                    ), 0) as total_neto
+                FROM ventas_retail v
+                LEFT JOIN clientes c ON v.cliente_id = c.id
+                WHERE v.fecha_compra BETWEEN %s AND %s
+            """
+            cursor.execute(query, (desde, hasta))
+            resultado = cursor.fetchone()
+            
+            return {
+                "total": safe_float(resultado["total_vendido"]),
+                "unidades": safe_int(resultado["total_unidades"]),
+                "neto": safe_float(resultado["total_neto"])
+            }
+
+        periodo_a = calcular_ventas_periodo(request.periodo_a.desde, request.periodo_a.hasta)
+        periodo_b = calcular_ventas_periodo(request.periodo_b.desde, request.periodo_b.hasta)
 
         return {
             "periodo_a": periodo_a,
@@ -568,7 +640,10 @@ def comparar_ventas(request: ComparacionRequest):
         }
 
     except Exception as e:
-        print("❌ ERROR en /dashboard/comparar-ventas:", e)
-        raise HTTPException(status_code=500, detail="Error interno en el servidor.")
+        logger.error(f"Error en /comparar-ventas: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al comparar ventas: {str(e)}")
     finally:
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
