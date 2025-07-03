@@ -359,6 +359,25 @@ async function cargarProductosMensuales() {
   }
 }
 
+async function cargarCalendarioCheques() {
+  try {
+    const año = fechaActualCalendario.getFullYear();
+    const mes = fechaActualCalendario.getMonth() + 1;
+    
+    console.log(`🔍 Cargando calendario para: ${año}-${mes}`); // AGREGAR ESTA LÍNEA
+    
+    const response = await fetch(`/dashboard/calendario-cheques?año=${año}&mes=${mes}`);
+    const data = await response.json();
+    
+    console.log('📅 Datos del calendario recibidos:', data); // AGREGAR ESTA LÍNEA
+    
+    actualizarCalendario(data);
+    
+  } catch (error) {
+    console.error('Error cargando calendario:', error);
+  }
+}
+
 // Cargar calendario de cheques
 async function cargarCalendarioCheques() {
   try {
@@ -658,8 +677,15 @@ function mostrarGraficoVacio(canvasId, mensaje) {
 
 // Actualizar calendario
 function actualizarCalendario(data) {
+  console.log('📅 Datos recibidos para calendario:', data);
+  
   const container = document.getElementById('calendario-cheques');
   const mesActual = document.getElementById('mes-actual');
+  
+  if (!container || !mesActual) {
+    console.error('❌ Elementos del calendario no encontrados');
+    return;
+  }
   
   // Actualizar título del mes
   const fecha = new Date(data.año, data.mes - 1);
@@ -675,7 +701,7 @@ function actualizarCalendario(data) {
   const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   diasSemana.forEach(dia => {
     const div = document.createElement('div');
-    div.className = 'p-2 font-semibold text-slate-600 bg-slate-100 rounded';
+    div.className = 'p-2 font-semibold text-slate-600 bg-slate-100 rounded text-xs';
     div.textContent = dia;
     container.appendChild(div);
   });
@@ -687,7 +713,7 @@ function actualizarCalendario(data) {
   // Agregar días vacíos al inicio
   for (let i = 0; i < primerDia; i++) {
     const div = document.createElement('div');
-    div.className = 'p-2';
+    div.className = 'p-1';
     container.appendChild(div);
   }
   
@@ -697,16 +723,28 @@ function actualizarCalendario(data) {
   
   for (let dia = 1; dia <= diasEnMes; dia++) {
     const div = document.createElement('div');
-    div.className = 'p-2 text-center rounded hover:bg-slate-100 cursor-pointer transition-colors relative';
+    div.className = 'p-2 text-center rounded hover:bg-slate-100 cursor-pointer transition-colors relative text-sm';
     
     const tieneCheques = data.dias_con_cheques[dia];
     if (tieneCheques) {
-      // Determinar color basado en el origen
-      const tieneSistema = tieneCheques.detalles.sistema.cantidad > 0;
-      const tieneTempora = tieneCheques.detalles.temporal.cantidad > 0;
+      console.log(`📊 Día ${dia}:`, tieneCheques);
       
+      // Verificar si tiene la estructura de detalles o no
+      let tieneSistema = false;
+      let tieneTempora = false;
+      
+      if (tieneCheques.detalles) {
+        // Nueva estructura con detalles
+        tieneSistema = tieneCheques.detalles.sistema && tieneCheques.detalles.sistema.cantidad > 0;
+        tieneTempora = tieneCheques.detalles.temporal && tieneCheques.detalles.temporal.cantidad > 0;
+      } else {
+        // Estructura simple - asumir que son datos temporales
+        tieneTempora = true;
+      }
+      
+      // Aplicar colores basado en el origen
       if (tieneSistema && tieneTempora) {
-        // Ambos orígenes - color especial
+        // Ambos orígenes - gradiente
         div.classList.add('bg-gradient-to-br', 'from-green-200', 'to-blue-200', 'text-gray-800', 'font-semibold');
       } else if (tieneSistema) {
         // Solo sistema actual - verde
@@ -716,10 +754,10 @@ function actualizarCalendario(data) {
         div.classList.add('bg-blue-200', 'text-blue-800', 'font-semibold');
       }
       
-      // Crear tooltip detallado
+      // Crear tooltip
       let tooltipText = `${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`;
       
-      if (tieneSistema && tieneTempora) {
+      if (tieneCheques.detalles && tieneSistema && tieneTempora) {
         tooltipText += `\n━━━━━━━━━━━━━━━━━━━━━━━━━`;
         tooltipText += `\n🏢 Sistema: ${tieneCheques.detalles.sistema.cantidad} cheques - ${formatCurrency(tieneCheques.detalles.sistema.monto)}`;
         tooltipText += `\n📋 Temporal: ${tieneCheques.detalles.temporal.cantidad} cheques - ${formatCurrency(tieneCheques.detalles.temporal.monto)}`;
@@ -743,24 +781,34 @@ function actualizarCalendario(data) {
       montoTotal += tieneCheques.monto;
     }
     
-    div.textContent = dia;
+    // Agregar número del día
+    const numeroDiv = document.createElement('span');
+    numeroDiv.textContent = dia;
+    div.appendChild(numeroDiv);
+    
     container.appendChild(div);
   }
   
-  // Actualizar totales con información adicional
+  // Actualizar totales
   const totalElement = document.getElementById('total-cheques-mes');
   if (totalElement) {
-    totalElement.innerHTML = `
-      <div class="text-sm">
-        <div class="font-semibold">${totalCheques} cheques - ${formatCurrency(montoTotal)}</div>
-        <div class="text-xs text-slate-500 mt-1">
-          <span class="inline-block w-3 h-3 bg-green-200 rounded mr-1"></span>Sistema
-          <span class="inline-block w-3 h-3 bg-blue-200 rounded mr-1 ml-2"></span>Temporal
-          <span class="inline-block w-3 h-3 bg-gradient-to-r from-green-200 to-blue-200 rounded mr-1 ml-2"></span>Ambos
+    if (totalCheques > 0) {
+      totalElement.innerHTML = `
+        <div class="text-sm">
+          <div class="font-semibold">${totalCheques} cheques - ${formatCurrency(montoTotal)}</div>
+          <div class="text-xs text-slate-500 mt-1">
+            <span class="inline-block w-3 h-3 bg-green-200 rounded mr-1"></span>Sistema
+            <span class="inline-block w-3 h-3 bg-blue-200 rounded mr-1 ml-2"></span>Temporal
+            <span class="inline-block w-3 h-3 bg-gradient-to-r from-green-200 to-blue-200 rounded mr-1 ml-2"></span>Ambos
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      totalElement.innerHTML = '<div class="text-sm text-slate-500">No hay cheques este mes</div>';
+    }
   }
+  
+  console.log('✅ Calendario actualizado:', { totalCheques, montoTotal });
 }
 
 function mostrarDetalleDia(año, mes, dia) {
