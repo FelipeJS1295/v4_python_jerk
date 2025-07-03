@@ -1124,14 +1124,17 @@ def detalle_cheques_por_fecha(request: Request, fecha: str):
 
 # Agregar esta ruta al final de finanzas.py, antes del último comentario
 
-@router.get("/cheques/{pago_id}/eliminar")
-def eliminar_cheque(pago_id: int):
-    """Eliminar un cheque específico"""
-    conn = conectar_mysql()
-    cursor = conn.cursor(dictionary=True)
+@router.post("/cheques/{pago_id}/eliminar")
+def eliminar_cheque_post(pago_id: int):
+    """Eliminar un cheque específico - usando POST para mayor compatibilidad"""
+    conn = None
+    cursor = None
     
     try:
-        # Obtener información del cheque antes de eliminarlo
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar que el cheque existe
         cursor.execute("""
             SELECT p.factura_id, p.monto, f.total as total_factura
             FROM pagos_factura p
@@ -1144,48 +1147,61 @@ def eliminar_cheque(pago_id: int):
         if not cheque_info:
             return RedirectResponse(url="/finanzas/cheques?error=cheque_no_encontrado", status_code=303)
         
-        # Eliminar el cheque
-        cursor.execute("DELETE FROM pagos_factura WHERE id = %s AND tipo = 'cheque'", (pago_id,))
-        
-        # Recalcular el estado de la factura después de eliminar el cheque
         factura_id = cheque_info["factura_id"]
         
-        # Obtener información de la factura
+        # Eliminar el cheque
+        cursor.execute("DELETE FROM pagos_factura WHERE id = %s AND p.tipo = 'cheque'", (pago_id,))
+        
+        if cursor.rowcount == 0:
+            return RedirectResponse(url="/finanzas/cheques?error=cheque_no_eliminado", status_code=303)
+        
+        # Obtener información actualizada de la factura
         cursor.execute("SELECT total, fecha_vencimiento FROM facturas_compra WHERE id = %s", (factura_id,))
         factura = cursor.fetchone()
         
-        # Calcular nuevo total pagado
-        cursor.execute("SELECT COALESCE(SUM(monto), 0) as total_pagado FROM pagos_factura WHERE factura_id = %s", (factura_id,))
-        resultado = cursor.fetchone()
-        total_pagado = int(resultado["total_pagado"]) if resultado["total_pagado"] else 0
-        
-        # Calcular faltante
-        faltante = int(factura["total"]) - total_pagado
-        
-        # Determinar nuevo estado de la factura
-        if faltante <= 0:
-            nuevo_estado = "pagada"
-        else:
-            dias_vencido = calcular_dias_vencido(factura["fecha_vencimiento"])
-            if dias_vencido > 0:
-                nuevo_estado = "vencida"
+        if factura:
+            # Calcular nuevo total pagado
+            cursor.execute("SELECT COALESCE(SUM(monto), 0) as total_pagado FROM pagos_factura WHERE factura_id = %s", (factura_id,))
+            resultado = cursor.fetchone()
+            total_pagado = int(resultado["total_pagado"]) if resultado and resultado["total_pagado"] else 0
+            
+            # Calcular faltante
+            faltante = int(factura["total"]) - total_pagado
+            
+            # Determinar nuevo estado de la factura
+            if faltante <= 0:
+                nuevo_estado = "pagada"
             else:
-                nuevo_estado = "pendiente"
-        
-        # Actualizar estado de la factura
-        cursor.execute("""
-            UPDATE facturas_compra 
-            SET estado = %s, updated_at = NOW() 
-            WHERE id = %s
-        """, (nuevo_estado, factura_id))
+                dias_vencido = calcular_dias_vencido(factura["fecha_vencimiento"])
+                if dias_vencido > 0:
+                    nuevo_estado = "vencida"
+                else:
+                    nuevo_estado = "pendiente"
+            
+            # Actualizar estado de la factura
+            cursor.execute("""
+                UPDATE facturas_compra 
+                SET estado = %s, updated_at = NOW() 
+                WHERE id = %s
+            """, (nuevo_estado, factura_id))
         
         conn.commit()
         return RedirectResponse(url="/finanzas/cheques?success=cheque_eliminado", status_code=303)
         
     except Exception as e:
-        conn.rollback()
+        print(f"Error al eliminar cheque: {str(e)}")  # Para debug en logs del VPS
+        if conn:
+            conn.rollback()
         return RedirectResponse(url="/finanzas/cheques?error=error_eliminacion", status_code=303)
     
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+# También mantener la versión GET como alternativa
+@router.get("/cheques/{pago_id}/eliminar")
+def eliminar_cheque_get(pago_id: int):
+    """Eliminar un cheque específico - versión GET para compatibilidad"""
+    return eliminar_cheque_post(pago_id)

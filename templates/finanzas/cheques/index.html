@@ -152,32 +152,32 @@
             <td class="py-4 px-6">
               <div class="flex items-center justify-center gap-2">
                 <!-- Cambiar Estado -->
-                <form method="post" action="/finanzas/cheques/{{ cheque.id }}/actualizar-estado" class="inline-block">
-                  <select name="nuevo_estado" onchange="this.form.submit()" 
-                          class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
-                    <option disabled selected class="text-gray-500">
-                      <svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                      </svg>
-                    </option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="cobrado">Cobrado</option>
-                    <option value="rechazado">Rechazado</option>
-                    <option value="reprogramado">Reprogramado</option>
-                    <option value="anulado">Anulado</option>
-                  </select>
-                </form>
+                  <form method="post" action="/finanzas/cheques/{{ cheque.id }}/actualizar-estado" class="inline-block">
+                    <select name="nuevo_estado" onchange="this.form.submit()" 
+                            class="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                      <option disabled selected class="text-gray-500">Cambiar</option>
+                      <option value="pendiente">Pendiente</option>
+                      <option value="cobrado">Cobrado</option>
+                      <option value="rechazado">Rechazado</option>
+                      <option value="reprogramado">Reprogramado</option>
+                      <option value="anulado">Anulado</option>
+                    </select>
+                  </form>
 
-                <!-- Botón Eliminar -->
-                <button onclick="confirmarEliminacion({{ cheque.id }}, '{{ cheque.cheque }}')" 
-                        class="inline-flex items-center justify-center w-8 h-8 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 rounded-lg transition-colors duration-200 border border-red-200 hover:border-red-300"
-                        title="Eliminar cheque">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                  </svg>
-                </button>
-              </div>
-            </td>
+                  <!-- Botón Eliminar usando POST form -->
+                  <form method="post" action="/finanzas/cheques/{{ cheque.id }}/eliminar" 
+                        onsubmit="return confirmarEliminacionForm('{{ cheque.cheque }}')" 
+                        class="inline-block">
+                    <button type="submit" 
+                            class="inline-flex items-center justify-center w-8 h-8 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 rounded-lg transition-colors duration-200 border border-red-200 hover:border-red-300"
+                            title="Eliminar cheque">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </form>
+                </div>
+              </td>
           </tr>
           {% else %}
           <tr>
@@ -228,6 +228,12 @@
 </div>
 
 <script>
+// Función de confirmación simplificada para formularios
+function confirmarEliminacionForm(numeroCheque) {
+  return confirm(`¿Estás seguro de que deseas eliminar el cheque ${numeroCheque}?\n\nEsta acción no se puede deshacer.`);
+}
+
+// Función alternativa con modal (mantener como respaldo)
 function confirmarEliminacion(chequeId, numeroCheque) {
   document.getElementById('numeroCheque').textContent = numeroCheque;
   document.getElementById('btnConfirmarEliminar').href = `/finanzas/cheques/${chequeId}/eliminar`;
@@ -238,18 +244,24 @@ function cerrarModal() {
   document.getElementById('modalEliminar').classList.add('hidden');
 }
 
-// Cerrar modal al hacer clic fuera de él
-document.getElementById('modalEliminar').addEventListener('click', function(e) {
-  if (e.target === this) {
-    cerrarModal();
+// Event listeners para modal
+document.addEventListener('DOMContentLoaded', function() {
+  // Cerrar modal al hacer clic fuera de él
+  const modal = document.getElementById('modalEliminar');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        cerrarModal();
+      }
+    });
   }
-});
 
-// Cerrar modal con Escape
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    cerrarModal();
-  }
+  // Cerrar modal con Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      cerrarModal();
+    }
+  });
 });
 </script>
 
