@@ -908,3 +908,245 @@ async def descargar_excel_ventas(
     finally:
         cursor.close()
         conn.close()
+
+# Agregar estos endpoints al final de ventas.py
+
+@router.get("/clientes-retail")
+async def obtener_clientes_retail():
+    """Obtener lista de clientes retail para dropdown Nubox"""
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Obtener clientes que tienen ventas en ventas_retail
+        query = """
+        SELECT DISTINCT c.id, c.nombre 
+        FROM clientes c
+        INNER JOIN ventas_retail vr ON c.id = vr.cliente_id
+        WHERE c.id IS NOT NULL
+        ORDER BY c.nombre
+        """
+        
+        cursor.execute(query)
+        clientes = cursor.fetchall()
+        
+        return clientes
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener clientes retail: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.get("/descargar/nubox/{cliente_id}")
+async def descargar_nubox_cliente(
+    cliente_id: int,
+    cliente: str = "",
+    orden: str = "",
+    desde: str = "",
+    hasta: str = "",
+    estado: str = ""
+):
+    """Descargar CSV formato Nubox para cliente específico"""
+    
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Construir filtros
+        filtros = ["vr.cliente_id = %s", "vr.estado != 'cancelada'"]
+        params = [cliente_id]
+
+        if cliente:
+            filtros.append("c.nombre LIKE %s")
+            params.append(f"%{cliente}%")
+        if orden:
+            filtros.append("vr.numero_orden LIKE %s")
+            params.append(f"%{orden}%")
+        if desde:
+            filtros.append("vr.fecha_compra >= %s")
+            params.append(desde)
+        if hasta:
+            filtros.append("vr.fecha_compra <= %s")
+            params.append(hasta)
+        if estado:
+            filtros.append("vr.estado = %s")
+            params.append(estado)
+
+        where_clause = "WHERE " + " AND ".join(filtros)
+
+        # Query principal con todos los campos necesarios
+        query = f"""
+            SELECT 
+                vr.documento,
+                vr.numero_orden,
+                vr.fecha_compra,
+                vr.rut_documento,
+                vr.rut,
+                vr.cliente_final,
+                vr.razon_social,
+                vr.giro,
+                vr.comuna,
+                vr.direccion,
+                vr.producto,
+                vr.unidades,
+                vr.precio_cliente,
+                vr.costo_despacho,
+                vr.email,
+                c.nombre as cliente_nombre
+            FROM ventas_retail vr
+            JOIN clientes c ON vr.cliente_id = c.id
+            {where_clause}
+            ORDER BY vr.numero_orden, vr.producto
+        """
+        
+        cursor.execute(query, params)
+        datos = cursor.fetchall()
+        
+        if not datos:
+            raise HTTPException(status_code=404, detail="No se encontraron datos para exportar")
+        
+        # Procesar datos para Nubox
+        datos_nubox = procesar_datos_nubox(datos)
+        
+        # Crear CSV
+        output = io.StringIO()
+        
+        # Headers Nubox
+        headers = [
+            "TIPO", "FOLIO", "SECUENCIA", "FECHA", "RUT", "RAZONSOCIAL", 
+            "GIRO", "COMUNA", "DIRECCION", "AFECTO", "PRODUCTO", 
+            "DESCRIPCION", "CANTIDAD", "PRECIO", "PORCENTDSCTO", 
+            "EMAIL", "TIPOSERVICIO", "PERIODODESDE", "PERIODOHASTA", 
+            "FECHAVENCIMIENTO"
+        ]
+        
+        # Escribir CSV
+        import csv
+        writer = csv.writer(output, delimiter=';')
+        writer.writerow(headers)
+        
+        for row in datos_nubox:
+            writer.writerow(row)
+        
+        output.seek(0)
+        
+        # Obtener nombre del cliente para el archivo
+        cliente_nombre = datos[0]['cliente_nombre'] if datos else 'cliente'
+        fecha_actual = datetime.now().strftime('%Y%m%d')
+        nombre_archivo = f"nubox_{cliente_nombre.lower().replace(' ', '_')}_{fecha_actual}.csv"
+        
+        return StreamingResponse(
+            io.StringIO(output.getvalue()),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar archivo Nubox: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+def formatear_rut(rut):
+    """Formatea RUT chileno con guión antes del dígito verificador"""
+    if not rut:
+        return ""
+    
+    # Limpiar RUT (quitar puntos, guiones, espacios)
+    rut_limpio = ''.join(filter(str.isalnum, str(rut).upper()))
+    
+    if len(rut_limpio) < 2:
+        return rut_limpio
+    
+    # Separar número y dígito verificador
+    numero = rut_limpio[:-1]
+    dv = rut_limpio[-1]
+    
+    # Retornar con formato: 12345678-9
+    return f"{numero}-{dv}"
+
+def procesar_datos_nubox(datos):
+    """Procesa los datos según la lógica especificada para Nubox"""
+    
+    resultado = []
+    
+    # Mapear folios por numero_orden (mismo número de orden = mismo folio)
+    folios_por_orden = {}
+    folio_counter = 1
+    
+    # Agrupar y organizar por numero_orden para mantener el mismo folio
+    from collections import defaultdict
+    ordenes = defaultdict(list)
+    
+    # Agrupar datos por numero_orden
+    for row in datos:
+        ordenes[row['numero_orden']].append(row)
+    
+    # Procesar cada orden
+    for numero_orden, items in ordenes.items():
+        # Asignar folio para esta orden
+        if numero_orden not in folios_por_orden:
+            folios_por_orden[numero_orden] = folio_counter
+            folio_counter += 1
+        
+        folio_orden = folios_por_orden[numero_orden]
+        
+        # Calcular secuencias dentro de esta orden
+        secuencia_actual = defaultdict(int)
+        
+        for row in items:
+            # Campos base
+            producto = row['producto']
+            documento = row['documento'].lower()
+            
+            # Calcular secuencia para este producto en esta orden
+            secuencia_actual[producto] += 1
+            secuencia = secuencia_actual[producto]
+            
+            # TIPO según documento
+            tipo = "39" if documento == "boleta" else "33"  # 39=Boleta, 33=Factura
+            
+            # RUT y RAZONSOCIAL según tipo de documento
+            if documento == "boleta":
+                rut = formatear_rut(row['rut_documento'])
+                razon_social = row['cliente_final'] or ""
+                giro = "Particular"
+            else:  # factura
+                rut = formatear_rut(row['rut'])
+                razon_social = row['razon_social'] or ""
+                giro = row['giro'] or "Particular"
+            
+            # PRECIO = precio_cliente + costo_despacho
+            precio = (row['precio_cliente'] or 0) + (row['costo_despacho'] or 0)
+            
+            # Formatear fecha
+            fecha = row['fecha_compra'].strftime('%d/%m/%Y') if row['fecha_compra'] else ""
+            
+            # Construir fila
+            fila_nubox = [
+                tipo,                           # TIPO
+                folio_orden,                    # FOLIO (mismo para toda la orden)
+                secuencia,                      # SECUENCIA (1,2,3... dentro de la orden)
+                fecha,                          # FECHA
+                rut,                           # RUT
+                razon_social,                   # RAZONSOCIAL
+                giro,                          # GIRO
+                row['comuna'] or "",           # COMUNA
+                row['direccion'] or "",        # DIRECCION
+                "SI",                          # AFECTO
+                producto,                      # PRODUCTO
+                numero_orden,                  # DESCRIPCION
+                row['unidades'] or 1,          # CANTIDAD
+                precio,                        # PRECIO
+                "0",                           # PORCENTDSCTO (0 por defecto)
+                row['email'] or "",            # EMAIL
+                "3",                           # TIPOSERVICIO
+                "",                            # PERIODODESDE
+                "",                            # PERIODOHASTA
+                ""                             # FECHAVENCIMIENTO
+            ]
+            
+            resultado.append(fila_nubox)
+    
+    return resultado

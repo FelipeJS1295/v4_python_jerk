@@ -75,6 +75,20 @@
           <i class="fas fa-trash mr-1"></i>
           Eliminar
         </button>
+
+        <!-- Dropdown para Nubox por Cliente -->
+        <div class="relative inline-block text-left">
+          <button type="button" class="inline-flex justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium border border-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors" id="nubox-menu-button">
+            <i class="fas fa-file-invoice mr-2"></i>
+            Nubox
+            <i class="fas fa-chevron-down ml-2"></i>
+          </button>
+          <div class="origin-top-right absolute right-0 mt-2 w-64 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10" id="nubox-submenu">
+            <div class="py-1" id="clientes-nubox-list">
+              <!-- Los clientes se cargarán dinámicamente -->
+            </div>
+          </div>
+        </div>
         
         <!-- Botón Descargar Ventas -->
         <button id="btn-descargar-ventas" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors">
@@ -417,6 +431,184 @@ document.addEventListener('DOMContentLoaded', function() {
 // Re-inicializar después de actualizaciones HTMX
 document.body.addEventListener('htmx:afterSwap', function() {
   initMenuButton();
+  updateSelectionCounter();
+  
+  // Re-enlazar event listeners para checkboxes individuales
+  document.querySelectorAll('input[name="venta-select"]').forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectionCounter);
+  });
+});
+
+// Función para cargar clientes retail
+async function cargarClientesNubox() {
+  try {
+    const response = await fetch('/ventas/clientes-retail');
+    if (response.ok) {
+      const clientes = await response.json();
+      const container = document.getElementById('clientes-nubox-list');
+      
+      if (container && clientes.length > 0) {
+        container.innerHTML = clientes.map(cliente => `
+          <button 
+            onclick="descargarNubox(${cliente.id}, '${cliente.nombre}')" 
+            class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 transition-colors"
+          >
+            <i class="fas fa-building mr-2 text-blue-600"></i>${cliente.nombre}
+          </button>
+        `).join('');
+      } else {
+        container.innerHTML = '<div class="px-4 py-2 text-sm text-slate-500">No hay clientes retail</div>';
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando clientes:', error);
+  }
+}
+
+// Función para descargar archivo Nubox
+function descargarNubox(clienteId, clienteNombre) {
+  // Obtener los valores de los filtros del formulario
+  const form = document.getElementById('filtros-form');
+  const formData = new FormData(form);
+  
+  // Construir URL con parámetros
+  const params = new URLSearchParams();
+  
+  // Agregar filtros si tienen valores
+  if (formData.get('cliente')) params.append('cliente', formData.get('cliente'));
+  if (formData.get('orden')) params.append('orden', formData.get('orden'));
+  if (formData.get('desde')) params.append('desde', formData.get('desde'));
+  if (formData.get('hasta')) params.append('hasta', formData.get('hasta'));
+  if (formData.get('estado')) params.append('estado', formData.get('estado'));
+  
+  // Crear URL de descarga
+  const url = `/ventas/descargar/nubox/${clienteId}?${params.toString()}`;
+  
+  // Crear enlace temporal y hacer clic para descargar
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `nubox_${clienteNombre.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Cerrar menú
+  const submenu = document.getElementById('nubox-submenu');
+  if (submenu) {
+    submenu.classList.add('hidden');
+  }
+}
+
+// Función para inicializar menú Nubox
+function initNuboxMenu() {
+  const botonMenu = document.getElementById('nubox-menu-button');
+  const submenu = document.getElementById('nubox-submenu');
+  
+  if (botonMenu && submenu) {
+    // Limpiar event listeners previos
+    const nuevoBotonMenu = botonMenu.cloneNode(true);
+    botonMenu.parentNode.replaceChild(nuevoBotonMenu, botonMenu);
+    
+    // Agregar event listener para abrir/cerrar menú
+    nuevoBotonMenu.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      submenu.classList.toggle('hidden');
+      
+      // Cargar clientes cuando se abre el menú
+      if (!submenu.classList.contains('hidden')) {
+        cargarClientesNubox();
+      }
+    });
+  }
+}
+
+// Función para cerrar menús al hacer clic fuera (actualizada)
+function setupClickOutside() {
+  document.addEventListener('click', function(e) {
+    const submenu = document.getElementById('submenu');
+    const botonMenu = document.getElementById('menu-button');
+    const nuboxSubmenu = document.getElementById('nubox-submenu');
+    const nuboxBotonMenu = document.getElementById('nubox-menu-button');
+    
+    // Cerrar menú de cargar ventas
+    if (submenu && botonMenu) {
+      if (!botonMenu.contains(e.target) && !submenu.contains(e.target)) {
+        submenu.classList.add('hidden');
+      }
+    }
+    
+    // Cerrar menú de Nubox
+    if (nuboxSubmenu && nuboxBotonMenu) {
+      if (!nuboxBotonMenu.contains(e.target) && !nuboxSubmenu.contains(e.target)) {
+        nuboxSubmenu.classList.add('hidden');
+      }
+    }
+  });
+}
+
+// Actualizar la función de inicialización
+function initEventListeners() {
+  // Event listener para limpiar filtros
+  const btnLimpiar = document.getElementById('btn-limpiar');
+  if (btnLimpiar) {
+    btnLimpiar.addEventListener('click', limpiarFiltros);
+  }
+  
+  // Event listener para cambiar estado
+  const btnCambiarEstado = document.getElementById('btn-cambiar-estado');
+  if (btnCambiarEstado) {
+    btnCambiarEstado.addEventListener('click', cambiarEstadoMasivo);
+  }
+  
+  // Event listener para eliminar ventas
+  const btnEliminarVentas = document.getElementById('btn-eliminar-ventas');
+  if (btnEliminarVentas) {
+    btnEliminarVentas.addEventListener('click', eliminarVentasMasivo);
+  }
+  
+  // Event listener para descargar ventas
+  const btnDescargarVentas = document.getElementById('btn-descargar-ventas');
+  if (btnDescargarVentas) {
+    btnDescargarVentas.addEventListener('click', descargarVentas);
+  }
+  
+  // Event listener para select all
+  const selectAll = document.getElementById('select-all');
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      toggleSelectAll(this);
+    });
+  }
+  
+  // Event listeners para ordenamiento de columnas
+  document.querySelectorAll('th[data-campo]').forEach(th => {
+    th.addEventListener('click', function() {
+      const campo = this.getAttribute('data-campo');
+      ordenarTabla(campo);
+    });
+  });
+}
+
+// Actualizar inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  updateSelectionCounter();
+  initMenuButton();
+  initNuboxMenu(); // ✅ NUEVO
+  setupClickOutside();
+  initEventListeners();
+  
+  // Cargar datos iniciales
+  const form = document.getElementById('filtros-form');
+  if (form) {
+    htmx.trigger(form, 'submit');
+  }
+});
+
+// Actualizar re-inicialización después de HTMX
+document.body.addEventListener('htmx:afterSwap', function() {
+  initMenuButton();
+  initNuboxMenu(); // ✅ NUEVO
   updateSelectionCounter();
   
   // Re-enlazar event listeners para checkboxes individuales
