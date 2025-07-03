@@ -1156,11 +1156,18 @@ def procesar_datos_nubox(datos):
                 razon_social = limpiar_caracteres_especiales(row['razon_social'] or "")
                 giro = limpiar_caracteres_especiales(row['giro'] or "Particular")
             
+            # Truncar giro a máximo 40 caracteres
+            giro = giro[:40] if len(giro) > 40 else giro
+            
             # PRECIO = precio_cliente + costo_despacho
             precio = (row['precio_cliente'] or 0) + (row['costo_despacho'] or 0)
             
             # Formatear fecha
             fecha = row['fecha_compra'].strftime('%d/%m/%Y') if row['fecha_compra'] else ""
+            
+            # Limpiar y truncar dirección a máximo 60 caracteres
+            direccion_limpia = limpiar_caracteres_especiales(row['direccion'] or "")
+            direccion_truncada = direccion_limpia[:60] if len(direccion_limpia) > 60 else direccion_limpia
             
             # Construir fila
             fila_nubox = [
@@ -1170,9 +1177,9 @@ def procesar_datos_nubox(datos):
                 fecha,                                                  # FECHA
                 rut,                                                   # RUT
                 razon_social,                                          # RAZONSOCIAL
-                giro,                                                  # GIRO
+                giro,                                                  # GIRO (máx 40 caracteres)
                 limpiar_caracteres_especiales(row['comuna'] or ""),    # COMUNA
-                limpiar_caracteres_especiales(row['direccion'] or ""), # DIRECCION
+                direccion_truncada,                                     # DIRECCION (máx 60 caracteres)
                 "SI",                                                  # AFECTO
                 limpiar_caracteres_especiales(producto),               # PRODUCTO
                 numero_orden,                                          # DESCRIPCION
