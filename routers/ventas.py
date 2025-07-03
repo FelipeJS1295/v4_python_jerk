@@ -1048,6 +1048,45 @@ async def descargar_nubox_cliente(
         cursor.close()
         conn.close()
 
+def limpiar_caracteres_especiales(texto):
+    """Limpia caracteres especiales para compatibilidad con Nubox"""
+    if not texto:
+        return ""
+    
+    # Convertir a string si no lo es
+    texto = str(texto)
+    
+    # Usar unidecode para convertir caracteres especiales
+    import unicodedata
+    
+    # Normalizar caracteres Unicode
+    texto = unicodedata.normalize('NFD', texto)
+    
+    # Quitar acentos y caracteres especiales
+    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+    
+    # Reemplazos específicos adicionales
+    reemplazos = {
+        'ñ': 'n', 'Ñ': 'N',
+        'ç': 'c', 'Ç': 'C',
+        '°': '', '§': '', '¨': '', '´': '', '`': '',
+        '"': '', '"': '', ''': '', ''': '', 
+        '–': '-', '—': '-', '…': '...',
+        '€': 'EUR', '£': 'GBP', '¥': 'YEN'
+    }
+    
+    # Aplicar reemplazos
+    for original, reemplazo in reemplazos.items():
+        texto = texto.replace(original, reemplazo)
+    
+    # Limpiar caracteres no ASCII restantes
+    texto = ''.join(char if ord(char) < 128 else '' for char in texto)
+    
+    # Limpiar espacios extra
+    texto = ' '.join(texto.split())
+    
+    return texto.strip()
+
 def formatear_rut(rut):
     """Formatea RUT chileno con guión antes del dígito verificador"""
     if not rut:
@@ -1110,12 +1149,12 @@ def procesar_datos_nubox(datos):
             # RUT y RAZONSOCIAL según tipo de documento
             if documento == "boleta":
                 rut = formatear_rut(row['rut_documento'])
-                razon_social = row['cliente_final'] or ""
+                razon_social = limpiar_caracteres_especiales(row['cliente_final'] or "")
                 giro = "Particular"
             else:  # factura
                 rut = formatear_rut(row['rut'])
-                razon_social = row['razon_social'] or ""
-                giro = row['giro'] or "Particular"
+                razon_social = limpiar_caracteres_especiales(row['razon_social'] or "")
+                giro = limpiar_caracteres_especiales(row['giro'] or "Particular")
             
             # PRECIO = precio_cliente + costo_despacho
             precio = (row['precio_cliente'] or 0) + (row['costo_despacho'] or 0)
@@ -1125,26 +1164,26 @@ def procesar_datos_nubox(datos):
             
             # Construir fila
             fila_nubox = [
-                tipo,                           # TIPO
-                folio_orden,                    # FOLIO (mismo para toda la orden)
-                secuencia,                      # SECUENCIA (1,2,3... dentro de la orden)
-                fecha,                          # FECHA
-                rut,                           # RUT
-                razon_social,                   # RAZONSOCIAL
-                giro,                          # GIRO
-                row['comuna'] or "",           # COMUNA
-                row['direccion'] or "",        # DIRECCION
-                "SI",                          # AFECTO
-                producto,                      # PRODUCTO
-                numero_orden,                  # DESCRIPCION
-                row['unidades'] or 1,          # CANTIDAD
-                precio,                        # PRECIO
-                "0",                           # PORCENTDSCTO (0 por defecto)
-                row['email'] or "",            # EMAIL
-                "3",                           # TIPOSERVICIO
-                "",                            # PERIODODESDE
-                "",                            # PERIODOHASTA
-                ""                             # FECHAVENCIMIENTO
+                tipo,                                                    # TIPO
+                folio_orden,                                            # FOLIO (mismo para toda la orden)
+                secuencia,                                              # SECUENCIA (1,2,3... dentro de la orden)
+                fecha,                                                  # FECHA
+                rut,                                                   # RUT
+                razon_social,                                          # RAZONSOCIAL
+                giro,                                                  # GIRO
+                limpiar_caracteres_especiales(row['comuna'] or ""),    # COMUNA
+                limpiar_caracteres_especiales(row['direccion'] or ""), # DIRECCION
+                "SI",                                                  # AFECTO
+                limpiar_caracteres_especiales(producto),               # PRODUCTO
+                numero_orden,                                          # DESCRIPCION
+                row['unidades'] or 1,                                  # CANTIDAD
+                precio,                                                # PRECIO
+                "0",                                                   # PORCENTDSCTO (0 por defecto)
+                limpiar_caracteres_especiales(row['email'] or ""),     # EMAIL
+                "3",                                                   # TIPOSERVICIO
+                "",                                                    # PERIODODESDE
+                "",                                                    # PERIODOHASTA
+                ""                                                     # FECHAVENCIMIENTO
             ]
             
             resultado.append(fila_nubox)
