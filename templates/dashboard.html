@@ -1,35 +1,818 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard{% endblock %}
-
-{% block header %}Dashboard General{% endblock %}
+{% block title %}Dashboard Corporativo{% endblock %}
+{% block header %}Dashboard Corporativo{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="space-y-6">
 
-  <!-- Total Unidades Vendidas -->
-  <div class="bg-white shadow-md rounded-xl p-6">
-    <h2 class="text-sm text-gray-500 uppercase font-bold">Unidades Vendidas</h2>
-    <p class="text-2xl font-bold mt-2 text-blue-600">1,254</p>
+  <!-- Filtros de Fecha -->
+  <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-slate-800 flex items-center">
+        <i class="fas fa-calendar-alt mr-2 text-blue-600"></i>
+        Filtros de Período
+      </h3>
+      <div class="flex space-x-2">
+        <button id="btn-hoy" class="text-sm px-3 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">Hoy</button>
+        <button id="btn-semana" class="text-sm px-3 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">Esta Semana</button>
+        <button id="btn-mes" class="text-sm px-3 py-2 bg-slate-600 text-white rounded-lg">Este Mes</button>
+        <button id="btn-año" class="text-sm px-3 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">Este Año</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Desde</label>
+        <input type="date" id="fecha-desde" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-2">Hasta</label>
+        <input type="date" id="fecha-hasta" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      <div class="flex items-end">
+        <button id="btn-aplicar-filtros" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+          <i class="fas fa-filter"></i>
+          <span>Aplicar Filtros</span>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <!-- Total Vendido -->
-  <div class="bg-white shadow-md rounded-xl p-6">
-    <h2 class="text-sm text-gray-500 uppercase font-bold">Total Vendido</h2>
-    <p class="text-2xl font-bold mt-2 text-green-600">$18.350.000</p>
+  <!-- KPIs Principales -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+    <!-- Total Ventas -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Total Ventas</p>
+          <p id="total-ventas" class="text-2xl font-bold text-green-600 mt-1">$0</p>
+          <p class="text-xs text-slate-500 mt-1">
+            <span id="ordenes-total" class="font-medium">0 órdenes</span>
+          </p>
+        </div>
+        <div class="bg-green-50 p-3 rounded-lg">
+          <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unidades Vendidas -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Unidades Vendidas</p>
+          <p id="total-unidades" class="text-2xl font-bold text-blue-600 mt-1">0</p>
+          <p class="text-xs text-slate-500 mt-1">
+            <span id="promedio-orden" class="font-medium">0 por orden</span>
+          </p>
+        </div>
+        <div class="bg-blue-50 p-3 rounded-lg">
+          <i class="fas fa-box text-blue-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Margen Neto -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Margen Neto</p>
+          <p id="margen-neto" class="text-2xl font-bold text-purple-600 mt-1">$0</p>
+          <p class="text-xs text-slate-500 mt-1">
+            <span id="porcentaje-margen" class="font-medium">0%</span>
+          </p>
+        </div>
+        <div class="bg-purple-50 p-3 rounded-lg">
+          <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Facturas Pendientes -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200 hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">Facturas Pendientes</p>
+          <p id="facturas-pendientes" class="text-2xl font-bold text-orange-600 mt-1">0</p>
+          <p class="text-xs text-slate-500 mt-1">
+            <span class="font-medium">Por cobrar</span>
+          </p>
+        </div>
+        <div class="bg-orange-50 p-3 rounded-lg">
+          <i class="fas fa-file-invoice text-orange-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Total Neto -->
-  <div class="bg-white shadow-md rounded-xl p-6">
-    <h2 class="text-sm text-gray-500 uppercase font-bold">Total Neto</h2>
-    <p class="text-2xl font-bold mt-2 text-gray-700">$12.980.000</p>
+  <!-- Gráficos y Tablas -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Tendencia de Ventas -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-slate-800">Tendencia de Ventas</h3>
+        <div class="flex space-x-2">
+          <button class="period-btn text-sm px-3 py-1 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-period="7">7D</button>
+          <button class="period-btn text-sm px-3 py-1 bg-slate-600 text-white rounded-lg" data-period="30">30D</button>
+          <button class="period-btn text-sm px-3 py-1 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-period="90">90D</button>
+        </div>
+      </div>
+      <div style="position: relative; height: 300px;">
+        <canvas id="chartVentas"></canvas>
+      </div>
+    </div>
+
+    <!-- Estados de Órdenes -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-slate-800">Productos Más Vendidos por Mes</h3>
+        <select id="mes-productos" class="text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <!-- Se llena dinámicamente -->
+        </select>
+      </div>
+      <div style="position: relative; height: 300px;">
+        <canvas id="chartProductos"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Top Clientes y Calendario de Cheques -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Top Clientes -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+        <i class="fas fa-users mr-2 text-blue-600"></i>
+        Top Clientes
+      </h3>
+      <div id="top-clientes" class="space-y-3">
+        <!-- Se llena dinámicamente -->
+      </div>
+    </div>
+
+    <!-- Calendario de Cheques -->
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-slate-200">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-slate-800 flex items-center">
+          <i class="fas fa-calendar-check mr-2 text-green-600"></i>
+          Calendario de Cheques
+        </h3>
+        <div class="flex space-x-2">
+          <button id="btn-mes-anterior" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="mes-actual" class="px-3 py-2 text-sm font-medium text-slate-800"></span>
+          <button id="btn-mes-siguiente" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+      <div id="calendario-cheques" class="grid grid-cols-7 gap-1 text-center text-xs">
+        <!-- Se llena dinámicamente -->
+      </div>
+      <div class="mt-4 flex items-center justify-between text-xs text-slate-600">
+        <div class="flex items-center space-x-2">
+          <div class="w-3 h-3 bg-green-200 rounded"></div>
+          <span>Con cheques</span>
+        </div>
+        <div id="total-cheques-mes" class="font-medium"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Botón de Actualización -->
+  <div class="flex justify-center">
+    <button id="btn-actualizar" class="bg-slate-600 text-white px-6 py-3 rounded-lg hover:bg-slate-700 transition-colors flex items-center space-x-2">
+      <i class="fas fa-sync-alt"></i>
+      <span>Actualizar Dashboard</span>
+    </button>
   </div>
 
 </div>
 
-<!-- Aquí puedes agregar más secciones después -->
-<div class="mt-10 bg-white p-6 shadow rounded-xl">
-  <h3 class="text-lg font-bold mb-4">Resumen de Ventas</h3>
-  <p class="text-sm text-gray-600">Pronto podrás ver gráficos comparativos por fechas, clientes y más.</p>
-</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+<script>
+// Variables globales para los gráficos
+let chartVentas, chartProductos;
+let fechaActualCalendario = new Date();
+let datosProductosMensuales = {};
+
+// Función para formatear números como moneda
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    minimumFractionDigits: 0
+  }).format(amount);
+}
+
+// Función para formatear números
+function formatNumber(num) {
+  return new Intl.NumberFormat('es-CL').format(num);
+}
+
+// Función para obtener fechas de filtros
+function obtenerFechasFiltro() {
+  const desde = document.getElementById('fecha-desde').value;
+  const hasta = document.getElementById('fecha-hasta').value;
+  return { desde, hasta };
+}
+
+// Función para establecer filtros rápidos
+function establecerFiltroRapido(tipo) {
+  const hoy = new Date();
+  let desde, hasta;
+  
+  switch(tipo) {
+    case 'hoy':
+      desde = hasta = hoy.toISOString().split('T')[0];
+      break;
+    case 'semana':
+      const inicioSemana = new Date(hoy);
+      inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+      desde = inicioSemana.toISOString().split('T')[0];
+      hasta = hoy.toISOString().split('T')[0];
+      break;
+    case 'mes':
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+      hasta = hoy.toISOString().split('T')[0];
+      break;
+    case 'año':
+      desde = new Date(hoy.getFullYear(), 0, 1).toISOString().split('T')[0];
+      hasta = hoy.toISOString().split('T')[0];
+      break;
+  }
+  
+  document.getElementById('fecha-desde').value = desde;
+  document.getElementById('fecha-hasta').value = hasta;
+  
+  // Actualizar botones activos
+  document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+    btn.classList.remove('bg-slate-600', 'text-white');
+    btn.classList.add('bg-slate-100', 'hover:bg-slate-200');
+  });
+  document.getElementById(`btn-${tipo}`).classList.remove('bg-slate-100', 'hover:bg-slate-200');
+  document.getElementById(`btn-${tipo}`).classList.add('bg-slate-600', 'text-white');
+  
+  cargarTodosLosDatos();
+}
+
+// Cargar KPIs principales
+async function cargarKPIs() {
+  try {
+    const { desde, hasta } = obtenerFechasFiltro();
+    const params = new URLSearchParams();
+    if (desde) params.append('fecha_desde', desde);
+    if (hasta) params.append('fecha_hasta', hasta);
+    
+    const response = await fetch(`/dashboard/kpis?${params}`);
+    const data = await response.json();
+    
+    // Actualizar KPIs
+    document.getElementById('total-ventas').textContent = formatCurrency(data.total_ventas);
+    document.getElementById('total-unidades').textContent = formatNumber(data.total_unidades);
+    document.getElementById('margen-neto').textContent = formatCurrency(data.margen_neto);
+    document.getElementById('facturas-pendientes').textContent = formatNumber(data.facturas_pendientes);
+    
+    // Cálculos adicionales
+    document.getElementById('ordenes-total').textContent = `${formatNumber(data.total_ordenes)} órdenes`;
+    
+    const promedioOrden = data.total_ordenes > 0 ? data.total_unidades / data.total_ordenes : 0;
+    document.getElementById('promedio-orden').textContent = `${promedioOrden.toFixed(1)} por orden`;
+    
+    const porcentajeMargen = data.total_ventas > 0 ? ((data.margen_neto / data.total_ventas) * 100) : 0;
+    document.getElementById('porcentaje-margen').textContent = `${porcentajeMargen.toFixed(1)}%`;
+    
+  } catch (error) {
+    console.error('Error cargando KPIs:', error);
+  }
+}
+
+// Cargar tendencia de ventas
+async function cargarTendenciaVentas(dias = 30) {
+  try {
+    const response = await fetch(`/dashboard/ventas-tendencia?dias=${dias}`);
+    const data = await response.json();
+    
+    actualizarGraficoVentas(data);
+    
+  } catch (error) {
+    console.error('Error cargando tendencia:', error);
+  }
+}
+
+// Cargar productos mensuales
+async function cargarProductosMensuales() {
+  try {
+    const { desde, hasta } = obtenerFechasFiltro();
+    const params = new URLSearchParams();
+    if (desde) params.append('fecha_desde', desde);
+    if (hasta) params.append('fecha_hasta', hasta);
+    
+    console.log('🔍 Cargando productos mensuales con filtros:', { desde, hasta });
+    
+    const response = await fetch(`/dashboard/productos-mensuales?${params}`);
+    const data = await response.json();
+    
+    console.log('📊 Datos productos mensuales recibidos:', data);
+    
+    datosProductosMensuales = data.datos_por_mes;
+    
+    // Llenar selector de meses
+    const selectMes = document.getElementById('mes-productos');
+    selectMes.innerHTML = '<option value="">Seleccionar mes</option>';
+    
+    const mesesDisponibles = Object.keys(datosProductosMensuales);
+    console.log('📅 Meses disponibles:', mesesDisponibles);
+    
+    if (mesesDisponibles.length === 0) {
+      selectMes.innerHTML = '<option value="">No hay datos disponibles</option>';
+      // Mostrar gráfico vacío
+      mostrarGraficoVacio('chartProductos', 'No hay datos de productos para el período seleccionado');
+      return;
+    }
+    
+    mesesDisponibles.sort().reverse().forEach(mes => {
+      const option = document.createElement('option');
+      option.value = mes;
+      option.textContent = new Date(mes + '-01').toLocaleDateString('es-CL', { 
+        year: 'numeric', 
+        month: 'long' 
+      });
+      selectMes.appendChild(option);
+    });
+    
+    // Seleccionar el mes más reciente por defecto
+    const mesReciente = mesesDisponibles.sort().reverse()[0];
+    selectMes.value = mesReciente;
+    actualizarGraficoProductos(mesReciente);
+    
+  } catch (error) {
+    console.error('Error cargando productos mensuales:', error);
+    mostrarGraficoVacio('chartProductos', 'Error al cargar datos de productos');
+  }
+}
+
+// Cargar calendario de cheques
+async function cargarCalendarioCheques() {
+  try {
+    const año = fechaActualCalendario.getFullYear();
+    const mes = fechaActualCalendario.getMonth() + 1;
+    
+    const response = await fetch(`/dashboard/calendario-cheques?año=${año}&mes=${mes}`);
+    const data = await response.json();
+    
+    actualizarCalendario(data);
+    
+  } catch (error) {
+    console.error('Error cargando calendario:', error);
+  }
+}
+
+// Cargar top clientes
+async function cargarTopClientes() {
+  try {
+    const { desde, hasta } = obtenerFechasFiltro();
+    const params = new URLSearchParams();
+    if (desde) params.append('fecha_desde', desde);
+    if (hasta) params.append('fecha_hasta', hasta);
+    params.append('limite', '5');
+    
+    const response = await fetch(`/dashboard/top-clientes?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    const container = document.getElementById('top-clientes');
+    if (!container) {
+      console.error('Container top-clientes no encontrado');
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    if (!data.clientes || data.clientes.length === 0) {
+      container.innerHTML = '<p class="text-slate-500 text-center">No hay datos de clientes disponibles</p>';
+      return;
+    }
+    
+    data.clientes.forEach((cliente, index) => {
+      const div = document.createElement('div');
+      div.className = 'flex items-center justify-between p-3 bg-slate-50 rounded-lg';
+      div.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <span class="text-blue-600 font-semibold text-sm">${index + 1}</span>
+          </div>
+          <div>
+            <p class="font-medium text-slate-800">${cliente.nombre}</p>
+            <p class="text-xs text-slate-600">${cliente.total_ordenes} órdenes</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="font-semibold text-slate-800">${formatCurrency(cliente.total_ventas)}</p>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+    
+  } catch (error) {
+    console.error('Error cargando clientes:', error);
+    const container = document.getElementById('top-clientes');
+    if (container) {
+      container.innerHTML = '<p class="text-red-500 text-center">Error al cargar datos de clientes</p>';
+    }
+  }
+}
+
+// Actualizar gráfico de ventas
+function actualizarGraficoVentas(data) {
+  const canvas = document.getElementById('chartVentas');
+  if (!canvas) {
+    console.error('Canvas chartVentas no encontrado');
+    return;
+  }
+  
+  const ctx = canvas.getContext('2d');
+  
+  if (chartVentas) {
+    chartVentas.destroy();
+  }
+  
+  if (!data.fechas || data.fechas.length === 0) {
+    mostrarGraficoVacio('chartVentas', 'No hay datos de ventas para el período seleccionado');
+    return;
+  }
+  
+  chartVentas = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.fechas,
+      datasets: [{
+        label: 'Ventas',
+        data: data.ventas,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return formatCurrency(value);
+            }
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      elements: {
+        point: {
+          radius: 4,
+          hoverRadius: 6
+        }
+      }
+    }
+  });
+}
+
+// Actualizar gráfico de productos
+function actualizarGraficoProductos(mes) {
+  const canvas = document.getElementById('chartProductos');
+  if (!canvas) {
+    console.error('Canvas chartProductos no encontrado');
+    return;
+  }
+  
+  const ctx = canvas.getContext('2d');
+  
+  if (chartProductos) {
+    chartProductos.destroy();
+  }
+  
+  const productos = datosProductosMensuales[mes] || [];
+  console.log('📊 Productos para el mes', mes, ':', productos);
+  
+  if (productos.length === 0) {
+    mostrarGraficoVacio('chartProductos', `No hay datos de productos para ${mes}`);
+    return;
+  }
+  
+  const labels = productos.map(p => p.producto);
+  const datos = productos.map(p => p.total_unidades);
+  
+  const colores = [
+    'rgba(59, 130, 246, 0.8)',
+    'rgba(16, 185, 129, 0.8)', 
+    'rgba(245, 158, 11, 0.8)',
+    'rgba(239, 68, 68, 0.8)',
+    'rgba(139, 92, 246, 0.8)'
+  ];
+  
+  chartProductos = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Unidades Vendidas',
+        data: datos,
+        backgroundColor: colores.slice(0, datos.length),
+        borderColor: colores.slice(0, datos.length).map(color => color.replace('0.8', '1')),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(context) {
+              const producto = productos[context.dataIndex];
+              return `Ventas: ${formatCurrency(producto.total_ventas)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        },
+        x: {
+          ticks: {
+            maxRotation: 45,
+            minRotation: 45
+          }
+        }
+      }
+    }
+  });
+}
+
+// Función para mostrar gráfico vacío con mensaje
+function mostrarGraficoVacio(canvasId, mensaje) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  
+  if (canvasId === 'chartProductos' && chartProductos) {
+    chartProductos.destroy();
+  }
+  if (canvasId === 'chartVentas' && chartVentas) {
+    chartVentas.destroy();
+  }
+  
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [''],
+      datasets: [{
+        data: [0],
+        backgroundColor: 'rgba(203, 213, 225, 0.5)',
+        borderColor: 'rgba(203, 213, 225, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          enabled: false
+        }
+      },
+      scales: {
+        y: {
+          display: false
+        },
+        x: {
+          display: false
+        }
+      },
+      layout: {
+        padding: 20
+      },
+      onHover: () => {},
+      onClick: () => {}
+    },
+    plugins: [{
+      afterDraw: function(chart) {
+        const ctx = chart.ctx;
+        const width = chart.width;
+        const height = chart.height;
+        
+        ctx.restore();
+        const fontSize = 14;
+        ctx.font = fontSize + "px Arial";
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const text = mensaje;
+        const textX = width / 2;
+        const textY = height / 2;
+        
+        ctx.fillText(text, textX, textY);
+        ctx.save();
+      }
+    }]
+  });
+  
+  if (canvasId === 'chartProductos') {
+    chartProductos = chart;
+  }
+  if (canvasId === 'chartVentas') {
+    chartVentas = chart;
+  }
+}
+
+// Actualizar calendario
+function actualizarCalendario(data) {
+  const container = document.getElementById('calendario-cheques');
+  const mesActual = document.getElementById('mes-actual');
+  
+  // Actualizar título del mes
+  const fecha = new Date(data.año, data.mes - 1);
+  mesActual.textContent = fecha.toLocaleDateString('es-CL', { 
+    year: 'numeric', 
+    month: 'long' 
+  });
+  
+  // Limpiar calendario
+  container.innerHTML = '';
+  
+  // Días de la semana
+  const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  diasSemana.forEach(dia => {
+    const div = document.createElement('div');
+    div.className = 'p-2 font-semibold text-slate-600 bg-slate-100 rounded';
+    div.textContent = dia;
+    container.appendChild(div);
+  });
+  
+  // Obtener primer día del mes y días en el mes
+  const primerDia = new Date(data.año, data.mes - 1, 1).getDay();
+  const diasEnMes = new Date(data.año, data.mes, 0).getDate();
+  
+  // Agregar días vacíos al inicio
+  for (let i = 0; i < primerDia; i++) {
+    const div = document.createElement('div');
+    div.className = 'p-2';
+    container.appendChild(div);
+  }
+  
+  // Agregar días del mes
+  let totalCheques = 0;
+  let montoTotal = 0;
+  
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const div = document.createElement('div');
+    div.className = 'p-2 text-center rounded hover:bg-slate-100 cursor-pointer transition-colors';
+    
+    const tieneCheques = data.dias_con_cheques[dia];
+    if (tieneCheques) {
+      div.classList.add('bg-green-200', 'text-green-800', 'font-semibold');
+      div.title = `${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`;
+      totalCheques += tieneCheques.cantidad;
+      montoTotal += tieneCheques.monto;
+    }
+    
+    div.textContent = dia;
+    container.appendChild(div);
+  }
+  
+  // Actualizar totales
+  document.getElementById('total-cheques-mes').textContent = 
+    `${totalCheques} cheques - ${formatCurrency(montoTotal)}`;
+}
+
+// Event listeners para botones de filtro rápido
+document.addEventListener('DOMContentLoaded', function() {
+  // Establecer fecha inicial (este mes)
+  establecerFiltroRapido('mes');
+  
+  // Botones de filtro rápido
+  document.getElementById('btn-hoy').addEventListener('click', () => establecerFiltroRapido('hoy'));
+  document.getElementById('btn-semana').addEventListener('click', () => establecerFiltroRapido('semana'));
+  document.getElementById('btn-mes').addEventListener('click', () => establecerFiltroRapido('mes'));
+ document.getElementById('btn-año').addEventListener('click', () => establecerFiltroRapido('año'));
+ 
+ // Botón aplicar filtros
+ document.getElementById('btn-aplicar-filtros').addEventListener('click', cargarTodosLosDatos);
+ 
+ // Botones de período para gráfico de ventas
+ document.querySelectorAll('.period-btn').forEach(btn => {
+   btn.addEventListener('click', function() {
+     // Remover clase activa de todos
+     document.querySelectorAll('.period-btn').forEach(b => {
+       b.classList.remove('bg-slate-600', 'text-white');
+       b.classList.add('bg-slate-100', 'hover:bg-slate-200');
+     });
+     
+     // Agregar clase activa al actual
+     this.classList.remove('bg-slate-100', 'hover:bg-slate-200');
+     this.classList.add('bg-slate-600', 'text-white');
+     
+     const dias = parseInt(this.dataset.period);
+     cargarTendenciaVentas(dias);
+   });
+ });
+ 
+ // Selector de mes para productos
+ document.getElementById('mes-productos').addEventListener('change', function() {
+   if (this.value) {
+     actualizarGraficoProductos(this.value);
+   }
+ });
+ 
+ // Navegación del calendario
+ document.getElementById('btn-mes-anterior').addEventListener('click', function() {
+   fechaActualCalendario.setMonth(fechaActualCalendario.getMonth() - 1);
+   cargarCalendarioCheques();
+ });
+ 
+ document.getElementById('btn-mes-siguiente').addEventListener('click', function() {
+   fechaActualCalendario.setMonth(fechaActualCalendario.getMonth() + 1);
+   cargarCalendarioCheques();
+ });
+ 
+ // Botón actualizar
+ document.getElementById('btn-actualizar').addEventListener('click', cargarTodosLosDatos);
+});
+
+// Función para cargar todos los datos
+async function cargarTodosLosDatos() {
+ const btnActualizar = document.getElementById('btn-actualizar');
+ if (!btnActualizar) {
+   console.error('Botón actualizar no encontrado');
+   return;
+ }
+ 
+ const icono = btnActualizar.querySelector('i');
+ 
+ // Mostrar loading
+ if (icono) icono.classList.add('fa-spin');
+ btnActualizar.disabled = true;
+ 
+ try {
+   console.log('🔄 Iniciando carga de todos los datos...');
+   
+   // Cargar datos secuencialmente para evitar problemas de concurrencia
+   await cargarKPIs();
+   console.log('✅ KPIs cargados');
+   
+   await cargarTendenciaVentas(30);
+   console.log('✅ Tendencia cargada');
+   
+   await cargarTopClientes();
+   console.log('✅ Clientes cargados');
+   
+   await cargarProductosMensuales();
+   console.log('✅ Productos cargados');
+   
+   await cargarCalendarioCheques();
+   console.log('✅ Calendario cargado');
+   
+   console.log('🎉 Todos los datos cargados exitosamente');
+   
+ } catch (error) {
+   console.error('❌ Error cargando datos:', error);
+ } finally {
+   // Quitar loading
+   if (icono) icono.classList.remove('fa-spin');
+   btnActualizar.disabled = false;
+ }
+}
+</script>
+
 {% endblock %}
