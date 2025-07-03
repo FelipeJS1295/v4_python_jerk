@@ -697,12 +697,48 @@ function actualizarCalendario(data) {
   
   for (let dia = 1; dia <= diasEnMes; dia++) {
     const div = document.createElement('div');
-    div.className = 'p-2 text-center rounded hover:bg-slate-100 cursor-pointer transition-colors';
+    div.className = 'p-2 text-center rounded hover:bg-slate-100 cursor-pointer transition-colors relative';
     
     const tieneCheques = data.dias_con_cheques[dia];
     if (tieneCheques) {
-      div.classList.add('bg-green-200', 'text-green-800', 'font-semibold');
-      div.title = `${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`;
+      // Determinar color basado en el origen
+      const tieneSistema = tieneCheques.detalles.sistema.cantidad > 0;
+      const tieneTempora = tieneCheques.detalles.temporal.cantidad > 0;
+      
+      if (tieneSistema && tieneTempora) {
+        // Ambos orígenes - color especial
+        div.classList.add('bg-gradient-to-br', 'from-green-200', 'to-blue-200', 'text-gray-800', 'font-semibold');
+      } else if (tieneSistema) {
+        // Solo sistema actual - verde
+        div.classList.add('bg-green-200', 'text-green-800', 'font-semibold');
+      } else {
+        // Solo temporal - azul
+        div.classList.add('bg-blue-200', 'text-blue-800', 'font-semibold');
+      }
+      
+      // Crear tooltip detallado
+      let tooltipText = `${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`;
+      
+      if (tieneSistema && tieneTempora) {
+        tooltipText += `\n━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        tooltipText += `\n🏢 Sistema: ${tieneCheques.detalles.sistema.cantidad} cheques - ${formatCurrency(tieneCheques.detalles.sistema.monto)}`;
+        tooltipText += `\n📋 Temporal: ${tieneCheques.detalles.temporal.cantidad} cheques - ${formatCurrency(tieneCheques.detalles.temporal.monto)}`;
+      } else if (tieneSistema) {
+        tooltipText += `\n🏢 Origen: Sistema Actual`;
+      } else {
+        tooltipText += `\n📋 Origen: Tabla Temporal`;
+      }
+      
+      div.title = tooltipText;
+      
+      // Agregar indicador visual si hay múltiples orígenes
+      if (tieneSistema && tieneTempora) {
+        const indicator = document.createElement('div');
+        indicator.className = 'absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full border border-white';
+        indicator.title = 'Múltiples orígenes';
+        div.appendChild(indicator);
+      }
+      
       totalCheques += tieneCheques.cantidad;
       montoTotal += tieneCheques.monto;
     }
@@ -711,64 +747,44 @@ function actualizarCalendario(data) {
     container.appendChild(div);
   }
   
-  // Actualizar totales
-  document.getElementById('total-cheques-mes').textContent = 
-    `${totalCheques} cheques - ${formatCurrency(montoTotal)}`;
+  // Actualizar totales con información adicional
+  const totalElement = document.getElementById('total-cheques-mes');
+  if (totalElement) {
+    totalElement.innerHTML = `
+      <div class="text-sm">
+        <div class="font-semibold">${totalCheques} cheques - ${formatCurrency(montoTotal)}</div>
+        <div class="text-xs text-slate-500 mt-1">
+          <span class="inline-block w-3 h-3 bg-green-200 rounded mr-1"></span>Sistema
+          <span class="inline-block w-3 h-3 bg-blue-200 rounded mr-1 ml-2"></span>Temporal
+          <span class="inline-block w-3 h-3 bg-gradient-to-r from-green-200 to-blue-200 rounded mr-1 ml-2"></span>Ambos
+        </div>
+      </div>
+    `;
+  }
 }
 
-// Event listeners para botones de filtro rápido
-document.addEventListener('DOMContentLoaded', function() {
-  // Establecer fecha inicial (este mes)
-  establecerFiltroRapido('mes');
-  
-  // Botones de filtro rápido
-  document.getElementById('btn-hoy').addEventListener('click', () => establecerFiltroRapido('hoy'));
-  document.getElementById('btn-semana').addEventListener('click', () => establecerFiltroRapido('semana'));
-  document.getElementById('btn-mes').addEventListener('click', () => establecerFiltroRapido('mes'));
- document.getElementById('btn-año').addEventListener('click', () => establecerFiltroRapido('año'));
- 
- // Botón aplicar filtros
- document.getElementById('btn-aplicar-filtros').addEventListener('click', cargarTodosLosDatos);
- 
- // Botones de período para gráfico de ventas
- document.querySelectorAll('.period-btn').forEach(btn => {
-   btn.addEventListener('click', function() {
-     // Remover clase activa de todos
-     document.querySelectorAll('.period-btn').forEach(b => {
-       b.classList.remove('bg-slate-600', 'text-white');
-       b.classList.add('bg-slate-100', 'hover:bg-slate-200');
-     });
-     
-     // Agregar clase activa al actual
-     this.classList.remove('bg-slate-100', 'hover:bg-slate-200');
-     this.classList.add('bg-slate-600', 'text-white');
-     
-     const dias = parseInt(this.dataset.period);
-     cargarTendenciaVentas(dias);
-   });
- });
- 
- // Selector de mes para productos
- document.getElementById('mes-productos').addEventListener('change', function() {
-   if (this.value) {
-     actualizarGraficoProductos(this.value);
-   }
- });
- 
- // Navegación del calendario
- document.getElementById('btn-mes-anterior').addEventListener('click', function() {
-   fechaActualCalendario.setMonth(fechaActualCalendario.getMonth() - 1);
-   cargarCalendarioCheques();
- });
- 
- document.getElementById('btn-mes-siguiente').addEventListener('click', function() {
-   fechaActualCalendario.setMonth(fechaActualCalendario.getMonth() + 1);
-   cargarCalendarioCheques();
- });
- 
- // Botón actualizar
- document.getElementById('btn-actualizar').addEventListener('click', cargarTodosLosDatos);
-});
+function mostrarDetalleDia(año, mes, dia) {
+  fetch(`/dashboard/calendario-cheques/detalle?año=${año}&mes=${mes}&dia=${dia}`)
+    .then(response => response.json())
+    .then(data => {
+      // Aquí puedes mostrar un modal o popup con los detalles
+      console.log('Detalles del día:', data);
+      
+      // Ejemplo de alerta simple (puedes mejorarlo con un modal)
+      let mensaje = `📅 ${data.fecha}\n`;
+      mensaje += `📊 Total: ${data.total_cheques} cheques - ${formatCurrency(data.total_monto)}\n\n`;
+      
+      if (data.cheques.length > 0) {
+        mensaje += `Detalle de cheques:\n`;
+        data.cheques.forEach((cheque, index) => {
+          mensaje += `${index + 1}. ${cheque.proveedor} - #${cheque.numero_cheque} - ${formatCurrency(cheque.monto)} (${cheque.origen})\n`;
+        });
+      }
+      
+      alert(mensaje);
+    })
+    .catch(error => console.error('Error:', error));
+}
 
 // Función para cargar todos los datos
 async function cargarTodosLosDatos() {

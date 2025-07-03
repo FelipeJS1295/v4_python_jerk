@@ -350,7 +350,7 @@ def obtener_productos_mensuales(fecha_desde: str = "", fecha_hasta: str = "", li
 
 @router.get("/calendario-cheques", response_class=JSONResponse)
 def obtener_calendario_cheques(año: int = None, mes: int = None):
-    """Obtener calendario de cheques para un mes específico"""
+    """Obtener calendario de cheques combinando pagos_factura y tabla cheques"""
     try:
         conn = conectar_mysql()
         cursor = conn.cursor(dictionary=True)
@@ -361,31 +361,65 @@ def obtener_calendario_cheques(año: int = None, mes: int = None):
             año = año or hoy.year
             mes = mes or hoy.month
 
-        # Buscar cheques en pagos_factura para el mes especificado
+        # Query combinada usando UNION para mezclar ambas tablas
         query = """
+            -- Cheques del sistema actual (pagos_factura)
             SELECT 
-                DATE(fecha) as fecha_cheque,
+                DATE(pf.fecha) as fecha_cheque,
                 COUNT(*) as cantidad_cheques,
-                SUM(monto) as monto_total
-            FROM pagos_factura
-            WHERE tipo = 'cheque' 
-            AND YEAR(fecha) = %s 
-            AND MONTH(fecha) = %s
-            GROUP BY DATE(fecha)
-            ORDER BY fecha_cheque
+                SUM(pf.monto) as monto_total,
+                'sistema' as origen
+            FROM pagos_factura pf
+            WHERE pf.tipo = 'cheque' 
+            AND YEAR(pf.fecha) = %s 
+            AND MONTH(pf.fecha) = %s
+            GROUP BY DATE(pf.fecha)
+            
+            UNION ALL
+            
+            -- Cheques de la tabla temporal
+            SELECT 
+                DATE(c.fecha_cheque) as fecha_cheque,
+                COUNT(*) as cantidad_cheques,
+                SUM(c.monto) as monto_total,
+                'temporal' as origen
+            FROM cheques c
+            WHERE YEAR(c.fecha_cheque) = %s 
+            AND MONTH(c.fecha_cheque) = %s
+            GROUP BY DATE(c.fecha_cheque)
         """
         
-        cursor.execute(query, (año, mes))
-        cheques = cursor.fetchall()
+        cursor.execute(query, (año, mes, año, mes))
+        resultados = cursor.fetchall()
 
-        # Formatear datos para el calendario
+        # Agrupar por fecha combinando ambos orígenes
         dias_con_cheques = {}
-        for cheque in cheques:
-            dia = cheque["fecha_cheque"].day
-            dias_con_cheques[dia] = {
-                "cantidad": cheque["cantidad_cheques"],
-                "monto": round(float(cheque["monto_total"] or 0), 2)
-            }
+        
+        for resultado in resultados:
+            dia = resultado["fecha_cheque"].day
+            
+            if dia not in dias_con_cheques:
+                dias_con_cheques[dia] = {
+                    "cantidad": 0,
+                    "monto": 0,
+                    "detalles": {
+                        "sistema": {"cantidad": 0, "monto": 0},
+                        "temporal": {"cantidad": 0, "monto": 0}
+                    }
+                }
+            
+            # Sumar totales
+            dias_con_cheques[dia]["cantidad"] += resultado["cantidad_cheques"]
+            dias_con_cheques[dia]["monto"] += float(resultado["monto_total"] or 0)
+            
+            # Guardar detalles por origen
+            origen = resultado["origen"]
+            dias_con_cheques[dia]["detalles"][origen]["cantidad"] = resultado["cantidad_cheques"]
+            dias_con_cheques[dia]["detalles"][origen]["monto"] = float(resultado["monto_total"] or 0)
+
+        # Redondear montos
+        for dia in dias_con_cheques:
+            dias_con_cheques[dia]["monto"] = round(dias_con_cheques[dia]["monto"], 2)
 
         return {
             "año": año,
@@ -398,6 +432,72 @@ def obtener_calendario_cheques(año: int = None, mes: int = None):
         raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
     finally:
         if 'conn' in locals():
+            cursor.close()
+            conn.close()
+
+@router.get("/calendario-cheques/detalle", response_class=JSONResponse)
+def obtener_detalle_dia_cheques(año: int, mes: int, dia: int):
+    """Obtener detalle de cheques para un día específico"""
+    try:
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+        
+        fecha_especifica = f"{año}-{mes:02d}-{dia:02d}"
+        
+        # Cheques del sistema actual
+        cursor.execute("""
+            SELECT 
+                pf.numero as numero_cheque,
+                pf.monto,
+                p.nombre as proveedor,
+                pf.estado,
+                'Sistema Actual' as origen
+            FROM pagos_factura pf
+            JOIN facturas_compra f ON f.id = pf.factura_id
+            JOIN proveedores p ON f.proveedor_id = p.id
+            WHERE pf.tipo = 'cheque' 
+            AND DATE(pf.fecha) = %s
+            ORDER BY pf.numero
+        """, (fecha_especifica,))
+        
+        cheques_sistema = cursor.fetchall()
+        
+        # Cheques de tabla temporal
+        cursor.execute("""
+            SELECT 
+                c.numero_cheque,
+                c.monto,
+                p.nombre as proveedor,
+                'Pendiente' as estado,
+                'Tabla Temporal' as origen
+            FROM cheques c
+            JOIN proveedores p ON c.proveedor_id = p.id
+            WHERE DATE(c.fecha_cheque) = %s
+            ORDER BY c.numero_cheque
+        """, (fecha_especifica,))
+        
+        cheques_temporal = cursor.fetchall()
+        
+        # Combinar ambos resultados
+        todos_cheques = cheques_sistema + cheques_temporal
+        
+        return {
+            "fecha": fecha_especifica,
+            "total_cheques": len(todos_cheques),
+            "total_monto": sum(float(c["monto"]) for c in todos_cheques),
+            "cheques": todos_cheques,
+            "resumen": {
+                "sistema": len(cheques_sistema),
+                "temporal": len(cheques_temporal)
+            }
+        }
+        
+    except Exception as e:
+        print("❌ ERROR EN /calendario-cheques/detalle:", e)
+        raise HTTPException(status_code=500, detail="Error interno en el cálculo.")
+    finally:
+        if 'conn' in locals():
+            cursor.close()
             conn.close()
 
 @router.get("/resumen-financiero", response_class=JSONResponse)
