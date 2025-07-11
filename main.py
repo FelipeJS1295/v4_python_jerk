@@ -1,8 +1,8 @@
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 import os
 
 # Routers generales
@@ -37,8 +37,6 @@ from routers.config import usuarios_acciones
 from routers.logistica import devoluciones
 from routers.logistica.bodega import facturas
 
-
-
 # Routers de configuración
 from routers.config import (
     clientes as config_clientes,
@@ -46,8 +44,7 @@ from routers.config import (
     proveedores as config_proveedores,
 )
 
-from routers.auth import router as auth_router
-
+from routers.auth import router as auth_router, obtener_usuario_actual
 
 # App y configuración
 app = FastAPI()
@@ -62,104 +59,86 @@ app.add_middleware(
 
 # Archivos estáticos y templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
-# Montar carpeta externa de imágenes
 app.mount("/imagenes", StaticFiles(directory="/var/www/imagenes_jhk"), name="imagenes")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
+# ===== RUTAS PÚBLICAS (no requieren autenticación) =====
+RUTAS_PUBLICAS = {
+    "/auth/login",
+    "/auth/logout", 
+    "/usuarios/login",
+}
 
-# ===== RUTA RAÍZ CON AUTENTICACIÓN =====
+def es_ruta_publica(path: str) -> bool:
+    """Verificar si una ruta es pública"""
+    return (
+        any(path.startswith(ruta) for ruta in RUTAS_PUBLICAS) or
+        path.startswith("/static") or
+        path.startswith("/imagenes")
+    )
+
+# ===== MIDDLEWARE DE AUTENTICACIÓN =====
+@app.middleware("http")
+async def verificar_autenticacion(request: Request, call_next):
+    """Middleware para verificar autenticación en todas las rutas protegidas"""
+    
+    ruta_actual = request.url.path
+    
+    # Verificar si es una ruta pública
+    if es_ruta_publica(ruta_actual):
+        response = await call_next(request)
+        return response
+    
+    # Para rutas protegidas, verificar autenticación
+    usuario = obtener_usuario_actual(request)
+    
+    if not usuario:
+        # No autenticado, redirigir según la ruta
+        if ruta_actual == "/":
+            # Para la ruta raíz, mostrar el login directamente
+            return templates.TemplateResponse("auth/login.html", {"request": request})
+        else:
+            # Para otras rutas, redirigir a login
+            return RedirectResponse(url="/auth/login", status_code=302)
+    
+    # Usuario válido, agregar al request state
+    request.state.usuario = usuario
+    
+    # Continuar con la solicitud
+    response = await call_next(request)
+    return response
+
+# ===== RUTA RAÍZ =====
 @app.get("/")
 def home(request: Request):
-    """Redirigir a login o dashboard según autenticación"""
+    """Dashboard principal - Protegido por middleware"""
+    # El middleware ya verificó la autenticación
+    usuario = getattr(request.state, 'usuario', None)
     
-    # Verificar si ya está autenticado
-    token = request.cookies.get("session_token")
-    
-    if token:
-        from utils.auth import verificar_token
-        from db import conectar_mysql
-        
-        payload = verificar_token(token)
-        
-        if payload:
-            # Verificar que sea admin
-            conn = conectar_mysql()
-            cursor = conn.cursor(dictionary=True)
-            
-            try:
-                user_id = payload.get("sub")
-                cursor.execute("""
-                    SELECT * FROM users 
-                    WHERE id = %s AND activo = 1 AND rol = 'Admin'
-                """, (user_id,))
-                user = cursor.fetchone()
-                
-                if user:
-                    # Ya autenticado, ir al dashboard
-                    return templates.TemplateResponse("dashboard.html", {
-                        "request": request,
-                        "usuario": user
-                    })
-                    
-            finally:
-                cursor.close()
-                conn.close()
-    
-    # No autenticado, mostrar login
-    return templates.TemplateResponse("auth/login.html", {"request": request})
+    if usuario:
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "usuario": usuario
+        })
+    else:
+        # Fallback (no debería pasar por el middleware)
+        return templates.TemplateResponse("auth/login.html", {"request": request})
 
-# ===== FUNCIÓN HELPER PARA PROTEGER RUTAS =====
-def verificar_admin_main(request: Request):
-    """Función helper para verificar que el usuario es admin"""
-    from fastapi import HTTPException
-    from utils.auth import verificar_token
-    from db import conectar_mysql
-    
-    token = request.cookies.get("session_token")
-    
-    if not token:
-        raise HTTPException(status_code=401, detail="No autenticado")
-    
-    payload = verificar_token(token)
-    
-    if not payload:
-        raise HTTPException(status_code=401, detail="Token inválido")
-    
-    conn = conectar_mysql()
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        user_id = payload.get("sub")
-        cursor.execute("""
-            SELECT * FROM users 
-            WHERE id = %s AND activo = 1 AND rol = 'Admin'
-        """, (user_id,))
-        user = cursor.fetchone()
-        
-        if not user:
-            raise HTTPException(status_code=401, detail="Solo administradores")
-        
-        return user
-        
-    finally:
-        cursor.close()
-        conn.close()
-
-# ===== RUTAS PROTEGIDAS DE EJEMPLO =====
-@app.get("/dashboard-main")
-def dashboard_main(request: Request):
-    """Dashboard principal protegido"""
-    usuario = verificar_admin_main(request)
+# ===== RUTA DE DASHBOARD ADICIONAL =====
+@app.get("/dashboard")
+def dashboard_principal(request: Request):
+    """Dashboard alternativo - También protegido"""
+    usuario = getattr(request.state, 'usuario', None)
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "usuario": usuario
     })
 
-# ===== INCLUIR ROUTER DE AUTENTICACIÓN =====
+# ===== INCLUIR ROUTER DE AUTENTICACIÓN PRIMERO =====
 app.include_router(auth_router)
 
-# ===== ROUTERS EXISTENTES =====
+# ===== ROUTERS EXISTENTES (Todos ahora protegidos automáticamente) =====
 app.include_router(clientes.router)
 app.include_router(insumos.router)
 app.include_router(proveedores.router)

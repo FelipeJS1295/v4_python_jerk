@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from db import conectar_mysql
 from schemas.usuario_schema import UsuarioLogin
@@ -13,6 +13,34 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/login", response_class=HTMLResponse)
 async def vista_login(request: Request):
     """Vista del formulario de login"""
+    # Verificar si ya está autenticado para evitar doble login
+    token = request.cookies.get("session_token")
+    
+    if token:
+        from utils.auth import verificar_token
+        payload = verificar_token(token)
+        
+        if payload:
+            # Verificar que sea admin activo
+            conn = conectar_mysql()
+            cursor = conn.cursor(dictionary=True)
+            
+            try:
+                user_id = payload.get("sub")
+                cursor.execute("""
+                    SELECT * FROM users 
+                    WHERE id = %s AND activo = 1 AND rol = 'Admin'
+                """, (user_id,))
+                user = cursor.fetchone()
+                
+                if user:
+                    # Ya autenticado, redirigir al dashboard
+                    return RedirectResponse(url="/", status_code=302)
+                    
+            finally:
+                cursor.close()
+                conn.close()
+    
     return templates.TemplateResponse("auth/login.html", {"request": request})
 
 # ===== ENDPOINT LOGIN =====
@@ -56,7 +84,8 @@ async def login(datos: UsuarioLogin, response: Response):
                 "id": user["id"],
                 "nombre_usuario": user["nombre_usuario"],
                 "rol": user["rol"]
-            }
+            },
+            "redirect_url": "/"  # Para que el frontend sepa a dónde redirigir
         }
         
     finally:
@@ -69,6 +98,13 @@ async def logout(response: Response):
     """Cerrar sesión"""
     response.delete_cookie(key="session_token")
     return {"mensaje": "Sesión cerrada"}
+
+# ===== RUTA GET PARA LOGOUT (para enlaces directos) =====
+@router.get("/logout")
+async def logout_get(response: Response):
+    """Cerrar sesión via GET"""
+    response.delete_cookie(key="session_token")
+    return RedirectResponse(url="/auth/login", status_code=302)
 
 # ===== VERIFICAR SESIÓN =====
 @router.get("/verificar-sesion")
@@ -113,45 +149,6 @@ async def verificar_sesion(request: Request):
         cursor.close()
         conn.close()
 
-# ===== DASHBOARD =====
-@router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    """Dashboard - Solo para administradores autenticados"""
-    
-    # Verificar sesión
-    token = request.cookies.get("session_token")
-    if not token:
-        return templates.TemplateResponse("auth/login.html", {"request": request})
-    
-    from utils.auth import verificar_token
-    payload = verificar_token(token)
-    
-    if not payload:
-        return templates.TemplateResponse("auth/login.html", {"request": request})
-    
-    # Verificar usuario admin
-    conn = conectar_mysql()
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        user_id = payload.get("sub")
-        cursor.execute("""
-            SELECT * FROM users 
-            WHERE id = %s AND activo = 1 AND rol = 'Admin'
-        """, (user_id,))
-        user = cursor.fetchone()
-        
-        if not user:
-            return templates.TemplateResponse("auth/login.html", {"request": request})
-        
-        # Redirigir al dashboard principal (raíz)
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/", status_code=302)
-        
-    finally:
-        cursor.close()
-        conn.close()
-
 # ===== FUNCIÓN HELPER PARA PROTEGER RUTAS =====
 def verificar_admin(request: Request):
     """Función helper para verificar que el usuario es admin"""
@@ -186,41 +183,31 @@ def verificar_admin(request: Request):
         cursor.close()
         conn.close()
 
-# ===== REDIRECCIÓN RAÍZ =====
-@router.get("/")
-async def root(request: Request):
-    """Redireccionar a login o dashboard según autenticación"""
-    
-    # Verificar si ya está autenticado
+# ===== FUNCIÓN PARA OBTENER USUARIO ACTUAL =====
+def obtener_usuario_actual(request: Request):
+    """Función helper para obtener el usuario actual sin lanzar excepciones"""
     token = request.cookies.get("session_token")
     
-    if token:
-        from utils.auth import verificar_token
-        payload = verificar_token(token)
-        
-        if payload:
-            # Verificar que sea admin
-            conn = conectar_mysql()
-            cursor = conn.cursor(dictionary=True)
-            
-            try:
-                user_id = payload.get("sub")
-                cursor.execute("""
-                    SELECT * FROM users 
-                    WHERE id = %s AND activo = 1 AND rol = 'Admin'
-                """, (user_id,))
-                user = cursor.fetchone()
-                
-                if user:
-                    # Ya autenticado, ir al dashboard
-                    return templates.TemplateResponse("dashboard.html", {
-                        "request": request,
-                        "usuario": user
-                    })
-                    
-            finally:
-                cursor.close()
-                conn.close()
+    if not token:
+        return None
     
-    # No autenticado, mostrar login
-    return templates.TemplateResponse("auth/login.html", {"request": request})
+    from utils.auth import verificar_token
+    payload = verificar_token(token)
+    
+    if not payload:
+        return None
+    
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        user_id = payload.get("sub")
+        cursor.execute("""
+            SELECT * FROM users 
+            WHERE id = %s AND activo = 1 AND rol = 'Admin'
+        """, (user_id,))
+        return cursor.fetchone()
+        
+    finally:
+        cursor.close()
+        conn.close()
