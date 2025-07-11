@@ -27,6 +27,7 @@ def nuevo_trabajador(request: Request):
 # Crear trabajador (POST desde create.html)
 @router.post("/configuracion/trabajadores/crear")
 def crear_trabajador(
+    user_id: int = Form(None),  # Agregado este parámetro
     nombres: str = Form(...),
     apellidos: str = Form(...),
     rut: str = Form(...),
@@ -50,11 +51,11 @@ def crear_trabajador(
     try:
         cursor.execute("""
             INSERT INTO trabajadores 
-            (nombres, apellidos, rut, telefono, direccion, afp, salud, sueldo, fecha_ingreso, 
+            (user_id, nombres, apellidos, rut, telefono, direccion, afp, salud, sueldo, fecha_ingreso, 
              talla_polera, talla_pantalon, talla_zapatos, banco, tipo_cuenta, numero_cuenta, estado)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            nombres, apellidos, rut, telefono, direccion, afp, salud, sueldo, fecha_ingreso,
+            user_id, nombres, apellidos, rut, telefono, direccion, afp, salud, sueldo, fecha_ingreso,
             talla_polera, talla_pantalon, talla_zapatos, banco, tipo_cuenta, numero_cuenta, estado
         ))
         conn.commit()
@@ -82,9 +83,14 @@ def cargar_edicion_trabajador(request: Request, trabajador_id: int):
         if not trabajador:
             raise HTTPException(status_code=404, detail="Trabajador no encontrado")
 
+        # Obtener usuarios disponibles para el select
+        cursor.execute("SELECT id, nombre_usuario, email FROM users WHERE activo = 1 ORDER BY nombre_usuario")
+        usuarios = cursor.fetchall()
+
         return templates.TemplateResponse("configuracion/trabajadores/edit.html", {
             "request": request,
-            "trabajador": trabajador
+            "trabajador": trabajador,
+            "usuarios": usuarios
         })
 
     finally:
@@ -96,6 +102,7 @@ def cargar_edicion_trabajador(request: Request, trabajador_id: int):
 @router.post("/configuracion/trabajadores/{trabajador_id}/actualizar")
 def actualizar_trabajador(
     trabajador_id: int,
+    user_id: int = Form(None),  # Agregado este parámetro
     nombres: str = Form(...),
     apellidos: str = Form(...),
     rut: str = Form(...),
@@ -119,13 +126,13 @@ def actualizar_trabajador(
     try:
         cursor.execute("""
             UPDATE trabajadores SET 
-                nombres=%s, apellidos=%s, rut=%s, telefono=%s, direccion=%s,
+                user_id=%s, nombres=%s, apellidos=%s, rut=%s, telefono=%s, direccion=%s,
                 afp=%s, salud=%s, sueldo=%s, fecha_ingreso=%s,
                 talla_polera=%s, talla_pantalon=%s, talla_zapatos=%s,
                 banco=%s, tipo_cuenta=%s, numero_cuenta=%s, estado=%s
             WHERE id=%s
         """, (
-            nombres, apellidos, rut, telefono, direccion,
+            user_id, nombres, apellidos, rut, telefono, direccion,
             afp, salud, sueldo, fecha_ingreso,
             talla_polera, talla_pantalon, talla_zapatos,
             banco, tipo_cuenta, numero_cuenta, estado,
