@@ -27,16 +27,17 @@ def nuevo_trabajador(request: Request):
 # Crear trabajador (POST desde create.html)
 @router.post("/configuracion/trabajadores/crear")
 def crear_trabajador(
-    user_id: int = Form(None),  # Agregado este parámetro
     nombres: str = Form(...),
     apellidos: str = Form(...),
-    rut: str = Form(...),
+    user_id: str = Form(""),
+    rut: str = Form(""),
     telefono: str = Form(""),
     direccion: str = Form(""),
     afp: str = Form(""),
     salud: str = Form(""),
-    sueldo: float = Form(0),
+    sueldo: str = Form(""),
     fecha_ingreso: str = Form(""),
+    fecha_nacimiento: str = Form(""),
     talla_polera: str = Form(""),
     talla_pantalon: str = Form(""),
     talla_zapatos: str = Form(""),
@@ -49,14 +50,20 @@ def crear_trabajador(
     cursor = conn.cursor()
     
     try:
+        # Convertir valores vacíos a NULL para la base de datos
+        user_id_val = int(user_id) if user_id and user_id.strip() else None
+        sueldo_val = float(sueldo) if sueldo and sueldo.strip() else None
+        fecha_ingreso_val = fecha_ingreso if fecha_ingreso and fecha_ingreso.strip() else None
+        fecha_nacimiento_val = fecha_nacimiento if fecha_nacimiento and fecha_nacimiento.strip() else None
+        
         cursor.execute("""
             INSERT INTO trabajadores 
             (user_id, nombres, apellidos, rut, telefono, direccion, afp, salud, sueldo, fecha_ingreso, 
-             talla_polera, talla_pantalon, talla_zapatos, banco, tipo_cuenta, numero_cuenta, estado)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             fecha_nacimiento, talla_polera, talla_pantalon, talla_zapatos, banco, tipo_cuenta, numero_cuenta, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            user_id, nombres, apellidos, rut, telefono, direccion, afp, salud, sueldo, fecha_ingreso,
-            talla_polera, talla_pantalon, talla_zapatos, banco, tipo_cuenta, numero_cuenta, estado
+            user_id_val, nombres, apellidos, rut, telefono, direccion, afp, salud, sueldo_val, fecha_ingreso_val,
+            fecha_nacimiento_val, talla_polera, talla_pantalon, talla_zapatos, banco, tipo_cuenta, numero_cuenta, estado
         ))
         conn.commit()
         return RedirectResponse(url="/configuracion/trabajadores", status_code=303)
@@ -102,16 +109,17 @@ def cargar_edicion_trabajador(request: Request, trabajador_id: int):
 @router.post("/configuracion/trabajadores/{trabajador_id}/actualizar")
 def actualizar_trabajador(
     trabajador_id: int,
-    user_id: int = Form(None),  # Agregado este parámetro
     nombres: str = Form(...),
     apellidos: str = Form(...),
-    rut: str = Form(...),
+    user_id: str = Form(""),
+    rut: str = Form(""),
     telefono: str = Form(""),
     direccion: str = Form(""),
     afp: str = Form(""),
     salud: str = Form(""),
-    sueldo: float = Form(0),
+    sueldo: str = Form(""),
     fecha_ingreso: str = Form(""),
+    fecha_nacimiento: str = Form(""),
     talla_polera: str = Form(""),
     talla_pantalon: str = Form(""),
     talla_zapatos: str = Form(""),
@@ -124,16 +132,22 @@ def actualizar_trabajador(
     cursor = conn.cursor()
 
     try:
+        # Convertir valores vacíos a NULL para la base de datos
+        user_id_val = int(user_id) if user_id and user_id.strip() else None
+        sueldo_val = float(sueldo) if sueldo and sueldo.strip() else None
+        fecha_ingreso_val = fecha_ingreso if fecha_ingreso and fecha_ingreso.strip() else None
+        fecha_nacimiento_val = fecha_nacimiento if fecha_nacimiento and fecha_nacimiento.strip() else None
+        
         cursor.execute("""
             UPDATE trabajadores SET 
                 user_id=%s, nombres=%s, apellidos=%s, rut=%s, telefono=%s, direccion=%s,
-                afp=%s, salud=%s, sueldo=%s, fecha_ingreso=%s,
+                afp=%s, salud=%s, sueldo=%s, fecha_ingreso=%s, fecha_nacimiento=%s,
                 talla_polera=%s, talla_pantalon=%s, talla_zapatos=%s,
                 banco=%s, tipo_cuenta=%s, numero_cuenta=%s, estado=%s
             WHERE id=%s
         """, (
-            user_id, nombres, apellidos, rut, telefono, direccion,
-            afp, salud, sueldo, fecha_ingreso,
+            user_id_val, nombres, apellidos, rut, telefono, direccion,
+            afp, salud, sueldo_val, fecha_ingreso_val, fecha_nacimiento_val,
             talla_polera, talla_pantalon, talla_zapatos,
             banco, tipo_cuenta, numero_cuenta, estado,
             trabajador_id

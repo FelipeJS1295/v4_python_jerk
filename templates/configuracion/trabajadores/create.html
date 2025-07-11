@@ -10,6 +10,16 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
       <div>
+        <label class="text-sm font-medium text-slate-700">Nombres *</label>
+        <input type="text" name="nombres" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Apellidos *</label>
+        <input type="text" name="apellidos" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
         <label class="text-sm font-medium text-slate-700">Usuario Asociado</label>
         <select name="user_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
           <option value="">Sin asignar</option>
@@ -20,18 +30,8 @@
       </div>
 
       <div>
-        <label class="text-sm font-medium text-slate-700">Nombres</label>
-        <input type="text" name="nombres" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Apellidos</label>
-        <input type="text" name="apellidos" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
         <label class="text-sm font-medium text-slate-700">RUT</label>
-        <input type="text" name="rut" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+        <input type="text" name="rut" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
       </div>
 
       <div>
@@ -42,6 +42,16 @@
       <div>
         <label class="text-sm font-medium text-slate-700">Dirección</label>
         <input type="text" name="direccion" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Fecha Nacimiento</label>
+        <input type="date" name="fecha_nacimiento" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+      </div>
+
+      <div>
+        <label class="text-sm font-medium text-slate-700">Fecha Ingreso</label>
+        <input type="date" name="fecha_ingreso" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
       </div>
 
       <!-- AFP -->
@@ -77,12 +87,7 @@
 
       <div>
         <label class="text-sm font-medium text-slate-700">Sueldo</label>
-        <input type="number" step="0.01" name="sueldo" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Fecha Ingreso</label>
-        <input type="date" name="fecha_ingreso" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+        <input type="number" step="0.01" name="sueldo" placeholder="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
       </div>
 
       <div>
