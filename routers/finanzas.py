@@ -1449,3 +1449,12 @@ def obtener_cheques_por_estado():
             cursor.close()
         if conn:
             conn.close()
+
+@router.get("/detalle-cheques", response_class=HTMLResponse)
+def vista_detalle_cheques(request: Request):
+    """Vista para el detalle de cheques de un día específico"""
+    try:
+        return templates.TemplateResponse("finanzas/detalle_cheques.html", {"request": request})
+    except Exception as e:
+        print(f"Error en vista detalle_cheques: {e}")
+        raise HTTPException(status_code=500, detail="Error al cargar la vista de detalle de cheques")
