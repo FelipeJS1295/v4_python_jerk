@@ -663,56 +663,56 @@ function actualizarCalendario(data) {
   }
   
   // Días del mes
-  let totalCheques = 0;
-  let montoTotal = 0;
+let totalCheques = 0;
+let montoTotal = 0;
+
+for (let dia = 1; dia <= diasEnMes; dia++) {
+  const div = document.createElement('div');
+  div.className = 'p-2 text-center rounded hover:bg-gray-100 cursor-pointer transition-colors text-sm';
   
-  for (let dia = 1; dia <= diasEnMes; dia++) {
-    const div = document.createElement('div');
-    div.className = 'p-2 text-center rounded hover:bg-gray-100 cursor-pointer transition-colors text-sm';
-    
-    const tieneCheques = data.dias_con_cheques[dia];
-    if (tieneCheques) {
-      // Determinar color según estado predominante
-      if (tieneCheques.estado_predominante === 'no_cobrado') {
-        // Verde para no cobrados
-        div.classList.remove('hover:bg-gray-100');
-        div.classList.add('bg-green-200', 'text-green-800', 'font-semibold', 'hover:bg-green-300');
-      } else {
-        // Gris para cobrados
-        div.classList.remove('hover:bg-gray-100');
-        div.classList.add('bg-gray-200', 'text-gray-800', 'font-semibold', 'hover:bg-gray-300');
-      }
-      
-      // Tooltip mejorado con información de estados
-      const tooltipTexto = [
-        `Total: ${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`
-      ];
-      
-      if (tieneCheques.cobrados > 0) {
-        tooltipTexto.push(`Cobrados: ${tieneCheques.cobrados} - ${formatCurrency(tieneCheques.monto_cobrado)}`);
-      }
-      
-      if (tieneCheques.no_cobrados > 0) {
-        tooltipTexto.push(`Pendientes: ${tieneCheques.no_cobrados} - ${formatCurrency(tieneCheques.monto_no_cobrado)}`);
-      }
-      
-      div.title = tooltipTexto.join('\n');
-      
-      totalCheques += tieneCheques.cantidad;
-      montoTotal += tieneCheques.monto;
-      
-      // Agregar evento de clic para ir al detalle
-      div.addEventListener('click', function() {
-        const url = `/finanzas/detalle-cheques?año=${data.año}&mes=${data.mes}&dia=${dia}`;
-        window.open(url, '_blank');
-      });
-      
-      div.style.cursor = 'pointer';
+  const tieneCheques = data.dias_con_cheques[dia];
+  if (tieneCheques) {
+    // Determinar color según estado predominante
+    if (tieneCheques.estado_predominante === 'no_cobrado') {
+      // Verde para no cobrados
+      div.classList.remove('hover:bg-gray-100');
+      div.classList.add('bg-green-200', 'text-green-800', 'font-semibold', 'hover:bg-green-300');
+    } else {
+      // Gris para cobrados
+      div.classList.remove('hover:bg-gray-100');
+      div.classList.add('bg-gray-200', 'text-gray-800', 'font-semibold', 'hover:bg-gray-300');
     }
     
-    div.textContent = dia;
-    container.appendChild(div);
+    // Tooltip mejorado con información de estados
+    const tooltipTexto = [
+      `Total: ${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`
+    ];
+    
+    if (tieneCheques.cobrados > 0) {
+      tooltipTexto.push(`Cobrados: ${tieneCheques.cobrados} - ${formatCurrency(tieneCheques.monto_cobrado)}`);
+    }
+    
+    if (tieneCheques.no_cobrados > 0) {
+      tooltipTexto.push(`Pendientes: ${tieneCheques.no_cobrados} - ${formatCurrency(tieneCheques.monto_no_cobrado)}`);
+    }
+    
+    div.title = tooltipTexto.join('\n');
+    
+    totalCheques += tieneCheques.cantidad;
+    montoTotal += tieneCheques.monto;
+    
+    // Agregar evento de clic para ir al detalle en la misma pestaña
+    div.addEventListener('click', function() {
+      const url = `/finanzas/detalle-cheques?año=${data.año}&mes=${data.mes}&dia=${dia}`;
+      window.location.href = url; // Cambiar de window.open a window.location.href
+    });
+    
+    div.style.cursor = 'pointer';
   }
+  
+  div.textContent = dia;
+  container.appendChild(div);
+}
   
   // Actualizar totales y leyenda
   const totalElement = document.getElementById('total-cheques-mes');
