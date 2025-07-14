@@ -390,12 +390,11 @@ async function guardarCambios() {
     if (resultado.success) {
       mostrarMensajeExito(`${resultado.actualizados} cheque(s) actualizado(s) correctamente`);
       
-      // Redirigir de vuelta después de 2 segundos
+      // Redirigir de vuelta en la misma pestaña después de 2 segundos
       setTimeout(() => {
-        window.close();
-        if (!window.closed) {
-          history.back();
-        }
+        const params = obtenerParametrosURL();
+        const urlRegreso = `/finanzas/detalle-cheques?año=${params.fecha.split('-')[0]}&mes=${parseInt(params.fecha.split('-')[1])}&dia=${parseInt(params.fecha.split('-')[2])}`;
+        window.location.href = urlRegreso;
       }, 2000);
     } else {
       throw new Error(resultado.message || 'Error al guardar');
@@ -451,12 +450,14 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('btn-cancelar')?.addEventListener('click', () => {
     if (chequesModificados.some(ch => ch.modificado)) {
       if (confirm('¿Está seguro de cancelar? Se perderán los cambios no guardados.')) {
-        window.close();
-        if (!window.closed) history.back();
+        const params = obtenerParametrosURL();
+        const urlRegreso = `/finanzas/detalle-cheques?año=${params.fecha.split('-')[0]}&mes=${parseInt(params.fecha.split('-')[1])}&dia=${parseInt(params.fecha.split('-')[2])}`;
+        window.location.href = urlRegreso;
       }
     } else {
-      window.close();
-      if (!window.closed) history.back();
+      const params = obtenerParametrosURL();
+      const urlRegreso = `/finanzas/detalle-cheques?año=${params.fecha.split('-')[0]}&mes=${parseInt(params.fecha.split('-')[1])}&dia=${parseInt(params.fecha.split('-')[2])}`;
+      window.location.href = urlRegreso;
     }
   });
 

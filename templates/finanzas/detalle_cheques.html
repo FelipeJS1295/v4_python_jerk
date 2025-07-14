@@ -591,16 +591,16 @@ function editarMasivo() {
     return;
   }
 
-  // Redirigir a página de edición con parámetros
+  // Navegar en la misma pestaña
   const numerosSeleccionados = editables.map(ch => ch.numero_cheque).join(',');
   const url = `/finanzas/detalle-cheques-edit?cheques=${encodeURIComponent(numerosSeleccionados)}&fecha=${fechaActual}`;
-  window.open(url, '_blank');
+  window.location.href = url;
 }
 
 // Edición individual
 function editarChequeIndividual(numeroCheque) {
   const url = `/finanzas/detalle-cheques-edit?cheques=${encodeURIComponent(numeroCheque)}&fecha=${fechaActual}`;
-  window.open(url, '_blank');
+  window.location.href = url;
 }
 
 // Cambiar estado de cheque individual
