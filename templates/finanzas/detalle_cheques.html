@@ -271,20 +271,9 @@ function aplicarFiltros() {
     return coincideOrigen && coincideEstado && coincideProveedor;
   });
 
-  // Actualizar tabla
+  paginaActual = 1;
   actualizarTabla();
   actualizarPaginacion();
-
-  // Agregar event listeners para checkboxes
-  document.addEventListener('change', function(e) {
-    if (e.target.classList.contains('cheque-checkbox') || e.target.id === 'checkbox-todos') {
-      if (e.target.id === 'checkbox-todos') {
-        const checkboxes = document.querySelectorAll('.cheque-checkbox:not(:disabled)');
-        checkboxes.forEach(cb => cb.checked = e.target.checked);
-      }
-      actualizarContadorSeleccionados();
-    }
-  });
 }
 
 // Actualizar tabla
@@ -358,15 +347,32 @@ function actualizarTabla() {
       </td>
     </tr>
   `).join('');
+
+  // Agregar event listeners para checkboxes después de crear la tabla
+  document.querySelectorAll('.cheque-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', actualizarContadorSeleccionados);
+  });
+
+  // Event listener para checkbox maestro
+  const checkboxTodos = document.getElementById('checkbox-todos');
+  if (checkboxTodos) {
+    checkboxTodos.addEventListener('change', function() {
+      const checkboxes = document.querySelectorAll('.cheque-checkbox:not(:disabled)');
+      checkboxes.forEach(cb => cb.checked = this.checked);
+      actualizarContadorSeleccionados();
+    });
+  }
 }
 
 // Obtener clase CSS para estado
 function obtenerClaseEstado(estado) {
   switch (estado?.toLowerCase()) {
-    case 'pendiente':
+    case 'no_cobrado':
       return 'bg-yellow-100 text-yellow-800';
     case 'cobrado':
       return 'bg-green-100 text-green-800';
+    case 'pendiente':
+      return 'bg-yellow-100 text-yellow-800';
     case 'cancelado':
       return 'bg-red-100 text-red-800';
     default:
@@ -471,14 +477,178 @@ function verDetalleCheque(numeroCheque) {
   // Implementar vista de detalle
 }
 
-function editarCheque(numeroCheque) {
-  console.log('Editar cheque:', numeroCheque);
-  // Implementar edición
+// Funciones de selección masiva
+function actualizarContadorSeleccionados() {
+  const checkboxes = document.querySelectorAll('.cheque-checkbox:not(:disabled):checked');
+  const contador = checkboxes.length;
+  
+  const contadorElement = document.getElementById('contador-seleccionados');
+  if (contadorElement) {
+    contadorElement.textContent = `${contador} seleccionado${contador !== 1 ? 's' : ''}`;
+  }
+  
+  // Habilitar/deshabilitar botones de acciones masivas
+  const btnCambiarEstado = document.getElementById('btn-cambiar-estado-masivo');
+  const btnEditarMasivo = document.getElementById('btn-editar-masivo');
+  
+  if (btnCambiarEstado) btnCambiarEstado.disabled = contador === 0;
+  if (btnEditarMasivo) btnEditarMasivo.disabled = contador === 0;
+}
+
+function seleccionarTodos() {
+  const checkboxes = document.querySelectorAll('.cheque-checkbox:not(:disabled)');
+  checkboxes.forEach(cb => cb.checked = true);
+  actualizarContadorSeleccionados();
+}
+
+function deseleccionarTodos() {
+  const checkboxes = document.querySelectorAll('.cheque-checkbox');
+  checkboxes.forEach(cb => cb.checked = false);
+  actualizarContadorSeleccionados();
+}
+
+function obtenerChequesSeleccionados() {
+  const checkboxes = document.querySelectorAll('.cheque-checkbox:checked');
+  return Array.from(checkboxes).map(cb => ({
+    numero_cheque: cb.dataset.numero,
+    origen: cb.dataset.origen
+  }));
+}
+
+// Cambiar estado masivo
+async function cambiarEstadoMasivo() {
+  const seleccionados = obtenerChequesSeleccionados();
+  
+  if (seleccionados.length === 0) {
+    mostrarError('No hay cheques seleccionados');
+    return;
+  }
+
+  // Filtrar solo los de tabla temporal
+  const editables = seleccionados.filter(ch => ch.origen === 'Tabla Temporal');
+  
+  if (editables.length === 0) {
+    mostrarError('Los cheques seleccionados no son editables');
+    return;
+  }
+
+  const nuevoEstado = prompt(`Cambiar estado de ${editables.length} cheque(s) a:\n\n1. Escriba "cobrado" para marcar como cobrado\n2. Escriba "no_cobrado" para marcar como no cobrado\n\nNuevo estado:`);
+  
+  if (!nuevoEstado || !['cobrado', 'no_cobrado'].includes(nuevoEstado)) {
+    return;
+  }
+
+  const confirmacion = confirm(`¿Está seguro de cambiar el estado de ${editables.length} cheque(s) a "${nuevoEstado === 'cobrado' ? 'Cobrado' : 'No Cobrado'}"?`);
+  
+  if (!confirmacion) return;
+
+  try {
+    const responses = await Promise.all(
+      editables.map(cheque => 
+        fetch('/finanzas/cambiar-estado-cheque', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            numero_cheque: cheque.numero_cheque,
+            nuevo_estado: nuevoEstado
+          })
+        })
+      )
+    );
+
+    const exitosos = responses.filter(r => r.ok).length;
+    
+    if (exitosos > 0) {
+      await cargarDetalleCheques();
+      mostrarMensajeExito(`${exitosos} cheque(s) actualizado(s) correctamente`);
+      deseleccionarTodos(); // Limpiar selección después del éxito
+    }
+    
+    if (exitosos < editables.length) {
+      mostrarError(`${editables.length - exitosos} cheque(s) no se pudieron actualizar`);
+    }
+
+  } catch (error) {
+    console.error('Error en cambio masivo:', error);
+    mostrarError('Error al cambiar estados masivamente');
+  }
+}
+
+// Editar múltiples cheques
+function editarMasivo() {
+  const seleccionados = obtenerChequesSeleccionados();
+  
+  if (seleccionados.length === 0) {
+    mostrarError('No hay cheques seleccionados');
+    return;
+  }
+
+  // Filtrar solo los de tabla temporal
+  const editables = seleccionados.filter(ch => ch.origen === 'Tabla Temporal');
+  
+  if (editables.length === 0) {
+    mostrarError('Los cheques seleccionados no son editables');
+    return;
+  }
+
+  // Redirigir a página de edición con parámetros
+  const numerosSeleccionados = editables.map(ch => ch.numero_cheque).join(',');
+  const url = `/finanzas/detalle-cheques-edit?cheques=${encodeURIComponent(numerosSeleccionados)}&fecha=${fechaActual}`;
+  window.open(url, '_blank');
+}
+
+// Edición individual
+function editarChequeIndividual(numeroCheque) {
+  const url = `/finanzas/detalle-cheques-edit?cheques=${encodeURIComponent(numeroCheque)}&fecha=${fechaActual}`;
+  window.open(url, '_blank');
+}
+
+// Cambiar estado de cheque individual
+async function cambiarEstadoCheque(numeroCheque, estadoActual) {
+  try {
+    const nuevoEstado = estadoActual === 'no_cobrado' ? 'cobrado' : 'no_cobrado';
+    
+    const confirmacion = confirm(
+      `¿Está seguro de cambiar el estado del cheque ${numeroCheque} a "${nuevoEstado === 'cobrado' ? 'Cobrado' : 'No Cobrado'}"?`
+    );
+    
+    if (!confirmacion) return;
+    
+    const response = await fetch('/finanzas/cambiar-estado-cheque', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        numero_cheque: numeroCheque,
+        nuevo_estado: nuevoEstado
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    const resultado = await response.json();
+    
+    if (resultado.success) {
+      // Recargar datos
+      await cargarDetalleCheques();
+      
+      // Mostrar mensaje de éxito
+      mostrarMensajeExito(`Estado del cheque ${numeroCheque} actualizado a "${nuevoEstado === 'cobrado' ? 'Cobrado' : 'No Cobrado'}"`);
+    } else {
+      throw new Error(resultado.message || 'Error al cambiar estado');
+    }
+    
+  } catch (error) {
+    console.error('Error cambiando estado:', error);
+    mostrarError('Error al cambiar el estado del cheque');
+  }
 }
 
 // Mostrar mensaje de éxito
 function mostrarMensajeExito(mensaje) {
-  // Crear un toast de éxito simple
   const toast = document.createElement('div');
   toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
   toast.innerHTML = `
@@ -490,7 +660,6 @@ function mostrarMensajeExito(mensaje) {
   
   document.body.appendChild(toast);
   
-  // Eliminar después de 3 segundos
   setTimeout(() => {
     if (toast.parentNode) {
       toast.parentNode.removeChild(toast);
@@ -501,15 +670,37 @@ function mostrarMensajeExito(mensaje) {
 // Mostrar error
 function mostrarError(mensaje) {
   console.error(mensaje);
-  const tbody = document.getElementById('tabla-cheques');
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="6" class="px-6 py-8 text-center text-red-500">
-        <i class="fas fa-exclamation-triangle text-2xl mb-2 block"></i>
-        <p>${mensaje}</p>
-      </td>
-    </tr>
+  
+  // Crear toast de error
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+  toast.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>${mensaje}</span>
+    </div>
   `;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 3000);
+  
+  // También mostrar en la tabla si es apropiado
+  const tbody = document.getElementById('tabla-cheques');
+  if (tbody && mensaje.includes('cargar')) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="px-6 py-8 text-center text-red-500">
+          <i class="fas fa-exclamation-triangle text-2xl mb-2 block"></i>
+          <p>${mensaje}</p>
+        </td>
+      </tr>
+    `;
+  }
 }
 
 // Event Listeners
