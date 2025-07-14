@@ -467,14 +467,20 @@ def obtener_detalle_dia_cheques(año: int, mes: int, dia: int):
         
         # Verificar que las tablas existan
         cursor.execute("SHOW TABLES LIKE 'pagos_factura'")
-        if cursor.fetchone():
+        tabla_pagos_existe = cursor.fetchone() is not None
+        
+        cursor.execute("SHOW TABLES LIKE 'cheques'")
+        tabla_cheques_existe = cursor.fetchone() is not None
+        
+        # Cheques del sistema actual (pagos_factura)
+        if tabla_pagos_existe:
             try:
                 cursor.execute("""
                     SELECT 
                         COALESCE(pf.numero, 'N/A') as numero_cheque,
                         COALESCE(pf.monto, 0) as monto,
                         COALESCE(p.nombre, 'Proveedor Desconocido') as proveedor,
-                        COALESCE(pf.estado, 'N/A') as estado,
+                        'cobrado' as estado,  -- Normalizar estado
                         'Sistema Actual' as origen
                     FROM pagos_factura pf
                     LEFT JOIN facturas_compra f ON f.id = pf.factura_id
@@ -490,16 +496,15 @@ def obtener_detalle_dia_cheques(año: int, mes: int, dia: int):
             except Exception as e:
                 logger.warning(f"Error consultando detalle pagos_factura: {e}")
         
-        # Tabla cheques temporal
-        cursor.execute("SHOW TABLES LIKE 'cheques'")
-        if cursor.fetchone():
+        # Cheques de tabla temporal
+        if tabla_cheques_existe:
             try:
                 cursor.execute("""
                     SELECT 
                         COALESCE(c.numero_cheque, 'N/A') as numero_cheque,
                         COALESCE(c.monto, 0) as monto,
                         COALESCE(p.nombre, 'Proveedor Desconocido') as proveedor,
-                        'Pendiente' as estado,
+                        COALESCE(c.estado, 'no_cobrado') as estado,  -- Usar estado real de la tabla
                         'Tabla Temporal' as origen
                     FROM cheques c
                     LEFT JOIN proveedores p ON c.proveedor_id = p.id
@@ -525,7 +530,7 @@ def obtener_detalle_dia_cheques(año: int, mes: int, dia: int):
                 "numero_cheque": cheque["numero_cheque"],
                 "monto": monto,
                 "proveedor": cheque["proveedor"],
-                "estado": cheque["estado"],
+                "estado": cheque["estado"],  # Ya normalizado arriba
                 "origen": cheque["origen"]
             })
         
