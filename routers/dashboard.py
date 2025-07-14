@@ -304,7 +304,7 @@ def obtener_productos_mensuales(fecha_desde: Optional[str] = None, fecha_hasta: 
 
 @router.get("/calendario-cheques", response_class=JSONResponse)
 def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = None):
-    """Obtener calendario de cheques con estados diferenciados"""
+    """Obtener calendario de cheques con estados diferenciados y desglose completo"""
     conn = None
     cursor = None
     
@@ -334,8 +334,7 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                     SELECT 
                         DAY(pf.fecha) as dia,
                         COUNT(*) as cantidad_cheques,
-                        COALESCE(SUM(pf.monto), 0) as monto_total,
-                        'cobrado' as estado_grupo
+                        COALESCE(SUM(pf.monto), 0) as monto_total
                     FROM pagos_factura pf
                     WHERE pf.tipo = 'cheque' 
                     AND YEAR(pf.fecha) = %s 
@@ -362,6 +361,7 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                     cantidad = safe_int(resultado["cantidad_cheques"])
                     monto = safe_float(resultado["monto_total"])
                     
+                    # Los del sistema siempre están cobrados
                     dias_con_cheques[dia]["cantidad"] += cantidad
                     dias_con_cheques[dia]["monto"] += monto
                     dias_con_cheques[dia]["cobrados"] += cantidad
@@ -376,13 +376,13 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                 query_temporal = """
                     SELECT 
                         DAY(c.fecha_cheque) as dia,
-                        c.estado,
+                        COALESCE(c.estado, 'no_cobrado') as estado,
                         COUNT(*) as cantidad_cheques,
                         COALESCE(SUM(c.monto), 0) as monto_total
                     FROM cheques c
                     WHERE YEAR(c.fecha_cheque) = %s 
                     AND MONTH(c.fecha_cheque) = %s
-                    GROUP BY DAY(c.fecha_cheque), c.estado
+                    GROUP BY DAY(c.fecha_cheque), COALESCE(c.estado, 'no_cobrado')
                 """
                 
                 cursor.execute(query_temporal, (año, mes))
@@ -390,7 +390,7 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                 
                 for resultado in resultados_temporal:
                     dia = resultado["dia"]
-                    estado = resultado["estado"]
+                    estado = resultado["estado"] or 'no_cobrado'
                     
                     if dia not in dias_con_cheques:
                         dias_con_cheques[dia] = {
@@ -412,27 +412,27 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                     if estado == 'cobrado':
                         dias_con_cheques[dia]["cobrados"] += cantidad
                         dias_con_cheques[dia]["monto_cobrado"] += monto
-                    else:
+                    else:  # no_cobrado o cualquier otro estado
                         dias_con_cheques[dia]["no_cobrados"] += cantidad
                         dias_con_cheques[dia]["monto_no_cobrado"] += monto
                     
             except Exception as e:
                 logger.warning(f"Error consultando tabla cheques: {e}")
 
-        # Calcular estado predominante para cada día
+        # Calcular estado predominante para cada día y redondear montos
         for dia in dias_con_cheques:
             data_dia = dias_con_cheques[dia]
             
-            # Si hay más no cobrados que cobrados, estado predominante es no_cobrado
+            # Determinar estado predominante basado en cantidad
             if data_dia["no_cobrados"] > data_dia["cobrados"]:
                 data_dia["estado_predominante"] = "no_cobrado"
             elif data_dia["cobrados"] > data_dia["no_cobrados"]:
                 data_dia["estado_predominante"] = "cobrado"
             else:
-                # En caso de empate, priorizar no cobrado
+                # En caso de empate, priorizar no cobrado si existe al menos uno
                 data_dia["estado_predominante"] = "no_cobrado" if data_dia["no_cobrados"] > 0 else "cobrado"
             
-            # Redondear montos
+            # Redondear todos los montos
             data_dia["monto"] = round(data_dia["monto"], 2)
             data_dia["monto_cobrado"] = round(data_dia["monto_cobrado"], 2)
             data_dia["monto_no_cobrado"] = round(data_dia["monto_no_cobrado"], 2)
