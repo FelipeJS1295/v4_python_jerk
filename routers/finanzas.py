@@ -1458,3 +1458,166 @@ def vista_detalle_cheques(request: Request):
     except Exception as e:
         print(f"Error en vista detalle_cheques: {e}")
         raise HTTPException(status_code=500, detail="Error al cargar la vista de detalle de cheques")
+
+@router.get("/detalle-cheques-edit", response_class=HTMLResponse)
+def vista_editar_cheques(request: Request):
+    """Vista para editar múltiples cheques"""
+    try:
+        return templates.TemplateResponse("finanzas/detalle_cheques_edit.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Error en vista editar_cheques: {e}")
+        raise HTTPException(status_code=500, detail="Error al cargar la vista de edición de cheques")
+
+@router.get("/cheque-detalle/{numero_cheque}", response_class=JSONResponse)
+def obtener_detalle_cheque(numero_cheque: str):
+    """Obtener detalles de un cheque específico"""
+    conn = None
+    cursor = None
+    
+    try:
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Buscar en tabla cheques
+        cursor.execute("""
+            SELECT 
+                c.numero_cheque,
+                c.monto,
+                c.fecha_cheque,
+                c.estado,
+                p.nombre as proveedor,
+                'Tabla Temporal' as origen
+            FROM cheques c
+            LEFT JOIN proveedores p ON c.proveedor_id = p.id
+            WHERE c.numero_cheque = %s
+        """, (numero_cheque,))
+        
+        cheque = cursor.fetchone()
+        
+        if not cheque:
+            # Buscar en pagos_factura como fallback
+            cursor.execute("""
+                SELECT 
+                    pf.numero as numero_cheque,
+                    pf.monto,
+                    pf.fecha as fecha_cheque,
+                    pf.estado,
+                    p.nombre as proveedor,
+                    'Sistema Actual' as origen
+                FROM pagos_factura pf
+                LEFT JOIN facturas_compra f ON pf.factura_id = f.id
+                LEFT JOIN proveedores p ON f.proveedor_id = p.id
+                WHERE pf.numero = %s AND pf.tipo = 'cheque'
+            """, (numero_cheque,))
+            
+            cheque = cursor.fetchone()
+        
+        if not cheque:
+            raise HTTPException(status_code=404, detail="Cheque no encontrado")
+        
+        # Convertir fecha a string si es necesario
+        if cheque['fecha_cheque']:
+            if isinstance(cheque['fecha_cheque'], date):
+                cheque['fecha_cheque'] = cheque['fecha_cheque'].strftime('%Y-%m-%d')
+        
+        return {
+            "success": True,
+            **cheque
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error obteniendo detalle de cheque {numero_cheque}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener detalle del cheque: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+class ActualizarChequesRequest(BaseModel):
+    cheques: list
+
+@router.post("/actualizar-cheques-masivo", response_class=JSONResponse)
+def actualizar_cheques_masivo(request: ActualizarChequesRequest):
+    """Actualizar múltiples cheques de forma masiva"""
+    conn = None
+    cursor = None
+    
+    try:
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+        
+        actualizados = 0
+        errores = []
+        
+        for cheque_data in request.cheques:
+            try:
+                numero_cheque = cheque_data.get('numero_cheque')
+                nueva_fecha = cheque_data.get('nueva_fecha')
+                nuevo_estado = cheque_data.get('nuevo_estado')
+                
+                if not numero_cheque:
+                    errores.append("Número de cheque faltante")
+                    continue
+                
+                # Verificar que el cheque existe
+                cursor.execute("""
+                    SELECT id FROM cheques WHERE numero_cheque = %s
+                """, (numero_cheque,))
+                
+                if not cursor.fetchone():
+                    errores.append(f"Cheque {numero_cheque} no encontrado")
+                    continue
+                
+                # Preparar campos para actualizar
+                campos_update = []
+                valores = []
+                
+                if nueva_fecha:
+                    campos_update.append("fecha_cheque = %s")
+                    valores.append(nueva_fecha)
+                
+                if nuevo_estado and nuevo_estado in ['cobrado', 'no_cobrado']:
+                    campos_update.append("estado = %s")
+                    valores.append(nuevo_estado)
+                
+                if not campos_update:
+                    errores.append(f"No hay cambios válidos para {numero_cheque}")
+                    continue
+                
+                # Ejecutar actualización
+                valores.append(numero_cheque)
+                query = f"UPDATE cheques SET {', '.join(campos_update)} WHERE numero_cheque = %s"
+                
+                cursor.execute(query, valores)
+                
+                if cursor.rowcount > 0:
+                    actualizados += 1
+                else:
+                    errores.append(f"No se pudo actualizar {numero_cheque}")
+                
+            except Exception as e:
+                errores.append(f"Error en {cheque_data.get('numero_cheque', 'N/A')}: {str(e)}")
+                continue
+        
+        conn.commit()
+        
+        return {
+            "success": True,
+            "actualizados": actualizados,
+            "errores": errores,
+            "total_procesados": len(request.cheques)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error en actualización masiva: {e}")
+        if conn:
+            conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error en actualización masiva: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

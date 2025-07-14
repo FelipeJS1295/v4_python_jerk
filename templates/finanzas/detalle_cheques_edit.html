@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Cheques{% endblock %}
+{% block header %}Editar Cheques{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="bg-white shadow-sm rounded-xl p-6 border border-gray-200">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <button onclick="history.back()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-arrow-left text-lg"></i>
+        </button>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+            <i class="fas fa-edit mr-3 text-gray-600"></i>
+            Editar Cheques
+          </h2>
+          <p class="text-sm text-gray-600 mt-1">
+            <span id="info-cheques">Cargando información...</span>
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button id="btn-cancelar" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+          <i class="fas fa-times mr-1"></i>
+          Cancelar
+        </button>
+        <button id="btn-guardar" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50" disabled>
+          <i class="fas fa-save mr-1"></i>
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario de edición -->
+  <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+        <i class="fas fa-table mr-2 text-gray-600"></i>
+        Cheques a Editar
+      </h3>
+    </div>
+    
+    <form id="form-edicion" class="p-6">
+      <div class="space-y-6">
+        
+        <!-- Acciones masivas -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 class="text-sm font-medium text-blue-800 mb-3">Aplicar a todos los cheques seleccionados:</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Fecha</label>
+              <input type="date" id="fecha-masiva" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Nuevo Estado</label>
+              <select id="estado-masivo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="">No cambiar</option>
+                <option value="no_cobrado">No Cobrado</option>
+                <option value="cobrado">Cobrado</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button type="button" id="btn-aplicar-masivo" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-magic mr-1"></i>
+                Aplicar a Todos
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de cheques -->
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <input type="checkbox" id="checkbox-todos-edit" class="rounded border-gray-300 text-blue-600">
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Cheque</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha Actual</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nueva Fecha</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado Actual</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nuevo Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-edicion" class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                  <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                  <p>Cargando cheques...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Resumen de cambios -->
+        <div id="resumen-cambios" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 hidden">
+          <h4 class="text-sm font-medium text-yellow-800 mb-2">
+            <i class="fas fa-exclamation-triangle mr-1"></i>
+            Resumen de Cambios
+          </h4>
+          <div id="lista-cambios" class="text-sm text-yellow-700"></div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+// Variables globales
+let chequesOriginales = [];
+let chequesModificados = [];
+
+// Obtener parámetros de URL
+function obtenerParametrosURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return {
+    cheques: urlParams.get('cheques'),
+    fecha: urlParams.get('fecha')
+  };
+}
+
+// Formatear moneda
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    minimumFractionDigits: 0
+  }).format(amount);
+}
+
+// Formatear fecha
+function formatearFecha(fechaStr) {
+  if (!fechaStr) return '';
+  const fecha = new Date(fechaStr + 'T00:00:00');
+  return fecha.toLocaleDateString('es-CL');
+}
+
+// Cargar datos de cheques
+async function cargarChequesParaEditar() {
+  try {
+    const params = obtenerParametrosURL();
+    
+    if (!params.cheques) {
+      mostrarError('No se especificaron cheques para editar');
+      return;
+    }
+
+    const numerosArray = params.cheques.split(',');
+    document.getElementById('info-cheques').textContent = 
+      `${numerosArray.length} cheque(s) para editar - Fecha: ${formatearFecha(params.fecha)}`;
+
+    // Hacer peticiones individuales para cada cheque
+    const promesas = numerosArray.map(async (numero) => {
+      const response = await fetch(`/finanzas/cheque-detalle/${numero.trim()}`);
+      if (response.ok) {
+        return await response.json();
+      }
+      return null;
+    });
+
+    const resultados = await Promise.all(promesas);
+    chequesOriginales = resultados.filter(ch => ch !== null);
+    
+    if (chequesOriginales.length === 0) {
+      mostrarError('No se pudieron cargar los cheques');
+      return;
+    }
+
+    // Inicializar cheques modificados como copia de originales
+    chequesModificados = chequesOriginales.map(ch => ({
+      ...ch,
+      nueva_fecha: ch.fecha_cheque,
+      nuevo_estado: ch.estado,
+      modificado: false
+    }));
+
+    actualizarTablaEdicion();
+    
+  } catch (error) {
+    console.error('Error cargando cheques:', error);
+    mostrarError('Error al cargar los cheques para editar');
+  }
+}
+
+// Actualizar tabla de edición
+function actualizarTablaEdicion() {
+  const tbody = document.getElementById('tabla-edicion');
+  
+  if (chequesModificados.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+          <p>No hay cheques para editar</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = chequesModificados.map((cheque, index) => `
+    <tr class="hover:bg-gray-50 transition-colors ${cheque.modificado ? 'bg-yellow-50' : ''}">
+      <td class="px-4 py-3">
+        <input type="checkbox" class="cheque-edit-checkbox rounded border-gray-300 text-blue-600" 
+               data-index="${index}">
+      </td>
+      <td class="px-4 py-3">
+        <div class="text-sm font-medium text-gray-900">${cheque.numero_cheque}</div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="text-sm text-gray-900">${cheque.proveedor || 'N/A'}</div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="text-sm font-semibold text-gray-900">${formatCurrency(cheque.monto)}</div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="text-sm text-gray-600">${formatearFecha(cheque.fecha_cheque)}</div>
+      </td>
+      <td class="px-4 py-3">
+        <input type="date" 
+               class="fecha-input w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500" 
+               data-index="${index}"
+               value="${cheque.nueva_fecha || cheque.fecha_cheque}">
+      </td>
+      <td class="px-4 py-3">
+        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerClaseEstado(cheque.estado)}">
+          ${cheque.estado}
+        </span>
+      </td>
+      <td class="px-4 py-3">
+        <select class="estado-input w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500" 
+                data-index="${index}">
+          <option value="no_cobrado" ${cheque.nuevo_estado === 'no_cobrado' ? 'selected' : ''}>No Cobrado</option>
+          <option value="cobrado" ${cheque.nuevo_estado === 'cobrado' ? 'selected' : ''}>Cobrado</option>
+        </select>
+      </td>
+    </tr>
+  `).join('');
+
+  // Agregar event listeners
+  document.querySelectorAll('.fecha-input').forEach(input => {
+    input.addEventListener('change', function() {
+      const index = parseInt(this.dataset.index);
+      chequesModificados[index].nueva_fecha = this.value;
+      chequesModificados[index].modificado = true;
+      verificarCambios();
+      actualizarResumenCambios();
+    });
+  });
+
+  document.querySelectorAll('.estado-input').forEach(select => {
+    select.addEventListener('change', function() {
+      const index = parseInt(this.dataset.index);
+      chequesModificados[index].nuevo_estado = this.value;
+      chequesModificados[index].modificado = true;
+      verificarCambios();
+      actualizarResumenCambios();
+    });
+  });
+}
+
+// Obtener clase CSS para estado
+function obtenerClaseEstado(estado) {
+  switch (estado?.toLowerCase()) {
+    case 'no_cobrado':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'cobrado':
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// Verificar si hay cambios
+function verificarCambios() {
+  const hayCambios = chequesModificados.some(cheque => cheque.modificado);
+  document.getElementById('btn-guardar').disabled = !hayCambios;
+}
+
+// Actualizar resumen de cambios
+function actualizarResumenCambios() {
+  const cambios = chequesModificados.filter(ch => ch.modificado);
+  const resumenDiv = document.getElementById('resumen-cambios');
+  const listaDiv = document.getElementById('lista-cambios');
+
+  if (cambios.length === 0) {
+    resumenDiv.classList.add('hidden');
+    return;
+  }
+
+  resumenDiv.classList.remove('hidden');
+  
+  const listaCambios = cambios.map(cheque => {
+    const cambiosTexto = [];
+    
+    if (cheque.nueva_fecha !== cheque.fecha_cheque) {
+      cambiosTexto.push(`Fecha: ${formatearFecha(cheque.fecha_cheque)} → ${formatearFecha(cheque.nueva_fecha)}`);
+    }
+    
+    if (cheque.nuevo_estado !== cheque.estado) {
+      cambiosTexto.push(`Estado: ${cheque.estado} → ${cheque.nuevo_estado}`);
+    }
+    
+    return `<div class="mb-1"><strong>${cheque.numero_cheque}:</strong> ${cambiosTexto.join(', ')}</div>`;
+  }).join('');
+
+  listaDiv.innerHTML = listaCambios;
+}
+
+// Aplicar cambios masivos
+function aplicarCambiosMasivos() {
+  const fechaMasiva = document.getElementById('fecha-masiva').value;
+  const estadoMasivo = document.getElementById('estado-masivo').value;
+  const checkboxes = document.querySelectorAll('.cheque-edit-checkbox:checked');
+
+  if (checkboxes.length === 0) {
+    mostrarError('Seleccione al menos un cheque');
+    return;
+  }
+
+  if (!fechaMasiva && !estadoMasivo) {
+    mostrarError('Especifique al menos una fecha o estado nuevo');
+    return;
+  }
+
+  checkboxes.forEach(checkbox => {
+    const index = parseInt(checkbox.dataset.index);
+    
+    if (fechaMasiva) {
+      chequesModificados[index].nueva_fecha = fechaMasiva;
+      chequesModificados[index].modificado = true;
+    }
+    
+    if (estadoMasivo) {
+      chequesModificados[index].nuevo_estado = estadoMasivo;
+      chequesModificados[index].modificado = true;
+    }
+  });
+
+  actualizarTablaEdicion();
+  verificarCambios();
+  actualizarResumenCambios();
+  
+  mostrarMensajeExito(`Cambios aplicados a ${checkboxes.length} cheque(s)`);
+}
+
+// Guardar cambios
+async function guardarCambios() {
+  const cambios = chequesModificados.filter(ch => ch.modificado);
+  
+  if (cambios.length === 0) {
+    mostrarError('No hay cambios para guardar');
+    return;
+  }
+
+  const confirmacion = confirm(`¿Está seguro de guardar los cambios en ${cambios.length} cheque(s)?`);
+  if (!confirmacion) return;
+
+  try {
+    const response = await fetch('/finanzas/actualizar-cheques-masivo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        cheques: cambios.map(ch => ({
+          numero_cheque: ch.numero_cheque,
+          nueva_fecha: ch.nueva_fecha,
+          nuevo_estado: ch.nuevo_estado
+        }))
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+
+    const resultado = await response.json();
+
+    if (resultado.success) {
+      mostrarMensajeExito(`${resultado.actualizados} cheque(s) actualizado(s) correctamente`);
+      
+      // Redirigir de vuelta después de 2 segundos
+      setTimeout(() => {
+        window.close();
+        if (!window.closed) {
+          history.back();
+        }
+      }, 2000);
+    } else {
+      throw new Error(resultado.message || 'Error al guardar');
+    }
+
+  } catch (error) {
+    console.error('Error guardando cambios:', error);
+    mostrarError('Error al guardar los cambios');
+  }
+}
+
+// Selección masiva
+function seleccionarTodosEdit() {
+  const checkboxes = document.querySelectorAll('.cheque-edit-checkbox');
+  const todosMarcados = Array.from(checkboxes).every(cb => cb.checked);
+  
+  checkboxes.forEach(cb => cb.checked = !todosMarcados);
+}
+
+// Mostrar mensajes
+function mostrarError(mensaje) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+  toast.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>${mensaje}</span>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function mostrarMensajeExito(mensaje) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+  toast.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-check-circle"></i>
+      <span>${mensaje}</span>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Cargar datos iniciales
+  cargarChequesParaEditar();
+
+  // Botones principales
+  document.getElementById('btn-cancelar')?.addEventListener('click', () => {
+    if (chequesModificados.some(ch => ch.modificado)) {
+      if (confirm('¿Está seguro de cancelar? Se perderán los cambios no guardados.')) {
+        window.close();
+        if (!window.closed) history.back();
+      }
+    } else {
+      window.close();
+      if (!window.closed) history.back();
+    }
+  });
+
+  document.getElementById('btn-guardar')?.addEventListener('click', guardarCambios);
+  document.getElementById('btn-aplicar-masivo')?.addEventListener('click', aplicarCambiosMasivos);
+
+  // Checkbox maestro
+  document.getElementById('checkbox-todos-edit')?.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.cheque-edit-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+  });
+});
+</script>
+
+{% endblock %}

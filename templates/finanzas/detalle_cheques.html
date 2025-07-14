@@ -85,8 +85,9 @@
         </select>
         <select id="filtro-estado" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 text-sm">
           <option value="">Todos los estados</option>
+          <option value="no_cobrado">No Cobrado</option>
+          <option value="cobrado">Cobrado</option>
           <option value="Pendiente">Pendiente</option>
-          <option value="Cobrado">Cobrado</option>
           <option value="Cancelado">Cancelado</option>
         </select>
       </div>
@@ -114,6 +115,9 @@
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <input type="checkbox" id="checkbox-todos" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               N° Cheque
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -135,7 +139,7 @@
         </thead>
         <tbody id="tabla-cheques" class="bg-white divide-y divide-gray-200">
           <tr>
-            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
               <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
               <p>Cargando cheques...</p>
             </td>
@@ -267,9 +271,20 @@ function aplicarFiltros() {
     return coincideOrigen && coincideEstado && coincideProveedor;
   });
 
-  paginaActual = 1;
+  // Actualizar tabla
   actualizarTabla();
   actualizarPaginacion();
+
+  // Agregar event listeners para checkboxes
+  document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('cheque-checkbox') || e.target.id === 'checkbox-todos') {
+      if (e.target.id === 'checkbox-todos') {
+        const checkboxes = document.querySelectorAll('.cheque-checkbox:not(:disabled)');
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+      }
+      actualizarContadorSeleccionados();
+    }
+  });
 }
 
 // Actualizar tabla
@@ -279,7 +294,7 @@ function actualizarTabla() {
   if (chequesFiltrados.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
           <i class="fas fa-search text-2xl mb-2 block"></i>
           <p>No se encontraron cheques</p>
         </td>
@@ -295,6 +310,12 @@ function actualizarTabla() {
 
   tbody.innerHTML = chequesVista.map(cheque => `
     <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <input type="checkbox" class="cheque-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+               data-numero="${cheque.numero_cheque}" 
+               data-origen="${cheque.origen}"
+               ${cheque.origen === 'Sistema Actual' ? 'disabled' : ''}>
+      </td>
       <td class="px-6 py-4 whitespace-nowrap">
         <div class="text-sm font-medium text-gray-900">${cheque.numero_cheque}</div>
       </td>
@@ -322,17 +343,17 @@ function actualizarTabla() {
             <i class="fas fa-eye"></i>
           </button>
           ${cheque.origen === 'Tabla Temporal' ? `
+            <button onclick="editarChequeIndividual('${cheque.numero_cheque}')" 
+                    class="text-green-600 hover:text-green-800 transition-colors" 
+                    title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>
             <button onclick="cambiarEstadoCheque('${cheque.numero_cheque}', '${cheque.estado}')" 
                     class="text-blue-600 hover:text-blue-800 transition-colors" 
                     title="${cheque.estado === 'no_cobrado' ? 'Marcar como cobrado' : 'Marcar como no cobrado'}">
               <i class="fas ${cheque.estado === 'no_cobrado' ? 'fa-check-circle' : 'fa-undo'}"></i>
             </button>
           ` : ''}
-          <button onclick="editarCheque('${cheque.numero_cheque}')" 
-                  class="text-gray-600 hover:text-gray-800 transition-colors" 
-                  title="Editar">
-            <i class="fas fa-edit"></i>
-          </button>
         </div>
       </td>
     </tr>
@@ -495,6 +516,12 @@ function mostrarError(mensaje) {
 document.addEventListener('DOMContentLoaded', function() {
   // Cargar datos iniciales
   cargarDetalleCheques();
+
+  // Botones de selección
+  document.getElementById('btn-seleccionar-todos')?.addEventListener('click', seleccionarTodos);
+  document.getElementById('btn-deseleccionar-todos')?.addEventListener('click', deseleccionarTodos);
+  document.getElementById('btn-cambiar-estado-masivo')?.addEventListener('click', cambiarEstadoMasivo);
+  document.getElementById('btn-editar-masivo')?.addEventListener('click', editarMasivo);
 
   // Filtros
   document.getElementById('filtro-origen')?.addEventListener('change', aplicarFiltros);
