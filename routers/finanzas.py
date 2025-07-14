@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Form, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import os
 from db import conectar_mysql
@@ -16,6 +16,8 @@ from fastapi import Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import json
+from pydantic import BaseModel
+import logging
 
 
 router = APIRouter(prefix="/finanzas", tags=["Finanzas"])
@@ -1302,3 +1304,148 @@ def test_connection(pago_id: int):
             "traceback": traceback.format_exc(),
             "pago_id": pago_id
         }
+
+logger = logging.getLogger(__name__)
+
+def safe_float(value, default=0.0):
+    """Convertir valor a float de forma segura"""
+    try:
+        return float(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
+
+def safe_int(value, default=0):
+    """Convertir valor a int de forma segura"""
+    try:
+        return int(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
+class CambiarEstadoRequest(BaseModel):
+    numero_cheque: str
+    nuevo_estado: str
+    
+@router.post("/cambiar-estado-cheque", response_class=JSONResponse)
+def cambiar_estado_cheque(request: CambiarEstadoRequest):
+    """Cambiar el estado de un cheque (solo para tabla temporal)"""
+    conn = None
+    cursor = None
+    
+    try:
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Validar el nuevo estado
+        if request.nuevo_estado not in ['cobrado', 'no_cobrado']:
+            raise HTTPException(status_code=400, detail="Estado no válido")
+        
+        # Verificar que el cheque existe
+        cursor.execute("""
+            SELECT id, numero_cheque, estado 
+            FROM cheques 
+            WHERE numero_cheque = %s
+        """, (request.numero_cheque,))
+        
+        cheque = cursor.fetchone()
+        
+        if not cheque:
+            raise HTTPException(status_code=404, detail="Cheque no encontrado")
+        
+        # Actualizar el estado
+        cursor.execute("""
+            UPDATE cheques 
+            SET estado = %s 
+            WHERE numero_cheque = %s
+        """, (request.nuevo_estado, request.numero_cheque))
+        
+        conn.commit()
+        
+        logger.info(f"Estado del cheque {request.numero_cheque} cambiado de {cheque['estado']} a {request.nuevo_estado}")
+        
+        return {
+            "success": True,
+            "message": f"Estado del cheque actualizado correctamente",
+            "cheque": {
+                "numero_cheque": request.numero_cheque,
+                "estado_anterior": cheque['estado'],
+                "estado_nuevo": request.nuevo_estado
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cambiando estado del cheque: {e}")
+        if conn:
+            conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error interno al cambiar estado: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@router.get("/cheques-por-estado", response_class=JSONResponse)
+def obtener_cheques_por_estado():
+    """Obtener resumen de cheques agrupados por estado"""
+    conn = None
+    cursor = None
+    
+    try:
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Cheques de tabla temporal por estado
+        cursor.execute("""
+            SELECT 
+                estado,
+                COUNT(*) as cantidad,
+                COALESCE(SUM(monto), 0) as monto_total
+            FROM cheques
+            GROUP BY estado
+        """)
+        
+        resultados = cursor.fetchall()
+        
+        resumen = {
+            "cobrado": {"cantidad": 0, "monto": 0},
+            "no_cobrado": {"cantidad": 0, "monto": 0}
+        }
+        
+        for resultado in resultados:
+            estado = resultado["estado"]
+            resumen[estado] = {
+                "cantidad": safe_int(resultado["cantidad"]),
+                "monto": safe_float(resultado["monto_total"])
+            }
+        
+        # Agregar cheques del sistema (siempre cobrados)
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as cantidad,
+                COALESCE(SUM(monto), 0) as monto_total
+            FROM pagos_factura
+            WHERE tipo = 'cheque'
+        """)
+        
+        sistema_result = cursor.fetchone()
+        if sistema_result:
+            resumen["cobrado"]["cantidad"] += safe_int(sistema_result["cantidad"])
+            resumen["cobrado"]["monto"] += safe_float(sistema_result["monto_total"])
+        
+        return {
+            "success": True,
+            "resumen": resumen,
+            "total": {
+                "cantidad": resumen["cobrado"]["cantidad"] + resumen["no_cobrado"]["cantidad"],
+                "monto": resumen["cobrado"]["monto"] + resumen["no_cobrado"]["monto"]
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo resumen de cheques: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al obtener resumen: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

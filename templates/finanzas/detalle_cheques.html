@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Cheques{% endblock %}
+{% block header %}Detalle de Cheques{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header con información de fecha -->
+  <div class="bg-white shadow-sm rounded-xl p-6 border border-gray-200">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <button onclick="history.back()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-arrow-left text-lg"></i>
+        </button>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+            <i class="fas fa-calendar-check mr-3 text-gray-600"></i>
+            Cheques del <span id="fecha-seleccionada" class="text-gray-900">-</span>
+          </h2>
+          <p class="text-sm text-gray-600 mt-1">Detalle completo de cheques programados</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button id="btn-exportar" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2">
+          <i class="fas fa-download"></i>
+          <span class="hidden sm:inline">Exportar</span>
+        </button>
+        <button id="btn-actualizar" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
+          <i class="fas fa-sync-alt"></i>
+          <span class="hidden sm:inline">Actualizar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen del día -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600">Total Cheques</p>
+          <p id="total-cheques-dia" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+        </div>
+        <div class="bg-gray-50 p-3 rounded-lg">
+          <i class="fas fa-file-invoice text-gray-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600">Monto Total</p>
+          <p id="monto-total-dia" class="text-2xl font-bold text-gray-800 mt-1">$0</p>
+        </div>
+        <div class="bg-gray-50 p-3 rounded-lg">
+          <i class="fas fa-dollar-sign text-gray-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-xl p-6 border border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600">Promedio</p>
+          <p id="promedio-cheque" class="text-2xl font-bold text-gray-800 mt-1">$0</p>
+        </div>
+        <div class="bg-gray-50 p-3 rounded-lg">
+          <i class="fas fa-chart-bar text-gray-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white shadow-sm rounded-xl p-6 border border-gray-200">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
+      <div class="flex items-center space-x-4">
+        <h3 class="text-lg font-semibold text-gray-800">Filtrar por:</h3>
+        <select id="filtro-origen" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 text-sm">
+          <option value="">Todos los orígenes</option>
+          <option value="Sistema Actual">Sistema Actual</option>
+          <option value="Tabla Temporal">Tabla Temporal</option>
+        </select>
+        <select id="filtro-estado" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 text-sm">
+          <option value="">Todos los estados</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Cobrado">Cobrado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="flex items-center space-x-2">
+        <input type="text" id="buscar-proveedor" placeholder="Buscar proveedor..." 
+               class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 text-sm w-48">
+        <button id="btn-limpiar-filtros" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de cheques -->
+  <div class="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+        <i class="fas fa-list mr-2 text-gray-600"></i>
+        Lista de Cheques
+      </h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              N° Cheque
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Proveedor
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Monto
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Estado
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Origen
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody id="tabla-cheques" class="bg-white divide-y divide-gray-200">
+          <tr>
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+              <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+              <p>Cargando cheques...</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div id="paginacion" class="bg-white shadow-sm rounded-xl p-4 border border-gray-200 hidden">
+    <div class="flex items-center justify-between">
+      <div class="text-sm text-gray-600">
+        Mostrando <span id="items-desde">0</span> a <span id="items-hasta">0</span> de <span id="items-total">0</span> cheques
+      </div>
+      <div class="flex items-center space-x-2">
+        <button id="btn-anterior" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" disabled>
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span id="pagina-actual" class="px-3 py-2 bg-gray-100 text-gray-800 rounded-lg text-sm">1</span>
+        <button id="btn-siguiente" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50" disabled>
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Variables globales
+let chequesOriginales = [];
+let chequesFiltrados = [];
+let fechaActual = '';
+let paginaActual = 1;
+const itemsPorPagina = 20;
+
+// Función para formatear números como moneda chilena
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    minimumFractionDigits: 0
+  }).format(amount);
+}
+
+// Función para formatear fecha
+function formatearFecha(fechaStr) {
+  const fecha = new Date(fechaStr + 'T00:00:00');
+  return fecha.toLocaleDateString('es-CL', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+// Obtener parámetros de la URL
+function obtenerParametrosURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return {
+    año: urlParams.get('año'),
+    mes: urlParams.get('mes'),
+    dia: urlParams.get('dia')
+  };
+}
+
+// Cargar datos de cheques
+async function cargarDetalleCheques() {
+  try {
+    const params = obtenerParametrosURL();
+    
+    if (!params.año || !params.mes || !params.dia) {
+      mostrarError('Parámetros de fecha no válidos');
+      return;
+    }
+
+    // Construir fecha
+    fechaActual = `${params.año}-${params.mes.padStart(2, '0')}-${params.dia.padStart(2, '0')}`;
+    
+    // Actualizar título
+    document.getElementById('fecha-seleccionada').textContent = formatearFecha(fechaActual);
+
+    // Hacer petición al API
+    const response = await fetch(`/dashboard/calendario-cheques/detalle?año=${params.año}&mes=${params.mes}&dia=${params.dia}`);
+    
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Guardar datos originales
+    chequesOriginales = data.cheques || [];
+    chequesFiltrados = [...chequesOriginales];
+    
+    // Actualizar resumen
+    actualizarResumen(data);
+    
+    // Actualizar tabla
+    aplicarFiltros();
+    
+  } catch (error) {
+    console.error('Error cargando cheques:', error);
+    mostrarError('Error al cargar los cheques');
+  }
+}
+
+// Actualizar resumen del día
+function actualizarResumen(data) {
+  document.getElementById('total-cheques-dia').textContent = data.total_cheques || 0;
+  document.getElementById('monto-total-dia').textContent = formatCurrency(data.total_monto || 0);
+  
+  const promedio = data.total_cheques > 0 ? (data.total_monto || 0) / data.total_cheques : 0;
+  document.getElementById('promedio-cheque').textContent = formatCurrency(promedio);
+}
+
+// Aplicar filtros
+function aplicarFiltros() {
+  const filtroOrigen = document.getElementById('filtro-origen').value;
+  const filtroEstado = document.getElementById('filtro-estado').value;
+  const buscarProveedor = document.getElementById('buscar-proveedor').value.toLowerCase();
+
+  chequesFiltrados = chequesOriginales.filter(cheque => {
+    const coincideOrigen = !filtroOrigen || cheque.origen === filtroOrigen;
+    const coincideEstado = !filtroEstado || cheque.estado === filtroEstado;
+    const coincideProveedor = !buscarProveedor || cheque.proveedor.toLowerCase().includes(buscarProveedor);
+    
+    return coincideOrigen && coincideEstado && coincideProveedor;
+  });
+
+  paginaActual = 1;
+  actualizarTabla();
+  actualizarPaginacion();
+}
+
+// Actualizar tabla
+function actualizarTabla() {
+  const tbody = document.getElementById('tabla-cheques');
+  
+  if (chequesFiltrados.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+          <i class="fas fa-search text-2xl mb-2 block"></i>
+          <p>No se encontraron cheques</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  // Calcular índices de paginación
+  const inicio = (paginaActual - 1) * itemsPorPagina;
+  const fin = inicio + itemsPorPagina;
+  const chequesVista = chequesFiltrados.slice(inicio, fin);
+
+  tbody.innerHTML = chequesVista.map(cheque => `
+    <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">${cheque.numero_cheque}</div>
+      </td>
+      <td class="px-6 py-4">
+        <div class="text-sm text-gray-900">${cheque.proveedor}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-semibold text-gray-900">${formatCurrency(cheque.monto)}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${obtenerClaseEstado(cheque.estado)}">
+          ${cheque.estado}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex px-2 py-1 text-xs rounded-full ${obtenerClaseOrigen(cheque.origen)}">
+          ${cheque.origen}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm">
+        <div class="flex items-center space-x-2">
+          <button onclick="verDetalleCheque('${cheque.numero_cheque}')" 
+                  class="text-gray-600 hover:text-gray-800 transition-colors" 
+                  title="Ver detalle">
+            <i class="fas fa-eye"></i>
+          </button>
+          ${cheque.origen === 'Tabla Temporal' ? `
+            <button onclick="cambiarEstadoCheque('${cheque.numero_cheque}', '${cheque.estado}')" 
+                    class="text-blue-600 hover:text-blue-800 transition-colors" 
+                    title="${cheque.estado === 'no_cobrado' ? 'Marcar como cobrado' : 'Marcar como no cobrado'}">
+              <i class="fas ${cheque.estado === 'no_cobrado' ? 'fa-check-circle' : 'fa-undo'}"></i>
+            </button>
+          ` : ''}
+          <button onclick="editarCheque('${cheque.numero_cheque}')" 
+                  class="text-gray-600 hover:text-gray-800 transition-colors" 
+                  title="Editar">
+            <i class="fas fa-edit"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Obtener clase CSS para estado
+function obtenerClaseEstado(estado) {
+  switch (estado?.toLowerCase()) {
+    case 'pendiente':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'cobrado':
+      return 'bg-green-100 text-green-800';
+    case 'cancelado':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// Obtener clase CSS para origen
+function obtenerClaseOrigen(origen) {
+  return origen === 'Sistema Actual' 
+    ? 'bg-blue-100 text-blue-800' 
+    : 'bg-purple-100 text-purple-800';
+}
+
+// Actualizar paginación
+function actualizarPaginacion() {
+  const totalPaginas = Math.ceil(chequesFiltrados.length / itemsPorPagina);
+  const inicio = (paginaActual - 1) * itemsPorPagina + 1;
+  const fin = Math.min(paginaActual * itemsPorPagina, chequesFiltrados.length);
+
+  document.getElementById('items-desde').textContent = chequesFiltrados.length > 0 ? inicio : 0;
+  document.getElementById('items-hasta').textContent = fin;
+  document.getElementById('items-total').textContent = chequesFiltrados.length;
+  document.getElementById('pagina-actual').textContent = paginaActual;
+
+  const btnAnterior = document.getElementById('btn-anterior');
+  const btnSiguiente = document.getElementById('btn-siguiente');
+
+  btnAnterior.disabled = paginaActual === 1;
+  btnSiguiente.disabled = paginaActual === totalPaginas || totalPaginas === 0;
+
+  document.getElementById('paginacion').classList.toggle('hidden', chequesFiltrados.length === 0);
+}
+
+// Navegación de páginas
+function irPaginaAnterior() {
+  if (paginaActual > 1) {
+    paginaActual--;
+    actualizarTabla();
+    actualizarPaginacion();
+  }
+}
+
+function irPaginaSiguiente() {
+  const totalPaginas = Math.ceil(chequesFiltrados.length / itemsPorPagina);
+  if (paginaActual < totalPaginas) {
+    paginaActual++;
+    actualizarTabla();
+    actualizarPaginacion();
+  }
+}
+
+// Limpiar filtros
+function limpiarFiltros() {
+  document.getElementById('filtro-origen').value = '';
+  document.getElementById('filtro-estado').value = '';
+  document.getElementById('buscar-proveedor').value = '';
+  aplicarFiltros();
+}
+
+// Exportar datos
+function exportarCheques() {
+  if (chequesFiltrados.length === 0) {
+    mostrarError('No hay datos para exportar');
+    return;
+  }
+
+  const csv = convertirACSV(chequesFiltrados);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `cheques_${fechaActual}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
+// Convertir a CSV
+function convertirACSV(datos) {
+  const headers = ['Número Cheque', 'Proveedor', 'Monto', 'Estado', 'Origen'];
+  const filas = datos.map(cheque => [
+    cheque.numero_cheque,
+    cheque.proveedor,
+    cheque.monto,
+    cheque.estado,
+    cheque.origen
+  ]);
+
+  return [headers, ...filas]
+    .map(fila => fila.map(campo => `"${campo}"`).join(','))
+    .join('\n');
+}
+
+// Acciones de cheques
+function verDetalleCheque(numeroCheque) {
+  console.log('Ver detalle del cheque:', numeroCheque);
+  // Implementar vista de detalle
+}
+
+function editarCheque(numeroCheque) {
+  console.log('Editar cheque:', numeroCheque);
+  // Implementar edición
+}
+
+// Mostrar mensaje de éxito
+function mostrarMensajeExito(mensaje) {
+  // Crear un toast de éxito simple
+  const toast = document.createElement('div');
+  toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+  toast.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <i class="fas fa-check-circle"></i>
+      <span>${mensaje}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(toast);
+  
+  // Eliminar después de 3 segundos
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 3000);
+}
+
+// Mostrar error
+function mostrarError(mensaje) {
+  console.error(mensaje);
+  const tbody = document.getElementById('tabla-cheques');
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" class="px-6 py-8 text-center text-red-500">
+        <i class="fas fa-exclamation-triangle text-2xl mb-2 block"></i>
+        <p>${mensaje}</p>
+      </td>
+    </tr>
+  `;
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Cargar datos iniciales
+  cargarDetalleCheques();
+
+  // Filtros
+  document.getElementById('filtro-origen')?.addEventListener('change', aplicarFiltros);
+  document.getElementById('filtro-estado')?.addEventListener('change', aplicarFiltros);
+  document.getElementById('buscar-proveedor')?.addEventListener('input', aplicarFiltros);
+  document.getElementById('btn-limpiar-filtros')?.addEventListener('click', limpiarFiltros);
+
+  // Botones
+  document.getElementById('btn-actualizar')?.addEventListener('click', cargarDetalleCheques);
+  document.getElementById('btn-exportar')?.addEventListener('click', exportarCheques);
+
+  // Paginación
+  document.getElementById('btn-anterior')?.addEventListener('click', irPaginaAnterior);
+  document.getElementById('btn-siguiente')?.addEventListener('click', irPaginaSiguiente);
+});
+</script>
+
+{% endblock %}

@@ -304,7 +304,7 @@ def obtener_productos_mensuales(fecha_desde: Optional[str] = None, fecha_hasta: 
 
 @router.get("/calendario-cheques", response_class=JSONResponse)
 def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = None):
-    """Obtener calendario de cheques combinando pagos_factura y tabla cheques"""
+    """Obtener calendario de cheques con estados diferenciados"""
     conn = None
     cursor = None
     
@@ -327,14 +327,15 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
 
         dias_con_cheques = {}
 
-        # Query para pagos_factura si existe
+        # Query para pagos_factura si existe (siempre cobrado)
         if tabla_pagos_existe:
             try:
                 query_sistema = """
                     SELECT 
                         DAY(pf.fecha) as dia,
                         COUNT(*) as cantidad_cheques,
-                        COALESCE(SUM(pf.monto), 0) as monto_total
+                        COALESCE(SUM(pf.monto), 0) as monto_total,
+                        'cobrado' as estado_grupo
                     FROM pagos_factura pf
                     WHERE pf.tipo = 'cheque' 
                     AND YEAR(pf.fecha) = %s 
@@ -351,10 +352,11 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                         dias_con_cheques[dia] = {
                             "cantidad": 0,
                             "monto": 0,
-                            "detalles": {
-                                "sistema": {"cantidad": 0, "monto": 0},
-                                "temporal": {"cantidad": 0, "monto": 0}
-                            }
+                            "cobrados": 0,
+                            "no_cobrados": 0,
+                            "monto_cobrado": 0,
+                            "monto_no_cobrado": 0,
+                            "estado_predominante": "cobrado"
                         }
                     
                     cantidad = safe_int(resultado["cantidad_cheques"])
@@ -362,24 +364,25 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                     
                     dias_con_cheques[dia]["cantidad"] += cantidad
                     dias_con_cheques[dia]["monto"] += monto
-                    dias_con_cheques[dia]["detalles"]["sistema"]["cantidad"] = cantidad
-                    dias_con_cheques[dia]["detalles"]["sistema"]["monto"] = monto
+                    dias_con_cheques[dia]["cobrados"] += cantidad
+                    dias_con_cheques[dia]["monto_cobrado"] += monto
                     
             except Exception as e:
                 logger.warning(f"Error consultando pagos_factura: {e}")
 
-        # Query para tabla cheques si existe
+        # Query para tabla cheques con estado
         if tabla_cheques_existe:
             try:
                 query_temporal = """
                     SELECT 
                         DAY(c.fecha_cheque) as dia,
+                        c.estado,
                         COUNT(*) as cantidad_cheques,
                         COALESCE(SUM(c.monto), 0) as monto_total
                     FROM cheques c
                     WHERE YEAR(c.fecha_cheque) = %s 
                     AND MONTH(c.fecha_cheque) = %s
-                    GROUP BY DAY(c.fecha_cheque)
+                    GROUP BY DAY(c.fecha_cheque), c.estado
                 """
                 
                 cursor.execute(query_temporal, (año, mes))
@@ -387,14 +390,17 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                 
                 for resultado in resultados_temporal:
                     dia = resultado["dia"]
+                    estado = resultado["estado"]
+                    
                     if dia not in dias_con_cheques:
                         dias_con_cheques[dia] = {
                             "cantidad": 0,
                             "monto": 0,
-                            "detalles": {
-                                "sistema": {"cantidad": 0, "monto": 0},
-                                "temporal": {"cantidad": 0, "monto": 0}
-                            }
+                            "cobrados": 0,
+                            "no_cobrados": 0,
+                            "monto_cobrado": 0,
+                            "monto_no_cobrado": 0,
+                            "estado_predominante": "no_cobrado"
                         }
                     
                     cantidad = safe_int(resultado["cantidad_cheques"])
@@ -402,21 +408,34 @@ def obtener_calendario_cheques(año: Optional[int] = None, mes: Optional[int] = 
                     
                     dias_con_cheques[dia]["cantidad"] += cantidad
                     dias_con_cheques[dia]["monto"] += monto
-                    dias_con_cheques[dia]["detalles"]["temporal"]["cantidad"] = cantidad
-                    dias_con_cheques[dia]["detalles"]["temporal"]["monto"] = monto
+                    
+                    if estado == 'cobrado':
+                        dias_con_cheques[dia]["cobrados"] += cantidad
+                        dias_con_cheques[dia]["monto_cobrado"] += monto
+                    else:
+                        dias_con_cheques[dia]["no_cobrados"] += cantidad
+                        dias_con_cheques[dia]["monto_no_cobrado"] += monto
                     
             except Exception as e:
                 logger.warning(f"Error consultando tabla cheques: {e}")
 
-        # Redondear montos
+        # Calcular estado predominante para cada día
         for dia in dias_con_cheques:
-            dias_con_cheques[dia]["monto"] = round(dias_con_cheques[dia]["monto"], 2)
-            dias_con_cheques[dia]["detalles"]["sistema"]["monto"] = round(
-                dias_con_cheques[dia]["detalles"]["sistema"]["monto"], 2
-            )
-            dias_con_cheques[dia]["detalles"]["temporal"]["monto"] = round(
-                dias_con_cheques[dia]["detalles"]["temporal"]["monto"], 2
-            )
+            data_dia = dias_con_cheques[dia]
+            
+            # Si hay más no cobrados que cobrados, estado predominante es no_cobrado
+            if data_dia["no_cobrados"] > data_dia["cobrados"]:
+                data_dia["estado_predominante"] = "no_cobrado"
+            elif data_dia["cobrados"] > data_dia["no_cobrados"]:
+                data_dia["estado_predominante"] = "cobrado"
+            else:
+                # En caso de empate, priorizar no cobrado
+                data_dia["estado_predominante"] = "no_cobrado" if data_dia["no_cobrados"] > 0 else "cobrado"
+            
+            # Redondear montos
+            data_dia["monto"] = round(data_dia["monto"], 2)
+            data_dia["monto_cobrado"] = round(data_dia["monto_cobrado"], 2)
+            data_dia["monto_no_cobrado"] = round(data_dia["monto_no_cobrado"], 2)
 
         return {
             "año": año,
@@ -647,3 +666,12 @@ def comparar_ventas(request: ComparacionRequest):
             cursor.close()
         if conn:
             conn.close()
+
+@router.get("/finanzas/detalle-cheques", response_class=HTMLResponse)
+def vista_detalle_cheques(request: Request):
+    """Vista para el detalle de cheques de un día específico"""
+    try:
+        return templates.TemplateResponse("finanzas/detalle_cheques.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Error en vista detalle_cheques: {e}")
+        raise HTTPException(status_code=500, detail="Error al cargar la vista de detalle de cheques")

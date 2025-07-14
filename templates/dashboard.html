@@ -672,23 +672,68 @@ function actualizarCalendario(data) {
     
     const tieneCheques = data.dias_con_cheques[dia];
     if (tieneCheques) {
-      div.classList.add('bg-gray-200', 'text-gray-800', 'font-semibold');
-      div.title = `${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`;
+      // Determinar color según estado predominante
+      if (tieneCheques.estado_predominante === 'no_cobrado') {
+        // Verde para no cobrados
+        div.classList.remove('hover:bg-gray-100');
+        div.classList.add('bg-green-200', 'text-green-800', 'font-semibold', 'hover:bg-green-300');
+      } else {
+        // Gris para cobrados
+        div.classList.remove('hover:bg-gray-100');
+        div.classList.add('bg-gray-200', 'text-gray-800', 'font-semibold', 'hover:bg-gray-300');
+      }
+      
+      // Tooltip mejorado con información de estados
+      const tooltipTexto = [
+        `Total: ${tieneCheques.cantidad} cheques - ${formatCurrency(tieneCheques.monto)}`
+      ];
+      
+      if (tieneCheques.cobrados > 0) {
+        tooltipTexto.push(`Cobrados: ${tieneCheques.cobrados} - ${formatCurrency(tieneCheques.monto_cobrado)}`);
+      }
+      
+      if (tieneCheques.no_cobrados > 0) {
+        tooltipTexto.push(`Pendientes: ${tieneCheques.no_cobrados} - ${formatCurrency(tieneCheques.monto_no_cobrado)}`);
+      }
+      
+      div.title = tooltipTexto.join('\n');
+      
       totalCheques += tieneCheques.cantidad;
       montoTotal += tieneCheques.monto;
+      
+      // Agregar evento de clic para ir al detalle
+      div.addEventListener('click', function() {
+        const url = `/finanzas/detalle-cheques?año=${data.año}&mes=${data.mes}&dia=${dia}`;
+        window.open(url, '_blank');
+      });
+      
+      div.style.cursor = 'pointer';
     }
     
     div.textContent = dia;
     container.appendChild(div);
   }
   
-  // Actualizar totales
+  // Actualizar totales y leyenda
   const totalElement = document.getElementById('total-cheques-mes');
   if (totalElement) {
-    if (totalCheques > 0) {
-      totalElement.textContent = `${totalCheques} cheques - ${formatCurrency(montoTotal)}`;
-    } else {
-      totalElement.textContent = 'No hay cheques este mes';
+    const parentContainer = totalElement.parentElement;
+    if (parentContainer) {
+      parentContainer.innerHTML = `
+        <div class="flex items-center space-x-4 text-xs text-gray-600">
+          <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 bg-green-200 rounded"></div>
+            <span>Pendientes</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 bg-gray-200 rounded"></div>
+            <span>Cobrados</span>
+          </div>
+        </div>
+        <div id="total-cheques-mes" class="font-medium">
+          ${totalCheques > 0 ? `${totalCheques} cheques - ${formatCurrency(montoTotal)}` : 'No hay cheques este mes'}
+        </div>
+      `;
     }
   }
 }
