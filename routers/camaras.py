@@ -218,7 +218,7 @@ async def obtener_status_camara(camera_id: str):
             "ubicacion": camera_config["ubicacion"],
             "activa": camera_config["activa"],
             "stream_activo": stream_activo,
-            "opencv_disponible": self.verificar_opencv()
+            "opencv_disponible": verificar_opencv()
         }
         
     except Exception as e:
