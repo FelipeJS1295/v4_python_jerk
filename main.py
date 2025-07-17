@@ -32,6 +32,7 @@ from routers import (
     trabajadores_jinja,
 )
 
+from routers import camaras
 from routers.config import trabajadores_acciones
 from routers.config import usuarios_acciones
 from routers.logistica import devoluciones
@@ -159,6 +160,7 @@ app.include_router(usuarios.router)
 app.include_router(configuracion.router)
 app.include_router(usuarios_jinja.router)
 app.include_router(trabajadores_jinja.router)
+app.include_router(camaras.router)
 
 # Routers de configuración
 app.include_router(config_clientes.router)
