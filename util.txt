@@ -8,6 +8,8 @@ cd /var/www/v4_python_jerk
 # Para ver logs si hay problemas
 pm2 logs jerkhome-admin
 
+uvicorn main:app --reload --port 8000 
+
 
 ngnix que funciona en jerkhome
 # /etc/nginx/sites-available/jerkhome.cl

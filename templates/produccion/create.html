@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Producción{% endblock %}
+{% block header %}Crear Nueva Producción{% endblock %}
+{% block breadcrumb %}Producción > <a href="/produccion" class="text-slate-500 hover:text-slate-700">Dashboard</a> > Crear{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  
+  <!-- Header con botón volver -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-semibold text-slate-800">Nueva Producción</h2>
+      <p class="text-sm text-slate-600 mt-1">Registrar órdenes de trabajo normales</p>
+    </div>
+    <a href="/produccion" class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+      <i class="fas fa-arrow-left mr-2"></i>
+      Volver
+    </a>
+  </div>
+
+  <!-- Formulario principal -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+    <div class="p-6 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-800">Información General</h3>
+    </div>
+    
+    <div class="p-6">
+      <form id="form-crear-produccion" class="space-y-6">
+        
+        <!-- Selección de trabajador -->
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            Trabajador <span class="text-red-500">*</span>
+          </label>
+          <select id="trabajador-produccion" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Seleccionar trabajador...</option>
+          </select>
+        </div>
+
+        <!-- Órdenes de trabajo -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="font-medium text-slate-800">Órdenes de Trabajo</h4>
+            <button type="button" id="btn-agregar-orden" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+              <i class="fas fa-plus mr-2"></i>
+              Agregar Orden
+            </button>
+          </div>
+          
+          <div id="lista-ordenes" class="space-y-4">
+            <!-- Órdenes se agregan dinámicamente -->
+          </div>
+          
+          <!-- Mensaje cuando no hay órdenes -->
+          <div id="sin-ordenes" class="text-center py-8 text-slate-500">
+            <i class="fas fa-clipboard-list text-3xl mb-3"></i>
+            <p>No hay órdenes agregadas</p>
+            <p class="text-sm">Haga clic en "Agregar Orden" para comenzar</p>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex justify-end space-x-3 pt-6 border-t border-slate-200">
+          <a href="/produccion" class="inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+            <i class="fas fa-times mr-2"></i>
+            Cancelar
+          </a>
+          <button type="submit" class="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="fas fa-save mr-2"></i>
+            Guardar Producción
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+let trabajadores = [];
+let productos = [];
+let ordenesProduccion = [];
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  cargarTrabajadores();
+  cargarProductos();
+  
+  // Event listeners
+  document.getElementById('btn-agregar-orden').addEventListener('click', agregarOrdenProduccion);
+  document.getElementById('form-crear-produccion').addEventListener('submit', guardarProduccion);
+  
+  // Agregar primera orden automáticamente
+  setTimeout(() => {
+    if (productos.length > 0) {
+      agregarOrdenProduccion();
+    }
+  }, 500);
+});
+
+async function cargarTrabajadores() {
+  try {
+    const response = await fetch('/produccion/trabajadores');
+    if (response.ok) {
+      trabajadores = await response.json();
+      
+      const select = document.getElementById('trabajador-produccion');
+      trabajadores.forEach(trabajador => {
+        const option = document.createElement('option');
+        option.value = trabajador.id;
+        option.textContent = trabajador.nombres;
+        select.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error cargando trabajadores:', error);
+    mostrarNotificacion('Error al cargar trabajadores', 'error');
+  }
+}
+
+async function cargarProductos() {
+  try {
+    const response = await fetch('/produccion/productos/');
+    if (response.ok) {
+      productos = await response.json();
+    }
+  } catch (error) {
+    console.error('Error cargando productos:', error);
+    mostrarNotificacion('Error al cargar productos', 'error');
+  }
+}
+
+function agregarOrdenProduccion() {
+  const contenedor = document.getElementById('lista-ordenes');
+  const sinOrdenes = document.getElementById('sin-ordenes');
+  const index = ordenesProduccion.length;
+  
+  // Ocultar mensaje "sin órdenes"
+  sinOrdenes.style.display = 'none';
+  
+  const div = document.createElement('div');
+  div.className = 'border border-slate-200 rounded-lg p-4 bg-slate-50';
+  div.dataset.index = index;
+  
+  const hoy = new Date().toISOString().split('T')[0];
+  
+  div.innerHTML = `
+    <div class="flex items-center justify-between mb-3">
+      <h5 class="font-medium text-slate-700">Orden #${index + 1}</h5>
+      <button type="button" onclick="eliminarOrdenProduccion(${index})" class="text-red-600 hover:text-red-800 p-1">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Producto <span class="text-red-500">*</span></label>
+        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="productos_id" required>
+          <option value="">Seleccionar producto...</option>
+          ${productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
+        </select>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">N° Orden <span class="text-red-500">*</span></label>
+        <input type="text" placeholder="Ej: ORD-001" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="numero_orden_trabajo" required>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Fecha <span class="text-red-500">*</span></label>
+        <input type="date" value="${hoy}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="fecha" required>
+      </div>
+    </div>
+  `;
+  
+  contenedor.appendChild(div);
+  ordenesProduccion.push({});
+}
+
+function eliminarOrdenProduccion(index) {
+  const contenedor = document.getElementById('lista-ordenes');
+  const sinOrdenes = document.getElementById('sin-ordenes');
+  
+  // Encontrar y eliminar el div específico
+  const divAEliminar = contenedor.querySelector(`[data-index="${index}"]`);
+  if (divAEliminar) {
+    divAEliminar.remove();
+  }
+  
+  // Eliminar del array
+  ordenesProduccion.splice(index, 1);
+  
+  // Reindexar elementos restantes
+  const divs = contenedor.querySelectorAll('[data-index]');
+  divs.forEach((div, newIndex) => {
+    div.dataset.index = newIndex;
+    const titulo = div.querySelector('h5');
+    if (titulo) {
+      titulo.textContent = `Orden #${newIndex + 1}`;
+    }
+    const btnEliminar = div.querySelector('button[onclick]');
+    if (btnEliminar) {
+      btnEliminar.setAttribute('onclick', `eliminarOrdenProduccion(${newIndex})`);
+    }
+  });
+  
+  // Mostrar mensaje si no hay órdenes
+  if (ordenesProduccion.length === 0) {
+    sinOrdenes.style.display = 'block';
+  }
+}
+
+async function guardarProduccion(event) {
+  event.preventDefault();
+  
+  const trabajadorId = document.getElementById('trabajador-produccion').value;
+  if (!trabajadorId) {
+    mostrarNotificacion('Seleccione un trabajador', 'error');
+    return;
+  }
+  
+  const ordenes = [];
+  const contenedor = document.getElementById('lista-ordenes');
+  const ordenesElements = contenedor.querySelectorAll('[data-index]');
+  
+  for (let i = 0; i < ordenesElements.length; i++) {
+    const div = ordenesElements[i];
+    const orden = {};
+    
+    div.querySelectorAll('[data-field]').forEach(input => {
+      const field = input.getAttribute('data-field');
+      orden[field] = input.value;
+    });
+    
+    if (!orden.productos_id || !orden.numero_orden_trabajo || !orden.fecha) {
+      mostrarNotificacion(`Complete todos los campos de la orden ${i + 1}`, 'error');
+      return;
+    }
+    
+    ordenes.push(orden);
+  }
+  
+  if (ordenes.length === 0) {
+    mostrarNotificacion('Agregue al menos una orden', 'error');
+    return;
+  }
+  
+  // Mostrar loading
+  const btnGuardar = event.target.querySelector('button[type="submit"]');
+  const textoOriginal = btnGuardar.innerHTML;
+  btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+  btnGuardar.disabled = true;
+  
+  try {
+    const response = await fetch('/produccion/crear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        trabajador_id: parseInt(trabajadorId),
+        ordenes: ordenes
+      })
+    });
+    
+    if (response.ok) {
+      mostrarNotificacion('Producción registrada correctamente', 'success');
+      setTimeout(() => {
+        window.location.href = '/produccion';
+      }, 1500);
+    } else {
+      const error = await response.json();
+      mostrarNotificacion('Error: ' + error.detail, 'error');
+    }
+  } catch (error) {
+    mostrarNotificacion('Error de conexión: ' + error.message, 'error');
+  } finally {
+    btnGuardar.innerHTML = textoOriginal;
+    btnGuardar.disabled = false;
+  }
+}
+
+function mostrarNotificacion(mensaje, tipo = 'info') {
+  // Crear elemento de notificación
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transition-all duration-300 transform translate-x-full`;
+  
+  // Estilos según tipo
+  const estilos = {
+    success: 'bg-green-600',
+    error: 'bg-red-600',
+    warning: 'bg-yellow-600',
+    info: 'bg-blue-600'
+  };
+  
+  notificacion.classList.add(estilos[tipo] || estilos.info);
+  notificacion.textContent = mensaje;
+  
+  document.body.appendChild(notificacion);
+  
+  // Animar entrada
+  setTimeout(() => {
+    notificacion.classList.remove('translate-x-full');
+  }, 100);
+  
+  // Remover después de 5 segundos
+  setTimeout(() => {
+    notificacion.classList.add('translate-x-full');
+    setTimeout(() => {
+      document.body.removeChild(notificacion);
+    }, 300);
+  }, 5000);
+}
+</script>
+
+<style>
+/* Estilos específicos para el formulario de creación */
+.form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Animaciones */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para órdenes */
+[data-index] {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+</style>
+{% endblock %}

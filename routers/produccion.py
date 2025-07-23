@@ -16,6 +16,26 @@ from fastapi.responses import JSONResponse, HTMLResponse
 router = APIRouter(prefix="/produccion", tags=["Producción"])
 templates = Jinja2Templates(directory="templates")
 
+# Vista principal de producción
+@router.get("/", response_class=HTMLResponse)
+async def vista_produccion(request: Request):
+    return templates.TemplateResponse("produccion.html", {"request": request})
+
+# Vista para crear nueva producción
+@router.get("/create", response_class=HTMLResponse)
+async def vista_crear_produccion(request: Request):
+    return templates.TemplateResponse("produccion/create.html", {"request": request})
+
+# Vista para crear nueva reparación
+@router.get("/create-reparacion", response_class=HTMLResponse)
+async def vista_crear_reparacion(request: Request):
+    return templates.TemplateResponse("produccion/create_reparacion.html", {"request": request})
+
+# Vista para editar producción
+@router.get("/edit/{id}", response_class=HTMLResponse)
+async def vista_editar_produccion(request: Request, id: int):
+    return templates.TemplateResponse("produccion/edit.html", {"request": request, "orden_id": id})
+
 @router.get("/ordenes", response_class=JSONResponse)
 def obtener_ordenes_produccion():
     conn = conectar_mysql()
@@ -135,9 +155,49 @@ class ProduccionCreate(BaseModel):
 @router.post("/crear", response_class=JSONResponse)
 def crear_produccion_batch(data: ProduccionBatch):
     conn = conectar_mysql()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
 
     try:
+        # Obtener el rol del trabajador seleccionado
+        cursor.execute("""
+            SELECT u.rol 
+            FROM users u 
+            JOIN trabajadores t ON u.id = t.id 
+            WHERE t.id = %s
+        """, (data.trabajador_id,))
+        
+        trabajador_info = cursor.fetchone()
+        if not trabajador_info:
+            raise HTTPException(status_code=404, detail="Trabajador no encontrado")
+        
+        rol_trabajador = trabajador_info["rol"]
+        
+        # Validar que no existan números de orden duplicados para el mismo rol
+        numeros_orden = [orden.numero_orden_trabajo for orden in data.ordenes]
+        
+        if len(numeros_orden) != len(set(numeros_orden)):
+            raise HTTPException(status_code=400, detail="No puede repetir números de orden en la misma solicitud")
+        
+        # Verificar números de orden existentes para el mismo rol
+        placeholders = ','.join(['%s'] * len(numeros_orden))
+        cursor.execute(f"""
+            SELECT p.numero_orden_trabajo
+            FROM produccion p
+            JOIN trabajadores t ON p.trabajadores_id = t.id
+            JOIN users u ON t.id = u.id
+            WHERE u.rol = %s AND p.numero_orden_trabajo IN ({placeholders})
+        """, [rol_trabajador] + numeros_orden)
+        
+        ordenes_existentes = cursor.fetchall()
+        
+        if ordenes_existentes:
+            numeros_duplicados = [orden["numero_orden_trabajo"] for orden in ordenes_existentes]
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Los siguientes números de orden ya existen para trabajadores de {rol_trabajador}: {', '.join(numeros_duplicados)}"
+            )
+        
+        # Si no hay duplicados, proceder con la inserción
         for orden in data.ordenes:
             cursor.execute("""
                 INSERT INTO produccion (
@@ -153,6 +213,9 @@ def crear_produccion_batch(data: ProduccionBatch):
         conn.commit()
         return {"mensaje": "Producción registrada correctamente"}
 
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Error al registrar producción: {str(e)}")
@@ -167,7 +230,6 @@ def resumen_detallado_trabajador(filtro: FiltroResumen):
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Obtener rol del trabajador
         cursor.execute("""
             SELECT u.rol, t.nombres 
             FROM users u 
@@ -182,12 +244,6 @@ def resumen_detallado_trabajador(filtro: FiltroResumen):
         rol = user_data["rol"].strip() if user_data["rol"] else ""
         nombre = user_data["nombres"]
 
-        # Debug temporal - puedes quitar estas líneas después
-        print(f"DEBUG: Trabajador ID: {filtro.trabajador_id}")
-        print(f"DEBUG: Rol encontrado: '{rol}' (longitud: {len(rol)})")
-        print(f"DEBUG: Nombre: {nombre}")
-
-        # Determinar qué costo usar - Maneja múltiples variantes
         campo_costo = {
             "Tapiceria": "costo_tapiceria",
             "Tapicería": "costo_tapiceria", 
@@ -201,24 +257,16 @@ def resumen_detallado_trabajador(filtro: FiltroResumen):
             "ESQUELETERIA": "costo_esqueleteria"
         }.get(rol, None)
 
-        print(f"DEBUG: Campo costo determinado: {campo_costo}")
-
         if not campo_costo:
-            # Fallback a precio_reparacion si no encuentra el rol
             campo_costo = "precio_reparacion"
-            print(f"DEBUG: Usando fallback: {campo_costo}")
 
-        # Verificar que la columna existe en productos
         cursor.execute(f"SHOW COLUMNS FROM productos LIKE '{campo_costo}'")
         columna_existe = cursor.fetchone()
         
         if not columna_existe and campo_costo != "precio_reparacion":
-            print(f"DEBUG: Columna {campo_costo} no existe, usando precio_reparacion")
             campo_costo = "precio_reparacion"
 
-        # Consulta de órdenes con manejo robusto de costos
         if campo_costo == "precio_reparacion":
-            # Si usa precio_reparacion, tomarlo de la tabla produccion
             query = """
                 SELECT 
                     p.fecha,
@@ -232,7 +280,6 @@ def resumen_detallado_trabajador(filtro: FiltroResumen):
                 WHERE p.trabajadores_id = %s
             """
         else:
-            # Si usa costo específico, tomarlo de la tabla productos
             query = f"""
                 SELECT 
                     p.fecha,
@@ -248,7 +295,6 @@ def resumen_detallado_trabajador(filtro: FiltroResumen):
         
         params = [filtro.trabajador_id]
 
-        # Agregar filtros de fecha si están presentes
         if filtro.fecha_desde:
             query += " AND p.fecha >= %s"
             params.append(filtro.fecha_desde)
@@ -258,18 +304,12 @@ def resumen_detallado_trabajador(filtro: FiltroResumen):
 
         query += " ORDER BY p.fecha DESC"
         
-        print(f"DEBUG: Query final: {query}")
-        print(f"DEBUG: Parámetros: {params}")
-        
         cursor.execute(query, params)
         datos = cursor.fetchall()
 
-        # Formatear fechas
         for d in datos:
             if d["fecha"]:
                 d["fecha"] = d["fecha"].strftime("%Y-%m-%d")
-
-        print(f"DEBUG: Registros encontrados: {len(datos)}")
 
         return {
             "trabajador": nombre,
@@ -280,30 +320,32 @@ def resumen_detallado_trabajador(filtro: FiltroResumen):
         }
 
     except Exception as e:
-        print(f"ERROR en resumen_detallado: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     
     finally:
         cursor.close()
         conn.close()
 
-@router.get("/{id}", response_class=JSONResponse)
+@router.get("/orden/{id}", response_class=JSONResponse)
 def obtener_orden(id: int):
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT p.*, t.nombres AS trabajador_nombre
+        SELECT p.*, t.nombres AS trabajador_nombre, pr.nombre AS producto_nombre
         FROM produccion p
         JOIN trabajadores t ON p.trabajadores_id = t.id
+        JOIN productos pr ON p.productos_id = pr.id
         WHERE p.id = %s
     """, (id,))
     data = cursor.fetchone()
 
+    if not data:
+        cursor.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+
     if data and data["fecha"]:
         data["fecha"] = data["fecha"].strftime("%Y-%m-%d")
-
-    # convertimos el nombre a objeto
-    data["trabajador"] = {"nombres": data.pop("trabajador_nombre")}
 
     cursor.close()
     conn.close()
@@ -312,8 +354,42 @@ def obtener_orden(id: int):
 @router.put("/{id}", response_class=JSONResponse)
 def actualizar_orden(id: int, data: ProduccionCreate):
     conn = conectar_mysql()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
     try:
+        # Obtener información actual de la orden
+        cursor.execute("""
+            SELECT p.numero_orden_trabajo, p.trabajadores_id, u.rol
+            FROM produccion p
+            JOIN trabajadores t ON p.trabajadores_id = t.id
+            JOIN users u ON t.id = u.id
+            WHERE p.id = %s
+        """, (id,))
+        
+        orden_actual = cursor.fetchone()
+        if not orden_actual:
+            raise HTTPException(status_code=404, detail="Orden no encontrada")
+        
+        # Solo validar si el número de orden cambió
+        if orden_actual["numero_orden_trabajo"] != data.numero_orden_trabajo:
+            rol_trabajador = orden_actual["rol"]
+            
+            # Verificar si el nuevo número de orden ya existe para el mismo rol
+            cursor.execute("""
+                SELECT p.id
+                FROM produccion p
+                JOIN trabajadores t ON p.trabajadores_id = t.id
+                JOIN users u ON t.id = u.id
+                WHERE u.rol = %s AND p.numero_orden_trabajo = %s AND p.id != %s
+            """, (rol_trabajador, data.numero_orden_trabajo, id))
+            
+            orden_existente = cursor.fetchone()
+            if orden_existente:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"El número de orden {data.numero_orden_trabajo} ya existe para otro trabajador de {rol_trabajador}"
+                )
+        
+        # Actualizar la orden
         cursor.execute("""
             UPDATE produccion
             SET productos_id = %s, numero_orden_trabajo = %s, fecha = %s, updated_at = NOW()
@@ -326,6 +402,9 @@ def actualizar_orden(id: int, data: ProduccionCreate):
         ))
         conn.commit()
         return {"mensaje": "Producción actualizada correctamente"}
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -347,9 +426,49 @@ class ReparacionCreate(BaseModel):
 @router.post("/crear-reparacion", response_class=JSONResponse)
 def crear_reparaciones(data: ReparacionCreate):
     conn = conectar_mysql()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
 
     try:
+        # Obtener el rol del trabajador seleccionado
+        cursor.execute("""
+            SELECT u.rol 
+            FROM users u 
+            JOIN trabajadores t ON u.id = t.id 
+            WHERE t.id = %s
+        """, (data.trabajadores_id,))
+        
+        trabajador_info = cursor.fetchone()
+        if not trabajador_info:
+            raise HTTPException(status_code=404, detail="Trabajador no encontrado")
+        
+        rol_trabajador = trabajador_info["rol"]
+        
+        # Validar que no existan números de orden duplicados para el mismo rol
+        numeros_orden = [orden.numero_orden_trabajo for orden in data.ordenes]
+        
+        if len(numeros_orden) != len(set(numeros_orden)):
+            raise HTTPException(status_code=400, detail="No puede repetir números de orden en la misma solicitud")
+        
+        # Verificar números de orden existentes para el mismo rol
+        placeholders = ','.join(['%s'] * len(numeros_orden))
+        cursor.execute(f"""
+            SELECT p.numero_orden_trabajo
+            FROM produccion p
+            JOIN trabajadores t ON p.trabajadores_id = t.id
+            JOIN users u ON t.id = u.id
+            WHERE u.rol = %s AND p.numero_orden_trabajo IN ({placeholders})
+        """, [rol_trabajador] + numeros_orden)
+        
+        ordenes_existentes = cursor.fetchall()
+        
+        if ordenes_existentes:
+            numeros_duplicados = [orden["numero_orden_trabajo"] for orden in ordenes_existentes]
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Los siguientes números de orden ya existen para trabajadores de {rol_trabajador}: {', '.join(numeros_duplicados)}"
+            )
+        
+        # Si no hay duplicados, proceder con la inserción
         for orden in data.ordenes:
             cursor.execute("""
                 INSERT INTO produccion (
@@ -368,6 +487,9 @@ def crear_reparaciones(data: ReparacionCreate):
         conn.commit()
         return {"mensaje": "Reparaciones registradas correctamente"}
 
+    except HTTPException:
+        conn.rollback()
+        raise
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Error al guardar reparaciones: {str(e)}")
@@ -375,10 +497,6 @@ def crear_reparaciones(data: ReparacionCreate):
     finally:
         cursor.close()
         conn.close()
-
-@router.get("/", response_class=HTMLResponse)
-async def vista_produccion(request: Request):
-    return templates.TemplateResponse("produccion.html", {"request": request})
 
 @router.get("/productos/")
 async def obtener_productos():
@@ -395,75 +513,6 @@ async def obtener_productos():
         cursor.close()
         conn.close()
 
-@router.get("/{id}", response_class=JSONResponse)
-def obtener_orden(id: int):
-    conn = conectar_mysql()
-    cursor = conn.cursor(dictionary=True)
-
-    # Obtener la orden principal
-    cursor.execute("""
-        SELECT trabajador_id, tipo
-        FROM produccion
-        WHERE id = %s
-    """, (id,))
-    orden = cursor.fetchone()
-    if not orden:
-        raise HTTPException(status_code=404, detail="Orden no encontrada")
-
-    # Obtener órdenes asociadas
-    if orden["tipo"] == "normal":
-        cursor.execute("""
-            SELECT productos_id, numero_orden_trabajo, fecha
-            FROM produccion
-            WHERE trabajador_id = %s AND tipo = 'normal'
-        """, (orden["trabajador_id"],))
-    else:
-        cursor.execute("""
-            SELECT producto_id, numero_orden_trabajo, fecha, descripcion, precio_reparacion
-            FROM produccion
-            WHERE trabajador_id = %s AND tipo = 'reparacion'
-        """, (orden["trabajador_id"],))
-
-    ordenes = cursor.fetchall()
-    conn.close()
-
-    return {
-        "trabajador_id": orden["trabajador_id"],
-        "tipo": orden["tipo"],
-        "ordenes": ordenes
-    }
-
-@router.put("/editar/{id}", response_class=JSONResponse)
-def editar_orden(id: int, data: dict):
-    conn = conectar_mysql()
-    cursor = conn.cursor()
-
-    trabajador_id = data.get("trabajador_id")
-    ordenes = data.get("ordenes", [])
-
-    if not trabajador_id or not ordenes:
-        raise HTTPException(status_code=400, detail="Datos incompletos")
-
-    # Eliminar las órdenes anteriores
-    cursor.execute("DELETE FROM produccion WHERE id = %s", (id,))
-
-    # Insertar nuevas órdenes
-    for orden in ordenes:
-        cursor.execute("""
-            INSERT INTO produccion (trabajador_id, productos_id, numero_orden_trabajo, fecha, tipo, estado)
-            VALUES (%s, %s, %s, %s, 'normal', 'Pendiente')
-        """, (
-            trabajador_id,
-            orden.get("productos_id"),
-            orden.get("numero_orden_trabajo"),
-            orden.get("fecha")
-        ))
-
-    conn.commit()
-    conn.close()
-
-    return {"mensaje": "Orden actualizada correctamente"}
-
 @router.delete("/eliminar/{id}", response_class=JSONResponse)
 def eliminar_orden(id: int):
     conn = conectar_mysql()
@@ -471,9 +520,75 @@ def eliminar_orden(id: int):
 
     cursor.execute("DELETE FROM produccion WHERE id = %s", (id,))
     conn.commit()
+    cursor.close()
     conn.close()
 
     return {"mensaje": "Orden eliminada correctamente"}
+
+@router.post("/validar-numero-orden", response_class=JSONResponse)
+def validar_numero_orden(data: dict):
+    """Validar si un número de orden ya existe para un trabajador del mismo rol"""
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        trabajador_id = data.get("trabajador_id")
+        numero_orden = data.get("numero_orden_trabajo")
+        orden_id = data.get("orden_id", None)  # Para edición
+        
+        if not trabajador_id or not numero_orden:
+            return {"valido": False, "mensaje": "Datos incompletos"}
+        
+        # Obtener el rol del trabajador
+        cursor.execute("""
+            SELECT u.rol 
+            FROM users u 
+            JOIN trabajadores t ON u.id = t.id 
+            WHERE t.id = %s
+        """, (trabajador_id,))
+        
+        trabajador_info = cursor.fetchone()
+        if not trabajador_info:
+            return {"valido": False, "mensaje": "Trabajador no encontrado"}
+        
+        rol_trabajador = trabajador_info["rol"]
+        
+        # Verificar si el número de orden ya existe para el mismo rol
+        if orden_id:  # Para edición - excluir la orden actual
+            cursor.execute("""
+                SELECT p.numero_orden_trabajo, t.nombres
+                FROM produccion p
+                JOIN trabajadores t ON p.trabajadores_id = t.id
+                JOIN users u ON t.id = u.id
+                WHERE u.rol = %s AND p.numero_orden_trabajo = %s AND p.id != %s
+                LIMIT 1
+            """, (rol_trabajador, numero_orden, orden_id))
+        else:  # Para creación nueva
+            cursor.execute("""
+                SELECT p.numero_orden_trabajo, t.nombres
+                FROM produccion p
+                JOIN trabajadores t ON p.trabajadores_id = t.id
+                JOIN users u ON t.id = u.id
+                WHERE u.rol = %s AND p.numero_orden_trabajo = %s
+                LIMIT 1
+            """, (rol_trabajador, numero_orden))
+        
+        orden_existente = cursor.fetchone()
+        
+        if orden_existente:
+            return {
+                "valido": False, 
+                "mensaje": f"El número de orden '{numero_orden}' ya está asignado a {orden_existente['nombres']} ({rol_trabajador})"
+            }
+        
+        return {"valido": True, "mensaje": "Número de orden disponible"}
+        
+    except Exception as e:
+        return {"valido": False, "mensaje": f"Error al validar: {str(e)}"}
+    
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.get("/precios/{tipo}")
 def obtener_precios(tipo: str):
@@ -496,5 +611,6 @@ def obtener_precios(tipo: str):
         ORDER BY nombre
     """)
     resultados = cursor.fetchall()
+    cursor.close()
     conn.close()
     return resultados

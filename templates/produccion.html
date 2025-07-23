@@ -8,30 +8,30 @@
 <div class="space-y-6">
   
   <!-- Panel de Acciones Principales -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-  <!-- Imprimir Precios Producción -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer relative group">
-    <div class="flex items-center space-x-4" onclick="toggleMenu()">
-      <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-        <i class="fas fa-print text-blue-600 text-xl"></i>
+    <!-- Imprimir Precios Producción -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer relative group">
+      <div class="flex items-center space-x-4" onclick="toggleMenu()">
+        <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+          <i class="fas fa-print text-slate-600 text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-slate-800">Imprimir Precios</h3>
+          <p class="text-sm text-slate-600">Costura, Tapicería o Esqueletería</p>
+        </div>
       </div>
-      <div>
-        <h3 class="text-lg font-semibold text-slate-800">Imprimir Precios</h3>
-        <p class="text-sm text-slate-600">Costura, Tapicería o Esqueletería</p>
+
+      <!-- Submenú desplegable -->
+      <div id="submenu" class="absolute top-full left-0 mt-2 hidden group-hover:block bg-white border border-slate-200 rounded-xl shadow-lg w-52 z-50">
+        <button onclick="mostrarPrecios('costura')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Costura</button>
+        <button onclick="mostrarPrecios('tapiceria')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Tapicería</button>
+        <button onclick="mostrarPrecios('esqueleteria')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Esqueletería</button>
       </div>
     </div>
-
-    <!-- Submenú desplegable -->
-    <div id="submenu" class="absolute top-full left-0 mt-2 hidden group-hover:block bg-white border border-slate-200 rounded-xl shadow-lg w-52 z-50">
-      <button onclick="mostrarPrecios('costura')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Costura</button>
-      <button onclick="mostrarPrecios('tapiceria')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Tapicería</button>
-      <button onclick="mostrarPrecios('esqueleteria')" class="block w-full text-left px-4 py-3 text-sm hover:bg-slate-100 text-slate-700">Esqueletería</button>
-    </div>
-  </div>
     
     <!-- Crear Producción Normal -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer" onclick="mostrarModal('modal-crear-produccion')">
+    <a href="/produccion/create" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
       <div class="flex items-center space-x-4">
         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
           <i class="fas fa-cogs text-blue-600 text-xl"></i>
@@ -41,10 +41,10 @@
           <p class="text-sm text-slate-600">Registrar órdenes de trabajo normales</p>
         </div>
       </div>
-    </div>
+    </a>
     
     <!-- Crear Reparación -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer" onclick="mostrarModal('modal-crear-reparacion')">
+    <a href="/produccion/create-reparacion" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer">
       <div class="flex items-center space-x-4">
         <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
           <i class="fas fa-tools text-orange-600 text-xl"></i>
@@ -54,7 +54,7 @@
           <p class="text-sm text-slate-600">Registrar trabajos de reparación</p>
         </div>
       </div>
-    </div>
+    </a>
     
     <!-- Ver Resumen -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow cursor-pointer" onclick="mostrarModal('modal-resumen-trabajador')">
@@ -128,101 +128,13 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
           </tr>
         </thead>
         <tbody id="tabla-ordenes" class="bg-white divide-y divide-slate-200">
           <!-- Contenido se carga dinámicamente -->
         </tbody>
       </table>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Crear Producción -->
-<div id="modal-crear-produccion" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
-      <div class="p-6 border-b border-slate-200">
-        <h3 class="text-lg font-semibold text-slate-800">Crear Producción Normal</h3>
-      </div>
-      
-      <div class="p-6">
-        <form id="form-crear-produccion" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-2">Trabajador *</label>
-            <select id="trabajador-produccion" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
-              <option value="">Seleccionar trabajador...</option>
-            </select>
-          </div>
-          
-          <div id="ordenes-produccion" class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h4 class="font-medium text-slate-800">Órdenes de Trabajo</h4>
-              <button type="button" id="btn-agregar-orden" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                <i class="fas fa-plus mr-1"></i>Agregar
-              </button>
-            </div>
-            
-            <div id="lista-ordenes">
-              <!-- Órdenes se agregan dinámicamente -->
-            </div>
-          </div>
-        </form>
-      </div>
-      
-      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
-        <button type="button" onclick="cerrarModal('modal-crear-produccion')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-          Cancelar
-        </button>
-        <button type="button" id="btn-guardar-produccion" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          <i class="fas fa-save mr-2"></i>Guardar
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Crear Reparación -->
-<div id="modal-crear-reparacion" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
-      <div class="p-6 border-b border-slate-200">
-        <h3 class="text-lg font-semibold text-slate-800">Crear Reparación</h3>
-      </div>
-      
-      <div class="p-6">
-        <form id="form-crear-reparacion" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-2">Trabajador *</label>
-            <select id="trabajador-reparacion" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
-              <option value="">Seleccionar trabajador...</option>
-            </select>
-          </div>
-          
-          <div id="ordenes-reparacion" class="space-y-4">
-            <div class="flex items-center justify-between">
-              <h4 class="font-medium text-slate-800">Órdenes de Reparación</h4>
-              <button type="button" id="btn-agregar-reparacion" class="px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700">
-                <i class="fas fa-plus mr-1"></i>Agregar
-              </button>
-            </div>
-            
-            <div id="lista-reparaciones">
-              <!-- Reparaciones se agregan dinámicamente -->
-            </div>
-          </div>
-        </form>
-      </div>
-      
-      <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
-        <button type="button" onclick="cerrarModal('modal-crear-reparacion')" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-          Cancelar
-        </button>
-        <button type="button" id="btn-guardar-reparacion" class="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-          <i class="fas fa-save mr-2"></i>Guardar
-        </button>
-      </div>
     </div>
   </div>
 </div>
@@ -281,7 +193,7 @@
 <div id="modal-precios" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center">
   <div class="bg-white rounded-xl w-full max-w-3xl max-h-screen overflow-y-auto p-6 relative">
     <!-- Botón cerrar -->
-    <button onclick="cerrarModal()" class="absolute top-4 right-4 text-gray-600 hover:text-black text-xl">&times;</button>
+    <button onclick="cerrarModalPrecios()" class="absolute top-4 right-4 text-gray-600 hover:text-black text-xl">&times;</button>
 
     <!-- Título + Imprimir -->
     <div class="flex justify-between items-center mb-4 sticky top-0 bg-white z-10">
@@ -308,12 +220,9 @@
   </div>
 </div>
 
-
 <script>
 let trabajadores = [];
 let productos = [];
-let ordenesProduccion = [];
-let ordenesReparacion = [];
 let datosResumenActual = null;
 
 // Inicialización
@@ -325,10 +234,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Event listeners
   document.getElementById('btn-limpiar').addEventListener('click', limpiarFiltros);
   document.getElementById('btn-filtrar').addEventListener('click', aplicarFiltros);
-  document.getElementById('btn-agregar-orden').addEventListener('click', agregarOrdenProduccion);
-  document.getElementById('btn-agregar-reparacion').addEventListener('click', agregarOrdenReparacion);
-  document.getElementById('btn-guardar-produccion').addEventListener('click', guardarProduccion);
-  document.getElementById('btn-guardar-reparacion').addEventListener('click', guardarReparacion);
   document.getElementById('btn-generar-resumen').addEventListener('click', generarResumen);
   document.getElementById('btn-imprimir-resumen').addEventListener('click', imprimirResumen);
   
@@ -350,7 +255,7 @@ async function cargarTrabajadores() {
       trabajadores = await response.json();
       
       // Llenar todos los selects de trabajadores
-      const selects = ['filtro-trabajador', 'trabajador-produccion', 'trabajador-reparacion', 'trabajador-resumen'];
+      const selects = ['filtro-trabajador', 'trabajador-resumen'];
       selects.forEach(selectId => {
         const select = document.getElementById(selectId);
         if (select) {
@@ -437,13 +342,15 @@ function mostrarOrdenes(ordenes) {
           ${orden.estado}
         </span>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <button onclick="editarOrden(${orden.id})" class="text-blue-600 hover:text-blue-900 mr-3">
-          <i class="fas fa-edit"></i>
-        </button>
-        <button onclick="eliminarOrden(${orden.id})" class="text-red-600 hover:text-red-900">
-          <i class="fas fa-trash"></i>
-        </button>
+      <td class="px-6 py-4 whitespace-nowrap text-center">
+        <div class="flex justify-center space-x-2">
+          <a href="/produccion/edit/${orden.id}" class="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
+            <i class="fas fa-edit"></i>
+          </a>
+          <button onclick="eliminarOrden(${orden.id})" class="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
       </td>
     `;
     
@@ -459,198 +366,10 @@ function cerrarModal(modalId) {
   document.getElementById(modalId).classList.add('hidden');
   
   // Limpiar formularios
-  if (modalId === 'modal-crear-produccion') {
-    ordenesProduccion = [];
-    document.getElementById('lista-ordenes').innerHTML = '';
-  } else if (modalId === 'modal-crear-reparacion') {
-    ordenesReparacion = [];
-    document.getElementById('lista-reparaciones').innerHTML = '';
-  } else if (modalId === 'modal-resumen-trabajador') {
+  if (modalId === 'modal-resumen-trabajador') {
     // Ocultar botón de imprimir al cerrar modal
     document.getElementById('btn-imprimir-resumen').classList.add('hidden');
     datosResumenActual = null;
-  }
-}
-
-function agregarOrdenProduccion() {
-  const contenedor = document.getElementById('lista-ordenes');
-  const index = ordenesProduccion.length;
-  
-  const div = document.createElement('div');
-  div.className = 'grid grid-cols-1 md:grid-cols-4 gap-3 p-4 border border-slate-200 rounded-lg';
-  div.innerHTML = `
-    <div>
-      <select class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="productos_id" required>
-        <option value="">Producto...</option>
-        ${productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
-      </select>
-    </div>
-    <div>
-      <input type="text" placeholder="N° Orden" class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="numero_orden_trabajo" required>
-    </div>
-    <div>
-      <input type="date" class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="fecha" required>
-    </div>
-    <div>
-      <button type="button" onclick="eliminarOrdenProduccion(${index})" class="w-full px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200">
-        <i class="fas fa-trash"></i>
-      </button>
-    </div>
-  `;
-  
-  contenedor.appendChild(div);
-  ordenesProduccion.push({});
-}
-
-function agregarOrdenReparacion() {
-  const contenedor = document.getElementById('lista-reparaciones');
-  const index = ordenesReparacion.length;
-  
-  const div = document.createElement('div');
-  div.className = 'space-y-3 p-4 border border-slate-200 rounded-lg';
-  div.innerHTML = `
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <select class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="producto_id" required>
-        <option value="">Producto...</option>
-        ${productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
-      </select>
-      <input type="text" placeholder="N° Orden" class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="numero_orden_trabajo" required>
-      <input type="date" class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="fecha" required>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <textarea placeholder="Descripción de la reparación..." class="w-full px-3 py-2 border border-slate-300 rounded text-sm" data-field="descripcion" rows="2"></textarea>
-      <div class="flex space-x-2">
-        <input type="number" placeholder="Precio reparación" class="flex-1 px-3 py-2 border border-slate-300 rounded text-sm" data-field="precio_reparacion" step="0.01">
-        <button type="button" onclick="eliminarOrdenReparacion(${index})" class="px-3 py-2 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    </div>
-  `;
-  
-  contenedor.appendChild(div);
-  ordenesReparacion.push({});
-}
-
-function eliminarOrdenProduccion(index) {
-  const contenedor = document.getElementById('lista-ordenes');
-  contenedor.children[index].remove();
-  ordenesProduccion.splice(index, 1);
-}
-
-function eliminarOrdenReparacion(index) {
-  const contenedor = document.getElementById('lista-reparaciones');
-  contenedor.children[index].remove();
-  ordenesReparacion.splice(index, 1);
-}
-
-async function guardarProduccion() {
-  const trabajadorId = document.getElementById('trabajador-produccion').value;
-  if (!trabajadorId) {
-    alert('Seleccione un trabajador');
-    return;
-  }
-  
-  const ordenes = [];
-  const contenedor = document.getElementById('lista-ordenes');
-  
-  for (let i = 0; i < contenedor.children.length; i++) {
-    const div = contenedor.children[i];
-    const orden = {};
-    
-    div.querySelectorAll('[data-field]').forEach(input => {
-      const field = input.getAttribute('data-field');
-      orden[field] = input.value;
-    });
-    
-    if (!orden.productos_id || !orden.numero_orden_trabajo || !orden.fecha) {
-      alert(`Complete todos los campos de la orden ${i + 1}`);
-      return;
-    }
-    
-    ordenes.push(orden);
-  }
-  
-  if (ordenes.length === 0) {
-    alert('Agregue al menos una orden');
-    return;
-  }
-  
-  try {
-    const response = await fetch('/produccion/crear', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        trabajador_id: parseInt(trabajadorId),
-        ordenes: ordenes
-      })
-    });
-    
-    if (response.ok) {
-      alert('Producción registrada correctamente');
-      cerrarModal('modal-crear-produccion');
-      cargarOrdenes();
-    } else {
-      const error = await response.json();
-      alert('Error: ' + error.detail);
-    }
-  } catch (error) {
-    alert('Error de conexión: ' + error.message);
-  }
-}
-
-async function guardarReparacion() {
-  const trabajadorId = document.getElementById('trabajador-reparacion').value;
-  if (!trabajadorId) {
-    alert('Seleccione un trabajador');
-    return;
-  }
-  
-  const ordenes = [];
-  const contenedor = document.getElementById('lista-reparaciones');
-  
-  for (let i = 0; i < contenedor.children.length; i++) {
-    const div = contenedor.children[i];
-    const orden = {};
-    
-    div.querySelectorAll('[data-field]').forEach(input => {
-      const field = input.getAttribute('data-field');
-      orden[field] = input.value;
-    });
-    
-    if (!orden.producto_id || !orden.numero_orden_trabajo || !orden.fecha) {
-      alert(`Complete los campos obligatorios de la reparación ${i + 1}`);
-      return;
-    }
-    
-    ordenes.push(orden);
-  }
-  
-  if (ordenes.length === 0) {
-    alert('Agregue al menos una reparación');
-    return;
-  }
-  
-  try {
-    const response = await fetch('/produccion/crear-reparacion', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        trabajadores_id: parseInt(trabajadorId),
-        ordenes: ordenes
-      })
-    });
-    
-    if (response.ok) {
-      alert('Reparaciones registradas correctamente');
-      cerrarModal('modal-crear-reparacion');
-      cargarOrdenes();
-    } else {
-      const error = await response.json();
-      alert('Error: ' + error.detail);
-    }
-  } catch (error) {
-    alert('Error de conexión: ' + error.message);
   }
 }
 
@@ -1099,11 +818,6 @@ function limpiarFiltros() {
   cargarOrdenes();
 }
 
-function editarOrden(id) {
-  // Implementar edición de orden
-  console.log('Editar orden:', id);
-}
-
 async function eliminarOrden(id) {
   if (!confirm('¿Está seguro de eliminar esta orden?')) return;
 
@@ -1161,7 +875,7 @@ async function mostrarPrecios(tipo) {
         tbody.innerHTML += `
           <tr>
             <td class="px-4 py-2 border-t border-gray-300">${producto.nombre}</td>
-            <td class="px-4 py-2 border-t border-gray-300">$${producto.costo.toLocaleString()}</td>
+            <td class="px-4 py-2 border-t border-gray-300">${producto.costo.toLocaleString()}</td>
           </tr>
         `;
       });
@@ -1174,7 +888,7 @@ async function mostrarPrecios(tipo) {
   }
 }
 
-function cerrarModal() {
+function cerrarModalPrecios() {
   document.getElementById('modal-precios').classList.add('hidden');
 }
 
@@ -1236,11 +950,31 @@ function imprimirTabla() {
   }
 }
 
-  #modal-precios .sticky {
-    position: sticky;
-    top: 0;
-    background-color: white;
-    z-index: 20;
-  }
+#modal-precios .sticky {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 20;
+}
+
+/* Mejoras visuales para los botones de acción */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.action-btn {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 </style>
 {% endblock %}
