@@ -12,8 +12,8 @@
       <h1 class="text-2xl font-semibold text-slate-800">Trabajadores</h1>
       <p class="text-slate-600 mt-1">Listado del personal registrado</p>
     </div>
-    <a href="/configuracion/trabajadores/nuevo" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
-      <i class="fas fa-user-cog mr-2"></i>Nuevo Trabajador
+    <a href="/configuracion/trabajadores/nuevo" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors">
+      <i class="fas fa-plus mr-2"></i>Nuevo Trabajador
     </a>
   </div>
 
@@ -26,31 +26,58 @@
           <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Teléfono</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Cargo</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Estado</th>
-          <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Acciones</th>
+          <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Acciones</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-slate-200">
         {% for t in trabajadores %}
-        <tr>
-          <td class="px-6 py-4">{{ t.nombres }} {{ t.apellidos }}</td>
-          <td class="px-6 py-4">{{ t.rut }}</td>
-          <td class="px-6 py-4">{{ t.telefono }}</td>
-          <td class="px-6 py-4">{{ t.rol or '—' }}</td>
+        <tr class="hover:bg-slate-50">
+          <td class="px-6 py-4 text-slate-900">{{ t.nombres }} {{ t.apellidos }}</td>
+          <td class="px-6 py-4 text-slate-700">{{ t.rut }}</td>
+          <td class="px-6 py-4 text-slate-700">{{ t.telefono }}</td>
+          <td class="px-6 py-4 text-slate-700">{{ t.rol or '—' }}</td>
           <td class="px-6 py-4">
             {% if t.estado == 'activo' %}
-              <span class="text-green-600 font-semibold text-sm">Activo</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-circle text-green-400 mr-1" style="font-size: 6px;"></i>
+                Activo
+              </span>
             {% else %}
-              <span class="text-red-600 font-semibold text-sm">Inactivo</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                <i class="fas fa-circle text-red-400 mr-1" style="font-size: 6px;"></i>
+                Inactivo
+              </span>
             {% endif %}
           </td>
-          <td class="px-6 py-4 text-right space-x-2">
-            <a href="/configuracion/trabajadores/{{ t.id }}/editar" class="text-yellow-600 hover:text-yellow-800 text-sm"><i class="fas fa-edit"></i></a>
-            <a href="/configuracion/trabajadores/{{ t.id }}/eliminar" class="text-red-600 hover:text-red-800 text-sm"><i class="fas fa-trash"></i></a>
+          <td class="px-6 py-4">
+            <div class="flex justify-center space-x-2">
+              <a href="/configuracion/trabajadores/{{ t.id }}/ver" 
+                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors"
+                 title="Ver detalles">
+                <i class="fas fa-eye text-sm"></i>
+              </a>
+              <a href="/configuracion/trabajadores/{{ t.id }}/editar" 
+                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-800 transition-colors"
+                 title="Editar">
+                <i class="fas fa-edit text-sm"></i>
+              </a>
+              <button onclick="confirmarEliminacion({{ t.id }}, '{{ t.nombres }} {{ t.apellidos }}')"
+                      class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-800 transition-colors"
+                      title="Eliminar">
+                <i class="fas fa-trash text-sm"></i>
+              </button>
+            </div>
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="6" class="text-center py-6 text-slate-500">No hay trabajadores registrados</td>
+          <td colspan="6" class="text-center py-12">
+            <div class="flex flex-col items-center">
+              <i class="fas fa-users text-4xl text-slate-300 mb-4"></i>
+              <p class="text-slate-500 text-lg">No hay trabajadores registrados</p>
+              <p class="text-slate-400 text-sm mt-1">Comienza agregando tu primer trabajador</p>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -58,4 +85,85 @@
   </div>
 
 </div>
+
+<!-- Modal de confirmación -->
+<div id="modalEliminar" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div class="p-6">
+        <div class="flex items-center mb-4">
+          <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+            <i class="fas fa-exclamation-triangle text-red-600"></i>
+          </div>
+        </div>
+        <div class="text-center">
+          <h3 class="text-lg font-medium text-slate-900 mb-2">Confirmar eliminación</h3>
+          <p class="text-slate-600 mb-6">
+            ¿Estás seguro que deseas eliminar al trabajador <strong id="nombreTrabajador"></strong>? 
+            Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div class="flex space-x-3">
+          <button onclick="cerrarModal()" 
+                  class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium py-2 px-4 rounded-lg transition-colors">
+            Cancelar
+          </button>
+          <button onclick="eliminarTrabajador()" 
+                  class="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let trabajadorIdEliminar = null;
+
+function confirmarEliminacion(id, nombre) {
+    trabajadorIdEliminar = id;
+    document.getElementById('nombreTrabajador').textContent = nombre;
+    document.getElementById('modalEliminar').classList.remove('hidden');
+}
+
+function cerrarModal() {
+    document.getElementById('modalEliminar').classList.add('hidden');
+    trabajadorIdEliminar = null;
+}
+
+async function eliminarTrabajador() {
+    if (!trabajadorIdEliminar) return;
+    
+    try {
+        const response = await fetch(`/trabajadores/${trabajadorIdEliminar}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            // Recargar la página para mostrar los cambios
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error al eliminar el trabajador: ' + (error.detail || 'Error desconocido'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al eliminar el trabajador. Por favor, intenta nuevamente.');
+    }
+    
+    cerrarModal();
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        cerrarModal();
+    }
+});
+</script>
+
 {% endblock %}

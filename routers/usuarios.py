@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from db import conectar_mysql
 from schemas.usuario_schema import UsuarioLogin
 from utils.auth import hashear_contraseña, verificar_contraseña, crear_token
@@ -62,6 +62,64 @@ def listar_usuarios():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener usuarios: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.delete("/eliminar/{usuario_id}")
+def eliminar_usuario(usuario_id: int):
+    """Eliminar usuario por ID"""
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Verificar que el usuario existe
+        cursor.execute("SELECT id FROM users WHERE id = %s", (usuario_id,))
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        # Eliminar usuario
+        cursor.execute("DELETE FROM users WHERE id = %s", (usuario_id,))
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        return {"mensaje": "Usuario eliminado correctamente"}
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar usuario: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.put("/cambiar-estado/{usuario_id}")
+def cambiar_estado_usuario(usuario_id: int):
+    """Cambiar estado activo/inactivo de un usuario"""
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Obtener estado actual
+        cursor.execute("SELECT activo FROM users WHERE id = %s", (usuario_id,))
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+        # Cambiar estado
+        nuevo_estado = 0 if usuario["activo"] == 1 else 1
+        cursor.execute("UPDATE users SET activo = %s WHERE id = %s", (nuevo_estado, usuario_id))
+        conn.commit()
+        
+        return {"mensaje": f"Usuario {'activado' if nuevo_estado else 'desactivado'} correctamente"}
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al cambiar estado: {str(e)}")
     finally:
         cursor.close()
         conn.close()

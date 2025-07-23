@@ -11,146 +11,70 @@
 
       <!-- Usuario asociado -->
       <div>
-        <label class="text-sm font-medium text-slate-700">Usuario Asociado</label>
-        <select name="user_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-          <option value="">Sin asignar</option>
-          {% for usuario in usuarios %}
-            <option value="{{ usuario.id }}" {% if usuario.id == trabajador.user_id %}selected{% endif %}>
-              {{ usuario.nombre_usuario }} ({{ usuario.email }})
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Nombres</label>
-        <input type="text" name="nombres" value="{{ trabajador.nombres }}" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Apellidos</label>
-        <input type="text" name="apellidos" value="{{ trabajador.apellidos }}" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">RUT</label>
-        <input type="text" name="rut" value="{{ trabajador.rut }}" required class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Teléfono</label>
-        <input type="text" name="telefono" value="{{ trabajador.telefono }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Dirección</label>
-        <input type="text" name="direccion" value="{{ trabajador.direccion }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <!-- AFP -->
-      <div>
-        <label class="text-sm font-medium text-slate-700">AFP</label>
-        <select name="afp" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-          <option value="">Seleccionar AFP...</option>
-          <option value="AFP Capital" {% if trabajador.afp == 'AFP Capital' %}selected{% endif %}>AFP Capital</option>
-          <option value="AFP Cuprum" {% if trabajador.afp == 'AFP Cuprum' %}selected{% endif %}>AFP Cuprum</option>
-          <option value="AFP Habitat" {% if trabajador.afp == 'AFP Habitat' %}selected{% endif %}>AFP Habitat</option>
-          <option value="AFP Modelo" {% if trabajador.afp == 'AFP Modelo' %}selected{% endif %}>AFP Modelo</option>
-          <option value="AFP PlanVital" {% if trabajador.afp == 'AFP PlanVital' %}selected{% endif %}>AFP PlanVital</option>
-          <option value="AFP Provida" {% if trabajador.afp == 'AFP Provida' %}selected{% endif %}>AFP Provida</option>
-        </select>
-      </div>
-
-      <!-- Salud -->
-      <div>
-        <label class="text-sm font-medium text-slate-700">Salud</label>
-        <select name="salud" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-          <option value="">Seleccionar salud...</option>
-          <option value="Fonasa" {% if trabajador.salud == 'Fonasa' %}selected{% endif %}>Fonasa</option>
-          <option value="Isapre Banmédica" {% if trabajador.salud == 'Isapre Banmédica' %}selected{% endif %}>Isapre Banmédica</option>
-          <option value="Isapre Colmena" {% if trabajador.salud == 'Isapre Colmena' %}selected{% endif %}>Isapre Colmena</option>
-          <option value="Isapre Consalud" {% if trabajador.salud == 'Isapre Consalud' %}selected{% endif %}>Isapre Consalud</option>
-          <option value="Isapre Cruz Blanca" {% if trabajador.salud == 'Isapre Cruz Blanca' %}selected{% endif %}>Isapre Cruz Blanca</option>
-          <option value="Isapre Nueva Masvida" {% if trabajador.salud == 'Isapre Nueva Masvida' %}selected{% endif %}>Isapre Nueva Masvida</option>
-          <option value="Isapre Vida Tres" {% if trabajador.salud == 'Isapre Vida Tres' %}selected{% endif %}>Isapre Vida Tres</option>
-          <option value="Isapre Fundación" {% if trabajador.salud == 'Isapre Fundación' %}selected{% endif %}>Isapre Fundación</option>
-          <option value="Isapre Fusat" {% if trabajador.salud == 'Isapre Fusat' %}selected{% endif %}>Isapre Fusat</option>
-          <option value="Isapre San Lorenzo" {% if trabajador.salud == 'Isapre San Lorenzo' %}selected{% endif %}>Isapre San Lorenzo</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Sueldo</label>
-        <input type="number" step="0.01" name="sueldo" value="{{ trabajador.sueldo }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Fecha Ingreso</label>
-        <input type="date" name="fecha_ingreso" value="{{ trabajador.fecha_ingreso }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Talla Polera</label>
-        <input type="text" name="talla_polera" value="{{ trabajador.talla_polera }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
-        <label class="text-sm font-medium text-slate-700">Talla Pantalón</label>
-        <input type="text" name="talla_pantalon" value="{{ trabajador.talla_pantalon }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-      </div>
-
-      <div>
         <label class="text-sm font-medium text-slate-700">Talla Zapatos</label>
-        <input type="text" name="talla_zapatos" value="{{ trabajador.talla_zapatos }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+        <select name="talla_zapatos" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
+          <option value="">Seleccionar talla...</option>
+          <option value="35" {% if trabajador.talla_zapatos == '35' %}selected{% endif %}>35</option>
+          <option value="36" {% if trabajador.talla_zapatos == '36' %}selected{% endif %}>36</option>
+          <option value="37" {% if trabajador.talla_zapatos == '37' %}selected{% endif %}>37</option>
+          <option value="38" {% if trabajador.talla_zapatos == '38' %}selected{% endif %}>38</option>
+          <option value="39" {% if trabajador.talla_zapatos == '39' %}selected{% endif %}>39</option>
+          <option value="40" {% if trabajador.talla_zapatos == '40' %}selected{% endif %}>40</option>
+          <option value="41" {% if trabajador.talla_zapatos == '41' %}selected{% endif %}>41</option>
+          <option value="42" {% if trabajador.talla_zapatos == '42' %}selected{% endif %}>42</option>
+          <option value="43" {% if trabajador.talla_zapatos == '43' %}selected{% endif %}>43</option>
+          <option value="44" {% if trabajador.talla_zapatos == '44' %}selected{% endif %}>44</option>
+          <option value="45" {% if trabajador.talla_zapatos == '45' %}selected{% endif %}>45</option>
+          <option value="46" {% if trabajador.talla_zapatos == '46' %}selected{% endif %}>46</option>
+        </select>
       </div>
 
       <!-- Banco -->
       <div>
         <label class="text-sm font-medium text-slate-700">Banco</label>
-        <select name="banco" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+        <select name="banco" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
           <option value="">Seleccionar banco...</option>
+          <option value="BancoEstado" {% if trabajador.banco == 'BancoEstado' %}selected{% endif %}>BancoEstado</option>
           <option value="Banco de Chile" {% if trabajador.banco == 'Banco de Chile' %}selected{% endif %}>Banco de Chile</option>
-          <option value="Banco Internacional" {% if trabajador.banco == 'Banco Internacional' %}selected{% endif %}>Banco Internacional</option>
-          <option value="Scotiabank Chile" {% if trabajador.banco == 'Scotiabank Chile' %}selected{% endif %}>Scotiabank Chile</option>
-          <option value="Banco de Crédito e Inversiones (BCI)" {% if trabajador.banco == 'Banco de Crédito e Inversiones (BCI)' %}selected{% endif %}>Banco de Crédito e Inversiones (BCI)</option>
-          <option value="Banco BICE" {% if trabajador.banco == 'Banco BICE' %}selected{% endif %}>Banco BICE</option>
-          <option value="HSBC Bank (Chile)" {% if trabajador.banco == 'HSBC Bank (Chile)' %}selected{% endif %}>HSBC Bank (Chile)</option>
           <option value="Banco Santander Chile" {% if trabajador.banco == 'Banco Santander Chile' %}selected{% endif %}>Banco Santander Chile</option>
+          <option value="Banco de Crédito e Inversiones (BCI)" {% if trabajador.banco == 'Banco de Crédito e Inversiones (BCI)' %}selected{% endif %}>Banco de Crédito e Inversiones (BCI)</option>
+          <option value="Scotiabank Chile" {% if trabajador.banco == 'Scotiabank Chile' %}selected{% endif %}>Scotiabank Chile</option>
           <option value="Itaú Corpbanca" {% if trabajador.banco == 'Itaú Corpbanca' %}selected{% endif %}>Itaú Corpbanca</option>
           <option value="Banco Security" {% if trabajador.banco == 'Banco Security' %}selected{% endif %}>Banco Security</option>
+          <option value="Banco BICE" {% if trabajador.banco == 'Banco BICE' %}selected{% endif %}>Banco BICE</option>
           <option value="Banco Falabella" {% if trabajador.banco == 'Banco Falabella' %}selected{% endif %}>Banco Falabella</option>
           <option value="Banco Ripley" {% if trabajador.banco == 'Banco Ripley' %}selected{% endif %}>Banco Ripley</option>
           <option value="Banco Consorcio" {% if trabajador.banco == 'Banco Consorcio' %}selected{% endif %}>Banco Consorcio</option>
-          <option value="BancoEstado" {% if trabajador.banco == 'BancoEstado' %}selected{% endif %}>BancoEstado</option>
+          <option value="Banco Internacional" {% if trabajador.banco == 'Banco Internacional' %}selected{% endif %}>Banco Internacional</option>
+          <option value="HSBC Bank (Chile)" {% if trabajador.banco == 'HSBC Bank (Chile)' %}selected{% endif %}>HSBC Bank (Chile)</option>
           <option value="Banco BBVA (Chile)" {% if trabajador.banco == 'Banco BBVA (Chile)' %}selected{% endif %}>Banco BBVA (Chile)</option>
           <option value="Banco BTG Pactual Chile" {% if trabajador.banco == 'Banco BTG Pactual Chile' %}selected{% endif %}>Banco BTG Pactual Chile</option>
           <option value="Banco Edwards" {% if trabajador.banco == 'Banco Edwards' %}selected{% endif %}>Banco Edwards</option>
-          <option value="Tenpo" {% if trabajador.banco == 'Tenpo' %}selected{% endif %}>Tenpo</option>
           <option value="Banco Cencosud" {% if trabajador.banco == 'Banco Cencosud' %}selected{% endif %}>Banco Cencosud</option>
           <option value="Banco París" {% if trabajador.banco == 'Banco París' %}selected{% endif %}>Banco París</option>
-          <option value="Banca Ética Latinoamericana" {% if trabajador.banco == 'Banca Ética Latinoamericana' %}selected{% endif %}>Banca Ética Latinoamericana</option>
+          <option value="Tenpo" {% if trabajador.banco == 'Tenpo' %}selected{% endif %}>Tenpo</option>
         </select>
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-700">Tipo Cuenta</label>
-        <select name="tipo_cuenta" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+        <select name="tipo_cuenta" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
           <option value="">Seleccionar...</option>
           <option value="Cuenta Corriente" {% if trabajador.tipo_cuenta == 'Cuenta Corriente' %}selected{% endif %}>Cuenta Corriente</option>
-          <option value="Vista" {% if trabajador.tipo_cuenta == 'Vista' %}selected{% endif %}>Vista</option>
-          <option value="Chequera Electrónica" {% if trabajador.tipo_cuenta == 'Chequera Electrónica' %}selected{% endif %}>Chequera Electrónica</option>
+          <option value="Cuenta Vista" {% if trabajador.tipo_cuenta == 'Cuenta Vista' %}selected{% endif %}>Cuenta Vista</option>
           <option value="Cuenta RUT" {% if trabajador.tipo_cuenta == 'Cuenta RUT' %}selected{% endif %}>Cuenta RUT</option>
+          <option value="Chequera Electrónica" {% if trabajador.tipo_cuenta == 'Chequera Electrónica' %}selected{% endif %}>Chequera Electrónica</option>
         </select>
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-700">Número Cuenta</label>
-        <input type="text" name="numero_cuenta" value="{{ trabajador.numero_cuenta }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+        <input type="text" name="numero_cuenta" value="{{ trabajador.numero_cuenta }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-700">Estado</label>
-        <select name="estado" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+        <select name="estado" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent">
           <option value="activo" {% if trabajador.estado == 'activo' %}selected{% endif %}>Activo</option>
           <option value="inactivo" {% if trabajador.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
         </select>
@@ -159,8 +83,12 @@
     </div>
 
     <div class="pt-6 flex justify-end space-x-3">
-      <a href="/configuracion/trabajadores" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-700 hover:bg-slate-200">Cancelar</a>
-      <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Actualizar Trabajador</button>
+      <a href="/configuracion/trabajadores" class="px-4 py-2 bg-slate-100 rounded-lg text-slate-700 hover:bg-slate-200 transition-colors">
+        <i class="fas fa-times mr-2"></i>Cancelar
+      </a>
+      <button type="submit" class="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors">
+        <i class="fas fa-save mr-2"></i>Actualizar Trabajador
+      </button>
     </div>
   </form>
 </div>

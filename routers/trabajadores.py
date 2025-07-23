@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, HTTPException
 from db import conectar_mysql
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -35,3 +35,32 @@ def vista_trabajadores(request: Request):
         "request": request,
         "trabajadores": trabajadores
     })
+
+@router.delete("/{trabajador_id}")
+def eliminar_trabajador(trabajador_id: int):
+    conn = conectar_mysql()
+    cursor = conn.cursor()
+    
+    try:
+        # Verificar si el trabajador existe
+        cursor.execute("SELECT id FROM trabajadores WHERE id = %s", (trabajador_id,))
+        trabajador = cursor.fetchone()
+        
+        if not trabajador:
+            raise HTTPException(status_code=404, detail="Trabajador no encontrado")
+        
+        # Eliminar el trabajador
+        cursor.execute("DELETE FROM trabajadores WHERE id = %s", (trabajador_id,))
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="No se pudo eliminar el trabajador")
+        
+        return {"message": "Trabajador eliminado exitosamente"}
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar trabajador: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
