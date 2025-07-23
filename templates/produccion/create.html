@@ -138,11 +138,33 @@ function agregarOrdenProduccion() {
   // Ocultar mensaje "sin órdenes"
   sinOrdenes.style.display = 'none';
   
+  // Obtener datos de la orden anterior si existe
+  let productoAnterior = '';
+  let productoAnteriorNombre = '';
+  let fechaAnterior = new Date().toISOString().split('T')[0];
+  
+  if (index > 0) {
+    const ordenAnterior = contenedor.querySelector(`[data-index="${index - 1}"]`);
+    if (ordenAnterior) {
+      const hiddenProducto = ordenAnterior.querySelector('[data-field="productos_id"]');
+      const inputProducto = ordenAnterior.querySelector('[data-field="productos_search"]');
+      const inputFecha = ordenAnterior.querySelector('[data-field="fecha"]');
+      
+      if (hiddenProducto && hiddenProducto.value) {
+        productoAnterior = hiddenProducto.value;
+        if (inputProducto && inputProducto.value) {
+          productoAnteriorNombre = inputProducto.value;
+        }
+      }
+      if (inputFecha && inputFecha.value) {
+        fechaAnterior = inputFecha.value;
+      }
+    }
+  }
+  
   const div = document.createElement('div');
   div.className = 'border border-slate-200 rounded-lg p-4 bg-slate-50';
   div.dataset.index = index;
-  
-  const hoy = new Date().toISOString().split('T')[0];
   
   div.innerHTML = `
     <div class="flex items-center justify-between mb-3">
@@ -153,12 +175,29 @@ function agregarOrdenProduccion() {
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div>
+      <div class="relative">
         <label class="block text-sm font-medium text-slate-700 mb-1">Producto <span class="text-red-500">*</span></label>
-        <select class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="productos_id" required>
-          <option value="">Seleccionar producto...</option>
-          ${productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('')}
-        </select>
+        <input type="text" 
+               placeholder="Buscar producto..." 
+               class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+               data-field="productos_search" 
+               autocomplete="off"
+               oninput="filtrarProductos(this)"
+               onfocus="mostrarListaProductos(this)"
+               onblur="ocultarListaProductos(this)"
+               required>
+        <input type="hidden" data-field="productos_id" required>
+        <div class="productos-lista absolute z-10 w-full bg-white border border-slate-300 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden">
+          ${productos.map(p => `
+            <div class="producto-item px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-b-0" 
+                 data-id="${p.id}" 
+                 data-nombre="${p.nombre}"
+                 onclick="seleccionarProducto(this)"
+                 style="display: ${p.id == productoAnterior ? 'block' : 'block'}">
+              ${p.nombre}
+            </div>
+          `).join('')}
+        </div>
       </div>
       
       <div>
@@ -168,13 +207,23 @@ function agregarOrdenProduccion() {
       
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Fecha <span class="text-red-500">*</span></label>
-        <input type="date" value="${hoy}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="fecha" required>
+        <input type="date" value="${fechaAnterior}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="fecha" required>
       </div>
     </div>
   `;
   
   contenedor.appendChild(div);
   ordenesProduccion.push({});
+  
+  // Pre-seleccionar producto anterior si existe
+  if (productoAnterior && productoAnteriorNombre) {
+    const inputSearch = div.querySelector('[data-field="productos_search"]');
+    const hiddenId = div.querySelector('[data-field="productos_id"]');
+    if (inputSearch && hiddenId) {
+      inputSearch.value = productoAnteriorNombre;
+      hiddenId.value = productoAnterior;
+    }
+  }
 }
 
 function eliminarOrdenProduccion(index) {
@@ -309,9 +358,88 @@ function mostrarNotificacion(mensaje, tipo = 'info') {
     }, 300);
   }, 5000);
 }
+
+// Funciones para el autocompletado de productos
+function filtrarProductos(input) {
+  const lista = input.nextElementSibling.nextElementSibling; // Skip hidden input
+  const termino = input.value.toLowerCase();
+  const items = lista.querySelectorAll('.producto-item');
+  
+  let hayCoincidencias = false;
+  items.forEach(item => {
+    const nombre = item.getAttribute('data-nombre').toLowerCase();
+    if (nombre.includes(termino)) {
+      item.style.display = 'block';
+      hayCoincidencias = true;
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  // Mostrar lista si hay texto y coincidencias
+  if (termino.length > 0 && hayCoincidencias) {
+    lista.classList.remove('hidden');
+  } else if (termino.length === 0) {
+    // Mostrar todos si no hay filtro
+    items.forEach(item => item.style.display = 'block');
+    lista.classList.remove('hidden');
+  } else {
+    lista.classList.add('hidden');
+  }
+  
+  // Limpiar selección si el texto no coincide exactamente
+  const hiddenInput = input.nextElementSibling;
+  const valorActual = hiddenInput.value;
+  if (valorActual) {
+    const productoSeleccionado = productos.find(p => p.id == valorActual);
+    if (!productoSeleccionado || productoSeleccionado.nombre !== input.value) {
+      hiddenInput.value = '';
+    }
+  }
+}
+
+function mostrarListaProductos(input) {
+  const lista = input.nextElementSibling.nextElementSibling;
+  lista.classList.remove('hidden');
+}
+
+function ocultarListaProductos(input) {
+  // Delay para permitir click en items
+  setTimeout(() => {
+    const lista = input.nextElementSibling.nextElementSibling;
+    lista.classList.add('hidden');
+  }, 150);
+}
+
+function seleccionarProducto(item) {
+  const lista = item.parentElement;
+  const container = lista.parentElement;
+  const input = container.querySelector('[data-field="productos_search"]');
+  const hiddenInput = container.querySelector('[data-field="productos_id"]');
+  
+  const id = item.getAttribute('data-id');
+  const nombre = item.getAttribute('data-nombre');
+  
+  input.value = nombre;
+  hiddenInput.value = id;
+  lista.classList.add('hidden');
+}
 </script>
 
 <style>
+/* Estilos para autocompletado de productos */
+.productos-lista {
+  z-index: 1000;
+}
+
+.producto-item:hover {
+  background-color: #f1f5f9;
+}
+
+.producto-item:last-child {
+  border-bottom: none;
+}
+
 /* Estilos específicos para el formulario de creación */
 .form-grid {
   display: grid;
