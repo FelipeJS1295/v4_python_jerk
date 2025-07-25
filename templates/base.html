@@ -9,42 +9,150 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="/static/css/styles.css" rel="stylesheet">
   <style>
-    .nav-item:hover { transform: translateX(4px); transition: all 0.2s ease; }
-    .btn-icon { transition: all 0.15s ease; }
-    .btn-icon:hover { transform: scale(1.05); }
-    
-    /* Estilos para submenú */
-    .submenu-item {
-      border-left: 2px solid #e2e8f0;
-      margin-left: 1rem;
-    }
-    .submenu-item:hover {
-      border-left-color: #94a3b8;
-    }
-    .nav-item button,
-    .submenu-item button,
-    .submenu-item a {
-      transition: all 0.2s ease;
-    }
-    .nav-item a.active,
-    .submenu-item a.active {
-      background-color: #e2e8f0;
-      color: #1e293b;
-      font-weight: 500;
+    /* Variables CSS para tema corporativo */
+    :root {
+      --primary-color: #1e293b;
+      --primary-light: #334155;
+      --secondary-color: #64748b;
+      --accent-color: #3b82f6;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --error-color: #ef4444;
+      --surface-color: #f8fafc;
+      --border-color: #e2e8f0;
     }
 
-    /* Overlay para cerrar menú en móvil */
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    /* Sidebar profesional */
+    .sidebar {
+      background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+      box-shadow: 4px 0 20px rgba(30, 41, 59, 0.1);
+    }
+
+    /* Logo area con gradiente sutil */
+    .logo-area {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Items de navegación */
+    .nav-item {
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+      border-right: 3px solid #3b82f6;
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 24px;
+      background: #3b82f6;
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* Submenús con mejor jerarquía visual */
+    .submenu-item {
+      background: rgba(0, 0, 0, 0.1);
+      border-left: 2px solid rgba(255, 255, 255, 0.1);
+      margin-left: 2rem;
+      transition: all 0.2s ease;
+    }
+
+    .submenu-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-left-color: #3b82f6;
+    }
+
+    /* Header con gradiente corporativo */
+    .main-header {
+      background: linear-gradient(90deg, #ffffff 0%, #f8fafc 100%);
+      border-bottom: 2px solid #e2e8f0;
+      box-shadow: 0 2px 20px rgba(30, 41, 59, 0.08);
+    }
+
+    /* Cards y contenido */
+    .content-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+    }
+
+    /* Botones corporativos */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border: none;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(100, 116, 139, 0.1);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(100, 116, 139, 0.15);
+      border-color: rgba(100, 116, 139, 0.3);
+    }
+
+    /* Search bar profesional */
+    .search-input {
+      background: rgba(248, 250, 252, 0.8);
+      border: 1px solid rgba(226, 232, 240, 0.6);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    /* User section con estilo premium */
+    .user-section {
+      background: rgba(0, 0, 0, 0.1);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Overlay para móvil */
     .mobile-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(0, 0, 0, 0.5);
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(4px);
       z-index: 40;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .mobile-overlay.active {
@@ -55,33 +163,81 @@
     /* Animación del sidebar móvil */
     .sidebar-mobile {
       transform: translateX(-100%);
-      transition: transform 0.3s ease;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .sidebar-mobile.active {
       transform: translateX(0);
     }
+
+    /* Iconos con mejor espaciado */
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      color: rgba(255, 255, 255, 0.8);
+      transition: color 0.2s ease;
+    }
+
+    .nav-item:hover .nav-icon {
+      color: rgba(255, 255, 255, 1);
+    }
+
+    /* Breadcrumb mejorado */
+    .breadcrumb {
+      color: #64748b;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    /* Mobile button profesional */
+    .mobile-menu-btn {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.5);
+      box-shadow: 0 4px 20px rgba(30, 41, 59, 0.1);
+    }
+
+    /* Scrollbar personalizado */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
   </style>
 </head>
-<body class="flex h-screen bg-slate-50 text-slate-700 font-medium">
+<body class="flex h-screen bg-slate-50 text-slate-700">
 
   <!-- Overlay para cerrar menú en móvil -->
   <div id="mobileOverlay" class="mobile-overlay md:hidden" onclick="closeMobileMenu()"></div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-72 bg-white border-r border-slate-200 flex flex-col fixed md:relative z-50 h-full sidebar-mobile md:flex md:transform-none">
+  <aside id="sidebar" class="w-80 sidebar flex flex-col fixed md:relative z-50 h-full sidebar-mobile md:flex md:transform-none">
     <!-- Logo Area -->
-    <div class="p-6 border-b border-slate-100">
+    <div class="logo-area p-6">
       <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
-            <span class="text-white font-bold text-lg">JH</span>
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-white font-bold text-xl">JH</span>
           </div>
-          <h2 class="text-xl font-bold text-slate-800">JerkHome</h2>
+          <div>
+            <h2 class="text-xl font-bold text-white">JerkHome</h2>
+            <p class="text-slate-300 text-sm font-medium">Panel Administrativo</p>
+          </div>
         </div>
         <!-- Botón cerrar en móvil -->
-        <button onclick="closeMobileMenu()" class="md:hidden p-2 hover:bg-slate-100 rounded-lg transition-colors">
-          <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button onclick="closeMobileMenu()" class="md:hidden p-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition-colors">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
@@ -89,142 +245,122 @@
     </div>
     
     <!-- Navigation -->
-    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-      <a href="/" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m8 7l4-4l4 4"/>
-        </svg>
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+      <a href="/" class="nav-item flex items-center space-x-4 px-4 py-3 rounded-xl text-white font-medium">
+        <i class="fas fa-chart-line nav-icon"></i>
         <span>Dashboard</span>
       </a>
       
-      <!-- Menú de Ventas con submenú -->
+      <!-- Menú de Ventas -->
       <div class="nav-item">
-        <button class="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors" 
+        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
                 onclick="toggleSubmenu('ventas-submenu', 'ventas-arrow')">
-          <div class="flex items-center space-x-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
+          <div class="flex items-center space-x-4">
+            <i class="fas fa-shopping-cart nav-icon"></i>
             <span>Ventas</span>
           </div>
-          <svg class="w-4 h-4 transition-transform duration-200" id="ventas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 transition-transform duration-300" id="ventas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
           </svg>
         </button>
         
-        <!-- Submenú -->
-        <div id="ventas-submenu" class="hidden ml-8 mt-2 space-y-1">
-          <a href="/ventas/vista" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
-            <i class="fas fa-list w-4 h-4 text-center"></i>
+        <div id="ventas-submenu" class="hidden mt-2 space-y-1">
+          <a href="/ventas/vista" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-list w-4 h-4"></i>
             <span>Lista de Ventas</span>
           </a>
-          
-          <a href="/ventas/maestra" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
-            <i class="fas fa-table w-4 h-4 text-center"></i>
+          <a href="/ventas/maestra" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-table w-4 h-4"></i>
             <span>Maestra</span>
           </a>
         </div>
       </div>
       
-      <a href="/produccion" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-        </svg>
+      <a href="/produccion" class="nav-item flex items-center space-x-4 px-4 py-3 rounded-xl text-white font-medium">
+        <i class="fas fa-industry nav-icon"></i>
         <span>Producción</span>
       </a>
 
-      <div class="space-y-1">
-        <div class="nav-item flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700 cursor-pointer" onclick="toggleSubmenu('logistica-submenu', 'icon-logistica-submenu')">
-          <div class="flex items-center space-x-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 17H5a2 2 0 01-2-2V7a2 2 0 012-2h4m0 0h6a2 2 0 012 2v4m-8-4v10m0 0h10a2 2 0 002-2v-2a2 2 0 00-2-2H9" />
-            </svg>
+      <!-- Menú de Logística -->
+      <div class="nav-item">
+        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
+                onclick="toggleSubmenu('logistica-submenu', 'logistica-arrow')">
+          <div class="flex items-center space-x-4">
+            <i class="fas fa-truck nav-icon"></i>
             <span>Logística</span>
           </div>
-          <svg class="w-4 h-4 transition-transform" id="icon-logistica-submenu" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-
-        <div id="logistica-submenu" class="ml-8 space-y-1 hidden">
-          <a href="/logistica/devoluciones" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">Devoluciones</a>
-          <a href="/bodega/facturas" class="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded">Facturas de Compra</a>
-        </div>
-      </div>
-
-      <!-- Menú de Finanzas con submenú -->
-      <div class="nav-item">
-        <button class="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors" 
-                onclick="toggleSubmenu('finanzas-submenu', 'finanzas-arrow')">
-          <div class="flex items-center space-x-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 10h11M9 21V3m9 4h3m-3 4h3m-3 4h3m-3 4h3" />
-            </svg>
-            <span>Finanzas</span>
-          </div>
-          <svg class="w-4 h-4 transition-transform duration-200" id="finanzas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 transition-transform duration-300" id="logistica-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
           </svg>
         </button>
 
-        <!-- Submenú -->
-        <div id="finanzas-submenu" class="hidden ml-8 mt-2 space-y-1">
-          <a href="/finanzas" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
-            <i class="fas fa-file-invoice-dollar w-4 h-4 text-center"></i>
+        <div id="logistica-submenu" class="hidden mt-2 space-y-1">
+          <a href="/logistica/devoluciones" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-undo w-4 h-4"></i>
+            <span>Devoluciones</span>
+          </a>
+          <a href="/bodega/facturas" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-file-invoice w-4 h-4"></i>
+            <span>Facturas de Compra</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Menú de Finanzas -->
+      <div class="nav-item">
+        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
+                onclick="toggleSubmenu('finanzas-submenu', 'finanzas-arrow')">
+          <div class="flex items-center space-x-4">
+            <i class="fas fa-chart-pie nav-icon"></i>
+            <span>Finanzas</span>
+          </div>
+          <svg class="w-4 h-4 transition-transform duration-300" id="finanzas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+
+        <div id="finanzas-submenu" class="hidden mt-2 space-y-1">
+          <a href="/finanzas" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-file-invoice-dollar w-4 h-4"></i>
             <span>Facturas</span>
           </a>
-
-          <a href="/finanzas/cheques" class="submenu-item flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-600 text-sm transition-colors">
-            <i class="fas fa-money-check-alt w-4 h-4 text-center"></i>
+          <a href="/finanzas/cheques" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-money-check-alt w-4 h-4"></i>
             <span>Cheques</span>
           </a>
         </div>
       </div>
       
-      <a href="/configuracion" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
+      <a href="/configuracion" class="nav-item flex items-center space-x-4 px-4 py-3 rounded-xl text-white font-medium">
+        <i class="fas fa-cog nav-icon"></i>
         <span>Configuración</span>
       </a>
 
-      <!-- Menú de Cámaras -->
-      <a href="/camaras" class="nav-item flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-100 text-slate-700">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-        </svg>
+      <a href="/camaras" class="nav-item flex items-center space-x-4 px-4 py-3 rounded-xl text-white font-medium">
+        <i class="fas fa-video nav-icon"></i>
         <span>Cámaras de Seguridad</span>
       </a>
     </nav>
     
     <!-- User Section -->
-    <div class="p-4 border-t border-slate-100">
-      <div class="flex items-center justify-between px-4 py-3">
+    <div class="user-section p-4">
+      <div class="flex items-center justify-between px-4 py-4">
         <div class="flex items-center space-x-3 flex-1 min-w-0">
-          <div class="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-            </svg>
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+            <i class="fas fa-user text-white"></i>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-700 truncate" id="usuario-nombre">Admin</p>
-            <p class="text-xs text-slate-500 truncate" id="usuario-email">admin@jerkhome.com</p>
+            <p class="text-sm font-semibold text-white truncate" id="usuario-nombre">Admin</p>
+            <p class="text-xs text-slate-300 truncate" id="usuario-email">admin@jerkhome.com</p>
           </div>
         </div>
         
-        <!-- Botón de Logout -->
         <button 
           onclick="logout()" 
-          class="ml-2 p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+          class="ml-3 p-2 text-slate-300 hover:text-red-400 hover:bg-red-500 hover:bg-opacity-10 rounded-lg transition-all duration-200 group"
           title="Cerrar Sesión"
         >
-          <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-          </svg>
+          <i class="fas fa-sign-out-alt group-hover:scale-110 transition-transform"></i>
         </button>
       </div>
     </div>
@@ -232,76 +368,64 @@
 
   <!-- Mobile Menu Button -->
   <div class="md:hidden fixed top-4 left-4 z-50">
-    <button onclick="toggleMobileMenu()" class="btn-icon p-2 bg-white rounded-lg shadow-md border border-slate-200 hover:bg-slate-50">
-      <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <button onclick="toggleMobileMenu()" class="mobile-menu-btn p-3 rounded-xl hover:bg-white transition-all duration-200">
+      <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
     </button>
   </div>
 
   <!-- Main Container -->
-  <div class="flex-1 flex flex-col min-w-0 md:ml-0">
+  <div class="flex-1 flex flex-col min-w-0">
     
     <!-- Header -->
-    <header class="bg-white border-b border-slate-200 px-6 py-4">
+    <header class="main-header px-6 py-4">
       <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-4">
-          <div class="md:hidden w-16"></div> <!-- Espacio para el botón móvil -->
-          <h1 class="text-2xl font-bold text-slate-800">{% block header %}Panel Administrativo{% endblock %}</h1>
-          <div class="hidden sm:block w-px h-6 bg-slate-300"></div>
-          <span class="hidden sm:inline-block text-sm text-slate-500">{% block breadcrumb %}Inicio{% endblock %}</span>
+        <div class="flex items-center space-x-6">
+          <div class="md:hidden w-16"></div>
+          <div>
+            <h1 class="text-2xl font-bold text-slate-800">{% block header %}Panel Administrativo{% endblock %}</h1>
+            <p class="breadcrumb mt-1">{% block breadcrumb %}Inicio{% endblock %}</p>
+          </div>
         </div>
         
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-4">
           <!-- Search -->
           <div class="relative hidden sm:block">
             <input 
               type="text" 
-              placeholder="Buscar..." 
-              class="w-64 pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+              placeholder="Buscar en el sistema..." 
+              class="search-input w-80 pl-12 pr-4 py-3 rounded-xl text-sm focus:outline-none transition-all duration-300"
             />
-            <svg class="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
+            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
           </div>
           
-          <!-- User Info in Header (Mobile) -->
-          <div class="md:hidden flex items-center space-x-2">
-            <span class="text-sm text-slate-600" id="usuario-nombre-mobile">Admin</span>
+          <!-- User Info (Mobile) -->
+          <div class="md:hidden flex items-center space-x-3">
+            <span class="text-sm font-medium text-slate-700" id="usuario-nombre-mobile">Admin</span>
             <button 
               onclick="logout()" 
               class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               title="Cerrar Sesión"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-              </svg>
+              <i class="fas fa-sign-out-alt"></i>
             </button>
           </div>
           
-          <!-- Action Buttons (Hidden on mobile) -->
+          <!-- Action Buttons (Desktop) -->
           <div class="hidden md:flex items-center space-x-2">
-            <button class="btn-icon p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5l-5-5h5z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17V7a4 4 0 00-8 0v10"/>
-              </svg>
+            <button class="btn-secondary p-3 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+              <i class="fas fa-bell"></i>
             </button>
             
-            <button class="btn-icon p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5l-5-5h5z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17V7a4 4 0 00-8 0v10"/>
-              </svg>
+            <button class="btn-secondary p-3 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+              <i class="fas fa-envelope"></i>
             </button>
             
-            <div class="w-px h-6 bg-slate-300"></div>
+            <div class="w-px h-8 bg-slate-200 mx-2"></div>
             
-            <button class="btn-icon p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
+            <button class="btn-secondary p-3 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+              <i class="fas fa-cog"></i>
             </button>
           </div>
         </div>
@@ -309,13 +433,17 @@
     </header>
 
     <!-- Content Area -->
-    <main class="flex-1 p-6 overflow-auto bg-slate-50">
+    <main class="flex-1 p-6 overflow-auto">
       <div class="max-w-7xl mx-auto">
         {% block content %}
-        <!-- Contenido principal -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <h2 class="text-lg font-semibold text-slate-800 mb-4">Contenido Principal</h2>
-          <p class="text-slate-600">Aquí se cargará el contenido específico de cada página.</p>
+        <div class="content-card rounded-2xl p-8">
+          <div class="text-center py-12">
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+              <i class="fas fa-chart-line text-2xl text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">Bienvenido al Panel Administrativo</h2>
+            <p class="text-slate-600 max-w-lg mx-auto">Gestiona tu negocio de manera eficiente con nuestras herramientas empresariales integradas.</p>
+          </div>
         </div>
         {% endblock %}
       </div>
@@ -323,10 +451,8 @@
   </div>
 
   <script>
-    // Variables para controlar el estado del menú móvil
     let mobileMenuOpen = false;
 
-    // Función para abrir/cerrar menú móvil
     function toggleMobileMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('mobileOverlay');
@@ -345,8 +471,6 @@
       sidebar.classList.add('active');
       overlay.classList.add('active');
       mobileMenuOpen = true;
-      
-      // Prevenir scroll del body cuando el menú está abierto
       document.body.style.overflow = 'hidden';
     }
 
@@ -357,19 +481,15 @@
       sidebar.classList.remove('active');
       overlay.classList.remove('active');
       mobileMenuOpen = false;
-      
-      // Restaurar scroll del body
       document.body.style.overflow = 'auto';
     }
 
-    // Cerrar menú al cambiar tamaño de pantalla a desktop
     window.addEventListener('resize', function() {
       if (window.innerWidth >= 768 && mobileMenuOpen) {
         closeMobileMenu();
       }
     });
 
-    // Función de logout
     async function logout() {
       try {
         const response = await fetch('/usuarios/logout', {
@@ -410,9 +530,7 @@
       }
     }
 
-    // Cargar información del usuario y mantener submenú abierto
     document.addEventListener('DOMContentLoaded', function() {
-      // Verificar sesión y cargar datos del usuario
       fetch('/usuarios/verificar-sesion')
         .then(response => response.json())
         .then(data => {
@@ -431,9 +549,9 @@
           window.location.href = '/usuarios/login';
         });
 
-      // Mantener submenú abierto si estamos en una página específica
       const currentPath = window.location.pathname;
       
+      // Mantener submenús abiertos según la ruta actual
       if (currentPath.startsWith('/ventas/')) {
         const ventasSubmenu = document.getElementById('ventas-submenu');
         const ventasArrow = document.getElementById('ventas-arrow');
@@ -441,11 +559,6 @@
         if (ventasSubmenu && ventasArrow) {
           ventasSubmenu.classList.remove('hidden');
           ventasArrow.style.transform = 'rotate(180deg)';
-        }
-        
-        const activeLink = document.querySelector(`a[href="${currentPath}"]`);
-        if (activeLink) {
-          activeLink.classList.add('bg-slate-200', 'text-slate-900', 'font-medium');
         }
       }
 
@@ -457,33 +570,22 @@
           finanzasSubmenu.classList.remove('hidden');
           finanzasArrow.style.transform = 'rotate(180deg)';
         }
-        
-        const activeLink = document.querySelector(`a[href="${currentPath}"]`);
-        if (activeLink) {
-          activeLink.classList.add('bg-slate-200', 'text-slate-900', 'font-medium');
-        }
       }
 
       if (currentPath.startsWith('/logistica/')) {
         const logisticaSubmenu = document.getElementById('logistica-submenu');
-        const logisticaArrow = document.getElementById('icon-logistica-submenu');
+        const logisticaArrow = document.getElementById('logistica-arrow');
         
         if (logisticaSubmenu && logisticaArrow) {
           logisticaSubmenu.classList.remove('hidden');
           logisticaArrow.style.transform = 'rotate(180deg)';
         }
-        
-        const activeLink = document.querySelector(`a[href="${currentPath}"]`);
-        if (activeLink) {
-          activeLink.classList.add('bg-slate-200', 'text-slate-900', 'font-medium');
-        }
       }
 
-      if (currentPath.startsWith('/configuracion/')) {
-        const configLink = document.querySelector(`a[href="/configuracion"]`);
-        if (configLink) {
-          configLink.classList.add('bg-slate-200', 'text-slate-900', 'font-medium');
-        }
+      // Marcar enlace activo
+      const activeLink = document.querySelector(`a[href="${currentPath}"]`);
+      if (activeLink) {
+        activeLink.classList.add('active');
       }
     });
   </script>

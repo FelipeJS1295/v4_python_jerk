@@ -40,12 +40,8 @@
 
         <!-- Órdenes de trabajo -->
         <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <h4 class="font-medium text-slate-800">Órdenes de Trabajo</h4>
-            <button type="button" id="btn-agregar-orden" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-              <i class="fas fa-plus mr-2"></i>
-              Agregar Orden
-            </button>
+          <div>
+            <h4 class="font-medium text-slate-800 mb-4">Órdenes de Trabajo</h4>
           </div>
           
           <div id="lista-ordenes" class="space-y-4">
@@ -57,6 +53,14 @@
             <i class="fas fa-clipboard-list text-3xl mb-3"></i>
             <p>No hay órdenes agregadas</p>
             <p class="text-sm">Haga clic en "Agregar Orden" para comenzar</p>
+          </div>
+
+          <!-- Botón agregar orden - siempre visible al final -->
+          <div class="flex justify-center pt-4">
+            <button type="button" id="btn-agregar-orden" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+              <i class="fas fa-plus mr-2"></i>
+              Agregar Orden
+            </button>
           </div>
         </div>
 
@@ -79,7 +83,7 @@
 <script>
 let trabajadores = [];
 let productos = [];
-let ordenesProduccion = [];
+let contadorOrdenes = 0;
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
@@ -133,7 +137,7 @@ async function cargarProductos() {
 function agregarOrdenProduccion() {
   const contenedor = document.getElementById('lista-ordenes');
   const sinOrdenes = document.getElementById('sin-ordenes');
-  const index = ordenesProduccion.length;
+  const index = contadorOrdenes++;
   
   // Ocultar mensaje "sin órdenes"
   sinOrdenes.style.display = 'none';
@@ -143,33 +147,32 @@ function agregarOrdenProduccion() {
   let productoAnteriorNombre = '';
   let fechaAnterior = new Date().toISOString().split('T')[0];
   
-  if (index > 0) {
-    const ordenAnterior = contenedor.querySelector(`[data-index="${index - 1}"]`);
-    if (ordenAnterior) {
-      const hiddenProducto = ordenAnterior.querySelector('[data-field="productos_id"]');
-      const inputProducto = ordenAnterior.querySelector('[data-field="productos_search"]');
-      const inputFecha = ordenAnterior.querySelector('[data-field="fecha"]');
-      
-      if (hiddenProducto && hiddenProducto.value) {
-        productoAnterior = hiddenProducto.value;
-        if (inputProducto && inputProducto.value) {
-          productoAnteriorNombre = inputProducto.value;
-        }
+  const ordenesExistentes = contenedor.querySelectorAll('.orden-item');
+  if (ordenesExistentes.length > 0) {
+    const ultimaOrden = ordenesExistentes[ordenesExistentes.length - 1];
+    const inputProductoId = ultimaOrden.querySelector('.productos_id');
+    const inputProductoSearch = ultimaOrden.querySelector('.productos_search');
+    const inputFecha = ultimaOrden.querySelector('.fecha');
+    
+    if (inputProductoId && inputProductoId.value) {
+      productoAnterior = inputProductoId.value;
+      if (inputProductoSearch && inputProductoSearch.value) {
+        productoAnteriorNombre = inputProductoSearch.value;
       }
-      if (inputFecha && inputFecha.value) {
-        fechaAnterior = inputFecha.value;
-      }
+    }
+    if (inputFecha && inputFecha.value) {
+      fechaAnterior = inputFecha.value;
     }
   }
   
   const div = document.createElement('div');
-  div.className = 'border border-slate-200 rounded-lg p-4 bg-slate-50';
+  div.className = 'orden-item border border-slate-200 rounded-lg p-4 bg-slate-50';
   div.dataset.index = index;
   
   div.innerHTML = `
     <div class="flex items-center justify-between mb-3">
-      <h5 class="font-medium text-slate-700">Orden #${index + 1}</h5>
-      <button type="button" onclick="eliminarOrdenProduccion(${index})" class="text-red-600 hover:text-red-800 p-1">
+      <h5 class="font-medium text-slate-700">Orden #${contenedor.querySelectorAll('.orden-item').length + 1}</h5>
+      <button type="button" onclick="eliminarOrdenProduccion(this)" class="text-red-600 hover:text-red-800 p-1">
         <i class="fas fa-trash"></i>
       </button>
     </div>
@@ -179,21 +182,20 @@ function agregarOrdenProduccion() {
         <label class="block text-sm font-medium text-slate-700 mb-1">Producto <span class="text-red-500">*</span></label>
         <input type="text" 
                placeholder="Buscar producto..." 
-               class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-               data-field="productos_search" 
+               class="productos_search w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                autocomplete="off"
                oninput="filtrarProductos(this)"
                onfocus="mostrarListaProductos(this)"
                onblur="ocultarListaProductos(this)"
-               required>
-        <input type="hidden" data-field="productos_id" required>
+               required
+               value="${productoAnteriorNombre}">
+        <input type="hidden" class="productos_id" value="${productoAnterior}" required>
         <div class="productos-lista absolute z-10 w-full bg-white border border-slate-300 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden">
           ${productos.map(p => `
             <div class="producto-item px-3 py-2 hover:bg-slate-100 cursor-pointer border-b border-slate-100 last:border-b-0" 
                  data-id="${p.id}" 
                  data-nombre="${p.nombre}"
-                 onclick="seleccionarProducto(this)"
-                 style="display: ${p.id == productoAnterior ? 'block' : 'block'}">
+                 onclick="seleccionarProducto(this)">
               ${p.nombre}
             </div>
           `).join('')}
@@ -202,59 +204,40 @@ function agregarOrdenProduccion() {
       
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">N° Orden <span class="text-red-500">*</span></label>
-        <input type="text" placeholder="Ej: ORD-001" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="numero_orden_trabajo" required>
+        <input type="text" placeholder="Ej: ORD-001" class="numero_orden_trabajo w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
       </div>
       
       <div>
         <label class="block text-sm font-medium text-slate-700 mb-1">Fecha <span class="text-red-500">*</span></label>
-        <input type="date" value="${fechaAnterior}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" data-field="fecha" required>
+        <input type="date" value="${fechaAnterior}" class="fecha w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
       </div>
     </div>
   `;
   
   contenedor.appendChild(div);
-  ordenesProduccion.push({});
-  
-  // Pre-seleccionar producto anterior si existe
-  if (productoAnterior && productoAnteriorNombre) {
-    const inputSearch = div.querySelector('[data-field="productos_search"]');
-    const hiddenId = div.querySelector('[data-field="productos_id"]');
-    if (inputSearch && hiddenId) {
-      inputSearch.value = productoAnteriorNombre;
-      hiddenId.value = productoAnterior;
-    }
-  }
 }
 
-function eliminarOrdenProduccion(index) {
+function eliminarOrdenProduccion(button) {
   const contenedor = document.getElementById('lista-ordenes');
   const sinOrdenes = document.getElementById('sin-ordenes');
   
-  // Encontrar y eliminar el div específico
-  const divAEliminar = contenedor.querySelector(`[data-index="${index}"]`);
+  // Eliminar el div que contiene el botón
+  const divAEliminar = button.closest('.orden-item');
   if (divAEliminar) {
     divAEliminar.remove();
   }
   
-  // Eliminar del array
-  ordenesProduccion.splice(index, 1);
-  
-  // Reindexar elementos restantes
-  const divs = contenedor.querySelectorAll('[data-index]');
-  divs.forEach((div, newIndex) => {
-    div.dataset.index = newIndex;
+  // Reindexar títulos
+  const ordenesRestantes = contenedor.querySelectorAll('.orden-item');
+  ordenesRestantes.forEach((div, index) => {
     const titulo = div.querySelector('h5');
     if (titulo) {
-      titulo.textContent = `Orden #${newIndex + 1}`;
-    }
-    const btnEliminar = div.querySelector('button[onclick]');
-    if (btnEliminar) {
-      btnEliminar.setAttribute('onclick', `eliminarOrdenProduccion(${newIndex})`);
+      titulo.textContent = `Orden #${index + 1}`;
     }
   });
   
   // Mostrar mensaje si no hay órdenes
-  if (ordenesProduccion.length === 0) {
+  if (ordenesRestantes.length === 0) {
     sinOrdenes.style.display = 'block';
   }
 }
@@ -270,29 +253,45 @@ async function guardarProduccion(event) {
   
   const ordenes = [];
   const contenedor = document.getElementById('lista-ordenes');
-  const ordenesElements = contenedor.querySelectorAll('[data-index]');
+  const ordenesElements = contenedor.querySelectorAll('.orden-item');
+  
+  console.log('Número de órdenes encontradas:', ordenesElements.length);
   
   for (let i = 0; i < ordenesElements.length; i++) {
     const div = ordenesElements[i];
-    const orden = {};
     
-    div.querySelectorAll('[data-field]').forEach(input => {
-      const field = input.getAttribute('data-field');
-      orden[field] = input.value;
+    const productosId = div.querySelector('.productos_id').value;
+    const numeroOrden = div.querySelector('.numero_orden_trabajo').value;
+    const fecha = div.querySelector('.fecha').value;
+    
+    console.log(`Orden ${i + 1}:`, {
+      productos_id: productosId,
+      numero_orden_trabajo: numeroOrden,
+      fecha: fecha
     });
     
-    if (!orden.productos_id || !orden.numero_orden_trabajo || !orden.fecha) {
+    // Validar que todos los campos estén completos
+    if (!productosId || !numeroOrden || !fecha) {
       mostrarNotificacion(`Complete todos los campos de la orden ${i + 1}`, 'error');
       return;
     }
     
-    ordenes.push(orden);
+    ordenes.push({
+      productos_id: parseInt(productosId),
+      numero_orden_trabajo: numeroOrden.trim(),
+      fecha: fecha
+    });
   }
   
   if (ordenes.length === 0) {
     mostrarNotificacion('Agregue al menos una orden', 'error');
     return;
   }
+  
+  console.log('Datos a enviar:', {
+    trabajador_id: parseInt(trabajadorId),
+    ordenes: ordenes
+  });
   
   // Mostrar loading
   const btnGuardar = event.target.querySelector('button[type="submit"]');
@@ -361,7 +360,8 @@ function mostrarNotificacion(mensaje, tipo = 'info') {
 
 // Funciones para el autocompletado de productos
 function filtrarProductos(input) {
-  const lista = input.nextElementSibling.nextElementSibling; // Skip hidden input
+  const container = input.closest('.relative');
+  const lista = container.querySelector('.productos-lista');
   const termino = input.value.toLowerCase();
   const items = lista.querySelectorAll('.producto-item');
   
@@ -388,7 +388,7 @@ function filtrarProductos(input) {
   }
   
   // Limpiar selección si el texto no coincide exactamente
-  const hiddenInput = input.nextElementSibling;
+  const hiddenInput = container.querySelector('.productos_id');
   const valorActual = hiddenInput.value;
   if (valorActual) {
     const productoSeleccionado = productos.find(p => p.id == valorActual);
@@ -399,23 +399,25 @@ function filtrarProductos(input) {
 }
 
 function mostrarListaProductos(input) {
-  const lista = input.nextElementSibling.nextElementSibling;
+  const container = input.closest('.relative');
+  const lista = container.querySelector('.productos-lista');
   lista.classList.remove('hidden');
 }
 
 function ocultarListaProductos(input) {
   // Delay para permitir click en items
   setTimeout(() => {
-    const lista = input.nextElementSibling.nextElementSibling;
+    const container = input.closest('.relative');
+    const lista = container.querySelector('.productos-lista');
     lista.classList.add('hidden');
   }, 150);
 }
 
 function seleccionarProducto(item) {
   const lista = item.parentElement;
-  const container = lista.parentElement;
-  const input = container.querySelector('[data-field="productos_search"]');
-  const hiddenInput = container.querySelector('[data-field="productos_id"]');
+  const container = lista.closest('.relative');
+  const input = container.querySelector('.productos_search');
+  const hiddenInput = container.querySelector('.productos_id');
   
   const id = item.getAttribute('data-id');
   const nombre = item.getAttribute('data-nombre');
@@ -469,7 +471,7 @@ function seleccionarProducto(item) {
 }
 
 /* Estilos para órdenes */
-[data-index] {
+.orden-item {
   animation: slideIn 0.3s ease-out;
 }
 
