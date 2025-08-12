@@ -507,10 +507,19 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
         conn = obtener_conexion_db()
         cursor = conn.cursor()
         
+        # Configurar autocommit
+        conn.autocommit = False
+        
         # ID del cliente Cencosud
         CLIENTE_CENCOSUD_ID = RETAIL_CONFIG["cencosud"]["cliente_id"]
         
         try:
+            # Asegurar que no hay transacciones pendientes
+            try:
+                conn.rollback()
+            except:
+                pass
+            
             print(f"🔍 Iniciando validación de {len(df)} órdenes del Excel")
             
             # PASO 1: VALIDACIÓN PREVIA - Verificar que TODAS las órdenes existan
@@ -598,8 +607,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             monto_devoluciones = 0
             errores_procesamiento = []
             
-            # Iniciar transacción para las actualizaciones
-            conn.start_transaction()
+            print("🔄 Iniciando actualizaciones de órdenes")
             
             for orden_data in ordenes_validas:
                 try:
@@ -705,7 +713,13 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             cursor.execute(query_liquidacion, valores_liquidacion)
             
             # Commit de la transacción
-            conn.commit()
+            try:
+                conn.commit()
+                print("✅ Transacción confirmada exitosamente")
+            except Exception as commit_error:
+                print(f"⚠️ Error en commit: {str(commit_error)}")
+                conn.rollback()
+                raise commit_error
             
             print(f"✅ Liquidación procesada exitosamente:")
             print(f"   - Órdenes procesadas: {len(ordenes_validas)}")
@@ -731,12 +745,20 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             }
             
         except Exception as e:
-            conn.rollback()
+            try:
+                conn.rollback()
+                print(f"🔄 Transacción revertida debido a error")
+            except:
+                pass
             print(f"❌ Error en transacción: {str(e)}")
             raise e
         finally:
-            cursor.close()
-            conn.close()
+            try:
+                cursor.close()
+                conn.close()
+                print("🔌 Conexión a BD cerrada")
+            except:
+                pass
         
     except Exception as e:
         print(f"❌ Error general procesando Cencosud: {str(e)}")
