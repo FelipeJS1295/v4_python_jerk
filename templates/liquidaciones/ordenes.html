@@ -72,7 +72,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-slate-600 text-sm font-medium">Total Órdenes</p>
-          <p class="text-xl font-bold text-slate-800" id="stat-total">-</p>
+          <p class="text-xl font-bold text-slate-800" id="stat-total">0</p>
         </div>
         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
           <i class="fas fa-shopping-cart text-blue-600"></i>
@@ -474,12 +474,13 @@ function renderizarOrdenes(ordenes) {
 }
 
 function actualizarEstadisticas(ordenes) {
+  // Solo mostrar estadísticas si hay datos reales
   const stats = {
     total: ordenes.length,
     pagadas: ordenes.filter(o => o.estado_pago === 'Pagado').length,
     pendientes: ordenes.filter(o => o.estado_pago === 'Pendiente').length,
     proceso: ordenes.filter(o => o.estado_pago === 'En Proceso').length,
-    monto: ordenes.reduce((sum, o) => sum + o.monto, 0)
+    monto: ordenes.reduce((sum, o) => sum + (o.monto || 0), 0)
   };
   
   document.getElementById('stat-total').textContent = stats.total;

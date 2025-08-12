@@ -56,7 +56,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-slate-600 text-sm font-medium">Total Liquidaciones</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-total">-</p>
+          <p class="text-2xl font-bold text-slate-800" id="stat-total">0</p>
         </div>
         <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
           <i class="fas fa-file-invoice-dollar text-blue-600 text-xl"></i>
@@ -68,7 +68,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-slate-600 text-sm font-medium">Monto Total</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-monto">-</p>
+          <p class="text-2xl font-bold text-slate-800" id="stat-monto">$0</p>
         </div>
         <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
           <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
@@ -80,7 +80,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-slate-600 text-sm font-medium">Órdenes Pagadas</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-ordenes">-</p>
+          <p class="text-2xl font-bold text-slate-800" id="stat-ordenes">0</p>
         </div>
         <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
           <i class="fas fa-check-circle text-emerald-600 text-xl"></i>
@@ -92,7 +92,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-slate-600 text-sm font-medium">Pendientes</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-pendientes">-</p>
+          <p class="text-2xl font-bold text-slate-800" id="stat-pendientes">0</p>
         </div>
         <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
           <i class="fas fa-clock text-amber-600 text-xl"></i>
@@ -261,15 +261,11 @@ function renderizarLiquidaciones(liquidaciones) {
 }
 
 function actualizarEstadisticas(liquidaciones) {
-  const total = liquidaciones.length;
-  const montoTotal = liquidaciones.reduce((sum, liq) => sum + liq.monto_total, 0);
-  const ordenesTotal = liquidaciones.reduce((sum, liq) => sum + liq.cantidad_ordenes, 0);
-  const procesadas = liquidaciones.filter(liq => liq.estado === 'Procesada').length;
-  
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-monto').textContent = formatearMoneda(montoTotal);
-  document.getElementById('stat-ordenes').textContent = ordenesTotal;
-  document.getElementById('stat-pendientes').textContent = total - procesadas;
+  // Solo mostrar estadísticas si hay datos reales
+  document.getElementById('stat-total').textContent = liquidaciones.length;
+  document.getElementById('stat-monto').textContent = liquidaciones.length > 0 ? formatearMoneda(liquidaciones.reduce((sum, liq) => sum + liq.monto_total, 0)) : '$0';
+  document.getElementById('stat-ordenes').textContent = liquidaciones.length > 0 ? liquidaciones.reduce((sum, liq) => sum + liq.cantidad_ordenes, 0) : '0';
+  document.getElementById('stat-pendientes').textContent = liquidaciones.length > 0 ? liquidaciones.filter(liq => liq.estado !== 'Procesada').length : '0';
 }
 
 function actualizarPaginacion(data) {
