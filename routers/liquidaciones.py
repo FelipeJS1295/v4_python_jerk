@@ -10,18 +10,16 @@ import mysql.connector
 from io import BytesIO
 import traceback
 
+# USAR LA MISMA FUNCIÓN DE CONEXIÓN QUE EL RESTO DEL PROYECTO
+from db import conectar_mysql
+
+# USAR LA MISMA FUNCIÓN DE CONEXIÓN QUE EL RESTO DEL PROYECTO
+from db import conectar_mysql
+
 # Configuración del router
 router = APIRouter(prefix="/liquidaciones", tags=["liquidaciones"])
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "..", "templates"))
-
-# Configuración de base de datos desde variables de entorno
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
-    "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "integracion")
-}
 
 # Configuración de retails
 RETAIL_CONFIG = {
@@ -33,9 +31,9 @@ RETAIL_CONFIG = {
 }
 
 def obtener_conexion_db():
-    """Obtener conexión a la base de datos"""
+    """Obtener conexión a la base de datos usando la configuración del proyecto"""
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = conectar_mysql()  # Usar tu función existente que lee el .env
         return conn
     except Exception as e:
         print(f"Error conectando a la base de datos: {str(e)}")
