@@ -122,10 +122,10 @@ class FiltrosOrdenes(BaseModel):
 
 class EstadisticasLiquidaciones(BaseModel):
     """Schema para estadísticas generales"""
-    total_liquidaciones: int
-    monto_total_liquidado: float
-    ordenes_pagadas: int
-    ordenes_pendientes: int
+    total_liquidaciones: int = 0
+    monto_total_liquidado: float = 0
+    ordenes_pagadas: int = 0
+    ordenes_pendientes: int = 0
     
     # Por retail
     estadisticas_por_retail: dict = {}
@@ -141,27 +141,6 @@ class ConfiguracionRetail(BaseModel):
     formato_archivo: str
     columnas_mapeo: dict
     validaciones_especiales: List[str] = []
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "retail": "cencosud",
-                "cliente_id": 2,
-                "nombre_completo": "Cencosud",
-                "formato_archivo": "transactions_report_*.xlsx",
-                "columnas_mapeo": {
-                    "numero_orden": "número orden",
-                    "tipo": "tipo",
-                    "monto": "monto a pagar",
-                    "fecha_liquidacion": "fecha liq.factura",
-                    "numero_liquidacion": "número liq.factura"
-                },
-                "validaciones_especiales": [
-                    "Verificar que estado de liq.factura sea 'Cerrada'",
-                    "Validar formato de fecha ISO 8601"
-                ]
-            }
-        }
 
 # Schema para respuestas de API
 class RespuestaAPI(BaseModel):
@@ -173,8 +152,8 @@ class RespuestaAPI(BaseModel):
 
 class ListaPaginada(BaseModel):
     """Schema para listas paginadas"""
-    items: List[dict]
-    total: int
-    page: int
-    limit: int
-    total_pages: int
+    items: List[dict] = []
+    total: int = 0
+    page: int = 1
+    limit: int = 10
+    total_pages: int = 0
