@@ -192,15 +192,53 @@
           <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
         </div>
         <h3 class="text-xl font-semibold text-slate-800 mb-2">Error en el Procesamiento</h3>
-        <p class="text-slate-600 mb-6" id="error-message">Ocurrió un error al procesar el archivo</p>
+        <p class="text-slate-600 mb-4" id="error-message">Ocurrió un error al procesar el archivo</p>
+        
+        <!-- Lista de órdenes faltantes -->
+        <div id="ordenes-faltantes-container" class="hidden mb-6">
+          <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-left">
+            <h4 class="font-semibold text-red-800 mb-3 flex items-center gap-2">
+              <i class="fas fa-exclamation-circle"></i>
+              Órdenes no encontradas en la base de datos:
+            </h4>
+            <div class="max-h-40 overflow-y-auto">
+              <ul id="lista-ordenes-faltantes" class="space-y-1 text-sm text-red-700">
+                <!-- Se llena dinámicamente -->
+              </ul>
+            </div>
+            <div class="mt-3 p-3 bg-red-100 rounded-lg">
+              <p class="text-xs text-red-700">
+                <strong>💡 Sugerencia:</strong> Verifica que las órdenes estén registradas en el sistema antes de procesar la liquidación.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Estadísticas del error -->
+        <div id="error-stats" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="p-4 bg-gray-50 rounded-xl">
+            <p class="text-sm text-gray-600 font-medium">Total Órdenes</p>
+            <p class="text-2xl font-bold text-gray-800" id="error-total-ordenes">0</p>
+          </div>
+          <div class="p-4 bg-red-50 rounded-xl">
+            <p class="text-sm text-red-600 font-medium">No Encontradas</p>
+            <p class="text-2xl font-bold text-red-800" id="error-ordenes-faltantes">0</p>
+          </div>
+          <div class="p-4 bg-green-50 rounded-xl">
+            <p class="text-sm text-green-600 font-medium">Encontradas</p>
+            <p class="text-2xl font-bold text-green-800" id="error-ordenes-validas">0</p>
+          </div>
+        </div>
         
         <div class="flex gap-4">
           <button onclick="volverFormulario()" 
                   class="flex-1 btn-secondary px-6 py-3 rounded-xl font-medium">
-            Volver a Intentar
+            <i class="fas fa-redo mr-2"></i>
+            Intentar con Otro Archivo
           </button>
           <a href="/liquidaciones" 
              class="flex-1 btn-primary px-6 py-3 text-white rounded-xl font-medium text-center">
+            <i class="fas fa-list mr-2"></i>
             Ver Liquidaciones
           </a>
         </div>
@@ -213,15 +251,15 @@
 // Variables globales
 let archivoSeleccionado = null;
 
-// Información de formatos por retail
+// Información de formatos por retail actualizada
 const formatosRetail = {
   falabella: {
     nombre: 'Falabella',
     descripcion: `
       <ul class="space-y-1">
-        <li>• Columnas requeridas: Número de Orden, Fecha, Monto, Estado</li>
-        <li>• Formato de fecha: DD/MM/YYYY</li>
-        <li>• Los montos deben estar en pesos chilenos</li>
+        <li>• <strong>Estado:</strong> En desarrollo</li>
+        <li>• Formato de archivo: Excel (.xlsx)</li>
+        <li>• Columnas esperadas: Por definir</li>
       </ul>
     `
   },
@@ -229,9 +267,16 @@ const formatosRetail = {
     nombre: 'Cencosud',
     descripcion: `
       <ul class="space-y-1">
-        <li>• Columnas requeridas: Order ID, Date, Amount, Status</li>
-        <li>• Formato de fecha: YYYY-MM-DD</li>
-        <li>• Los montos pueden incluir separadores de miles</li>
+        <li>• <strong>Hoja requerida:</strong> "transacciones"</li>
+        <li>• <strong>Columnas obligatorias:</strong></li>
+        <li class="ml-4">- número orden</li>
+        <li class="ml-4">- tipo (venta/devolución)</li>
+        <li class="ml-4">- monto a pagar</li>
+        <li class="ml-4">- fecha liq.factura</li>
+        <li class="ml-4">- número liq.factura</li>
+        <li class="ml-4">- nro solicitud liq.factura</li>
+        <li class="ml-4">- estado de liq.factura</li>
+        <li>• <strong>Importante:</strong> Todas las órdenes deben existir en la base de datos</li>
       </ul>
     `
   },
@@ -239,9 +284,9 @@ const formatosRetail = {
     nombre: 'Walmart',
     descripcion: `
       <ul class="space-y-1">
-        <li>• Columnas requeridas: Order Number, Order Date, Total Amount</li>
-        <li>• Formato de fecha: MM/DD/YYYY</li>
-        <li>• Incluye información de comisiones</li>
+        <li>• <strong>Estado:</strong> En desarrollo</li>
+        <li>• Formato de archivo: Excel (.xlsx)</li>
+        <li>• Columnas esperadas: Por definir</li>
       </ul>
     `
   },
@@ -249,9 +294,9 @@ const formatosRetail = {
     nombre: 'Ripley',
     descripcion: `
       <ul class="space-y-1">
-        <li>• Columnas requeridas: N° Pedido, Fecha Pedido, Monto Neto</li>
-        <li>• Formato de fecha: DD-MM-YYYY</li>
-        <li>• Separar monto neto de IVA</li>
+        <li>• <strong>Estado:</strong> En desarrollo</li>
+        <li>• Formato de archivo: Excel (.xlsx)</li>
+        <li>• Columnas esperadas: Por definir</li>
       </ul>
     `
   },
@@ -259,9 +304,9 @@ const formatosRetail = {
     nombre: 'Hites',
     descripcion: `
       <ul class="space-y-1">
-        <li>• Columnas requeridas: Código Venta, Fecha, Valor Total</li>
-        <li>• Formato de fecha: DD/MM/AA</li>
-        <li>• Incluye descuentos aplicados</li>
+        <li>• <strong>Estado:</strong> En desarrollo</li>
+        <li>• Formato de archivo: Excel (.xlsx)</li>
+        <li>• Columnas esperadas: Por definir</li>
       </ul>
     `
   }
@@ -423,16 +468,20 @@ async function handleSubmit(e) {
     });
 
     const resultado = await response.json();
+    
+    console.log('Respuesta del servidor:', resultado);
 
-    if (response.ok) {
+    if (response.ok && resultado.success) {
       mostrarResultadoExito(resultado);
     } else {
-      mostrarResultadoError(resultado.detail || 'Error desconocido');
+      // Error en el procesamiento
+      const mensajeError = resultado.message || resultado.detail || 'Error desconocido al procesar la liquidación';
+      mostrarResultadoError(mensajeError, resultado);
     }
 
   } catch (error) {
-    console.error('Error:', error);
-    mostrarResultadoError('Error de conexión con el servidor');
+    console.error('Error de conexión:', error);
+    mostrarResultadoError('Error de conexión con el servidor. Verifica tu conexión a internet.');
   }
 }
 
@@ -476,32 +525,89 @@ function mostrarResultadoExito(resultado) {
   document.getElementById('result-numero').textContent = resultado.numero_liquidacion;
 }
 
-function mostrarResultadoError(mensaje) {
+function mostrarResultadoError(mensaje, resultado = null) {
   document.getElementById('progress-container').classList.add('hidden');
   document.getElementById('result-container').classList.remove('hidden');
   document.getElementById('result-error').classList.remove('hidden');
   
   document.getElementById('error-message').textContent = mensaje;
+  
+  // Si hay información detallada del error (órdenes faltantes)
+  if (resultado && resultado.detalle_ordenes_faltantes && resultado.detalle_ordenes_faltantes.length > 0) {
+    mostrarOrdenesFaltantes(resultado);
+  }
+  
+  // Si hay estadísticas del error
+  if (resultado && resultado.ordenes_procesadas !== undefined) {
+    mostrarEstadisticasError(resultado);
+  }
+}
+
+function mostrarOrdenesFaltantes(resultado) {
+  const container = document.getElementById('ordenes-faltantes-container');
+  const lista = document.getElementById('lista-ordenes-faltantes');
+  
+  container.classList.remove('hidden');
+  
+  // Limpiar lista
+  lista.innerHTML = '';
+  
+  // Agregar órdenes faltantes (máximo 15 para no saturar)
+  const ordenesMostrar = resultado.detalle_ordenes_faltantes.slice(0, 15);
+  
+  ordenesMostrar.forEach(orden => {
+    const li = document.createElement('li');
+    li.className = 'flex items-center gap-2';
+    li.innerHTML = `
+      <i class="fas fa-times-circle text-red-500 text-xs"></i>
+      <span><strong>Orden ${orden.numero_orden}</strong> (Fila ${orden.fila_excel} del Excel)</span>
+      ${orden.error ? `<span class="text-xs text-red-500">- ${orden.error}</span>` : ''}
+    `;
+    lista.appendChild(li);
+  });
+  
+  // Si hay más órdenes, mostrar contador
+  if (resultado.detalle_ordenes_faltantes.length > 15) {
+    const li = document.createElement('li');
+    li.className = 'text-red-600 font-medium';
+    li.innerHTML = `<i class="fas fa-ellipsis-h"></i> Y ${resultado.detalle_ordenes_faltantes.length - 15} órdenes más...`;
+    lista.appendChild(li);
+  }
+}
+
+function mostrarEstadisticasError(resultado) {
+  const container = document.getElementById('error-stats');
+  container.classList.remove('hidden');
+  
+  const totalOrdenes = resultado.ordenes_procesadas || 0;
+  const ordenesFaltantes = resultado.ordenes_no_encontradas || 0;
+  const ordenesValidas = totalOrdenes - ordenesFaltantes;
+  
+  document.getElementById('error-total-ordenes').textContent = totalOrdenes;
+  document.getElementById('error-ordenes-faltantes').textContent = ordenesFaltantes;
+  document.getElementById('error-ordenes-validas').textContent = ordenesValidas;
 }
 
 function nuevaLiquidacion() {
-  // Resetear formulario
-  document.getElementById('form-liquidacion').reset();
-  removerArchivo();
-  
-  // Mostrar formulario
-  document.querySelector('.content-card').classList.remove('hidden');
-  document.getElementById('result-container').classList.add('hidden');
-  document.getElementById('result-success').classList.add('hidden');
-  document.getElementById('result-error').classList.add('hidden');
+  volverFormulario(); // Usar la misma lógica
 }
 
 function volverFormulario() {
-  // Mostrar formulario
-  document.querySelector('.content-card').classList.remove('hidden');
+  // Resetear todo
+  document.getElementById('form-liquidacion').reset();
+  removerArchivo();
+  
+  // Ocultar todos los contenedores de resultado
   document.getElementById('result-container').classList.add('hidden');
   document.getElementById('result-success').classList.add('hidden');
   document.getElementById('result-error').classList.add('hidden');
+  document.getElementById('ordenes-faltantes-container').classList.add('hidden');
+  document.getElementById('error-stats').classList.add('hidden');
+  document.getElementById('progress-container').classList.add('hidden');
+  document.getElementById('retail-info').classList.add('hidden');
+  
+  // Mostrar formulario
+  document.querySelector('.content-card').classList.remove('hidden');
 }
 
 // Funciones auxiliares

@@ -479,7 +479,7 @@ async def procesar_liquidacion_retail(retail: str, contenido: bytes, nombre_arch
         }
 
 async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, numero_liquidacion: Optional[str] = None):
-    """Procesar liquidación específica de Cencosud con mapeo a ventas_retail"""
+    """Procesar liquidación específica de Cencosud con validación previa completa"""
     try:
         # Leer archivo Excel
         df = pd.read_excel(BytesIO(contenido), sheet_name='transacciones')
@@ -506,39 +506,107 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
         # Usar el número proporcionado o el del Excel
         numero_liquidacion_final = numero_liquidacion or numero_liquidacion_excel
         
-        # Estadísticas para el resultado
-        ordenes_procesadas = 0
-        ordenes_actualizadas = 0
-        ordenes_no_encontradas = 0
-        monto_total = 0
-        monto_ventas = 0
-        monto_devoluciones = 0
-        errores = []
-        
         conn = obtener_conexion_db()
         cursor = conn.cursor()
         
-        # ID del cliente Cencosud (ajustar según tu configuración)
+        # ID del cliente Cencosud
         CLIENTE_CENCOSUD_ID = RETAIL_CONFIG["cencosud"]["cliente_id"]
         
         try:
-            # Iniciar transacción
-            conn.start_transaction()
+            print(f"🔍 Iniciando validación de {len(df)} órdenes del Excel")
             
-            print(f"Iniciando procesamiento de {len(df)} filas del Excel")
+            # PASO 1: VALIDACIÓN PREVIA - Verificar que TODAS las órdenes existan
+            ordenes_no_encontradas = []
+            ordenes_validas = []
             
-            # Procesar cada fila del Excel
             for index, row in df.iterrows():
                 try:
                     numero_orden = str(row['número orden']).strip()
+                    
+                    # Buscar la orden en ventas_retail
+                    query_buscar = """
+                    SELECT id, numero_orden FROM ventas_retail 
+                    WHERE numero_orden = %s AND cliente_id = %s
+                    """
+                    
+                    cursor.execute(query_buscar, (numero_orden, CLIENTE_CENCOSUD_ID))
+                    venta_encontrada = cursor.fetchone()
+                    
+                    if venta_encontrada:
+                        ordenes_validas.append({
+                            'numero_orden': numero_orden,
+                            'venta_id': venta_encontrada[0],
+                            'fila_excel': index + 1,
+                            'data': row
+                        })
+                        print(f"✅ Orden {numero_orden} encontrada en BD")
+                    else:
+                        ordenes_no_encontradas.append({
+                            'numero_orden': numero_orden,
+                            'fila_excel': index + 1
+                        })
+                        print(f"❌ Orden {numero_orden} NO encontrada en BD")
+                        
+                except Exception as e:
+                    ordenes_no_encontradas.append({
+                        'numero_orden': str(row.get('número orden', 'N/A')),
+                        'fila_excel': index + 1,
+                        'error': str(e)
+                    })
+            
+            # Si hay órdenes no encontradas, DETENER el proceso
+            if ordenes_no_encontradas:
+                print(f"❌ Se encontraron {len(ordenes_no_encontradas)} órdenes que no existen en la base de datos")
+                
+                # Crear mensaje detallado de error
+                mensaje_error = f"No se pudo procesar la liquidación. Se encontraron {len(ordenes_no_encontradas)} órdenes que no existen en la base de datos:"
+                
+                ordenes_faltantes_texto = []
+                for orden in ordenes_no_encontradas[:10]:  # Mostrar máximo 10
+                    ordenes_faltantes_texto.append(f"• Orden: {orden['numero_orden']} (Fila {orden['fila_excel']} del Excel)")
+                
+                if len(ordenes_no_encontradas) > 10:
+                    ordenes_faltantes_texto.append(f"• ... y {len(ordenes_no_encontradas) - 10} órdenes más")
+                
+                return {
+                    "success": False,
+                    "message": mensaje_error,
+                    "retail": "Cencosud",
+                    "archivo": nombre_archivo,
+                    "ordenes_procesadas": len(df),
+                    "ordenes_actualizadas": 0,
+                    "ordenes_no_encontradas": len(ordenes_no_encontradas),
+                    "ordenes_con_error": 0,
+                    "monto_total": 0,
+                    "monto_ventas": 0,
+                    "monto_devoluciones": 0,
+                    "errores": ordenes_faltantes_texto,
+                    "detalle_ordenes_faltantes": ordenes_no_encontradas  # Para el frontend
+                }
+            
+            print(f"✅ Todas las órdenes ({len(ordenes_validas)}) existen en la base de datos. Procediendo con la actualización...")
+            
+            # PASO 2: PROCESAMIENTO - Todas las órdenes son válidas, proceder con las actualizaciones
+            ordenes_actualizadas = 0
+            monto_total = 0
+            monto_ventas = 0
+            monto_devoluciones = 0
+            errores_procesamiento = []
+            
+            # Iniciar transacción para las actualizaciones
+            conn.start_transaction()
+            
+            for orden_data in ordenes_validas:
+                try:
+                    row = orden_data['data']
+                    numero_orden = orden_data['numero_orden']
+                    
                     tipo = str(row['tipo']).strip()
                     monto_pago = float(row['monto a pagar']) if pd.notna(row['monto a pagar']) else 0
                     fecha_liquidacion_fila = row['fecha liq.factura'] if pd.notna(row['fecha liq.factura']) else None
                     numero_liquidacion_fila = str(row['número liq.factura']).strip() if pd.notna(row['número liq.factura']) else None
                     nro_solicitud = str(row['nro solicitud liq.factura']).strip() if pd.notna(row['nro solicitud liq.factura']) else None
                     estado_liquidacion_excel = str(row['estado de liq.factura']).strip() if pd.notna(row['estado de liq.factura']) else 'pendiente'
-                    
-                    print(f"Procesando orden: {numero_orden}, tipo: {tipo}, monto: {monto_pago}")
                     
                     # Mapear tipo a enum
                     if tipo.lower() in ['venta', 'ventas']:
@@ -563,60 +631,43 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     
                     monto_total += monto_pago
                     
-                    # Buscar la orden en ventas_retail
-                    query_buscar = """
-                    SELECT id FROM ventas_retail 
+                    # Actualizar la orden existente con los datos de liquidación
+                    query_update = """
+                    UPDATE ventas_retail SET 
+                        monto_pago_liquidacion = %s,
+                        tipo_liquidacion = %s,
+                        fecha_liquidacion = %s,
+                        numero_liquidacion = %s,
+                        fecha_procesamiento_liquidacion = %s,
+                        estado_liquidacion = %s,
+                        estado_pago = %s
                     WHERE numero_orden = %s AND cliente_id = %s
                     """
                     
-                    cursor.execute(query_buscar, (numero_orden, CLIENTE_CENCOSUD_ID))
-                    venta_encontrada = cursor.fetchone()
+                    valores = (
+                        monto_pago,                    # monto_pago_liquidacion
+                        tipo_liquidacion,              # tipo_liquidacion  
+                        fecha_liquidacion_fila,        # fecha_liquidacion
+                        numero_liquidacion_fila,       # numero_liquidacion
+                        nro_solicitud,                 # fecha_procesamiento_liquidacion
+                        estado_liquidacion,            # estado_liquidacion
+                        estado_pago,                   # estado_pago
+                        numero_orden,                  # WHERE numero_orden
+                        CLIENTE_CENCOSUD_ID           # WHERE cliente_id
+                    )
                     
-                    if venta_encontrada:
-                        # Actualizar la orden existente con los datos de liquidación
-                        query_update = """
-                        UPDATE ventas_retail SET 
-                            monto_pago_liquidacion = %s,
-                            tipo_liquidacion = %s,
-                            fecha_liquidacion = %s,
-                            numero_liquidacion = %s,
-                            fecha_procesamiento_liquidacion = %s,
-                            estado_liquidacion = %s,
-                            estado_pago = %s
-                        WHERE numero_orden = %s AND cliente_id = %s
-                        """
-                        
-                        valores = (
-                            monto_pago,                    # monto_pago_liquidacion
-                            tipo_liquidacion,              # tipo_liquidacion  
-                            fecha_liquidacion_fila,        # fecha_liquidacion
-                            numero_liquidacion_fila,       # numero_liquidacion
-                            nro_solicitud,                 # fecha_procesamiento_liquidacion (usando nro solicitud)
-                            estado_liquidacion,            # estado_liquidacion
-                            estado_pago,                   # estado_pago
-                            numero_orden,                  # WHERE numero_orden
-                            CLIENTE_CENCOSUD_ID           # WHERE cliente_id
-                        )
-                        
-                        cursor.execute(query_update, valores)
-                        
-                        if cursor.rowcount > 0:
-                            ordenes_actualizadas += 1
-                            print(f"✅ Orden {numero_orden} actualizada exitosamente")
-                        else:
-                            ordenes_no_encontradas += 1
-                            errores.append(f"Orden {numero_orden} no se pudo actualizar")
-                            print(f"❌ Orden {numero_orden} no se pudo actualizar")
+                    cursor.execute(query_update, valores)
+                    
+                    if cursor.rowcount > 0:
+                        ordenes_actualizadas += 1
+                        print(f"✅ Orden {numero_orden} actualizada exitosamente")
                     else:
-                        ordenes_no_encontradas += 1
-                        errores.append(f"Orden {numero_orden} no encontrada en ventas_retail")
-                        print(f"❌ Orden {numero_orden} no encontrada en ventas_retail")
-                    
-                    ordenes_procesadas += 1
+                        errores_procesamiento.append(f"Orden {numero_orden} no se pudo actualizar (sin cambios)")
+                        print(f"⚠️ Orden {numero_orden} no se pudo actualizar")
                     
                 except Exception as e:
-                    error_msg = f"Error procesando orden {numero_orden}: {str(e)}"
-                    errores.append(error_msg)
+                    error_msg = f"Error actualizando orden {numero_orden}: {str(e)}"
+                    errores_procesamiento.append(error_msg)
                     print(f"❌ {error_msg}")
                     continue
             
@@ -635,12 +686,12 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                 numero_liquidacion_final,
                 fecha_liquidacion,
                 monto_total,
-                ordenes_procesadas,
+                len(ordenes_validas),
                 'procesada' if ordenes_actualizadas > 0 else 'error',
                 nombre_archivo,
-                ordenes_procesadas,
+                len(ordenes_validas),
                 ordenes_actualizadas,
-                ordenes_no_encontradas
+                0  # ordenes_no_encontradas es 0 porque ya validamos
             )
             
             cursor.execute(query_liquidacion, valores_liquidacion)
@@ -649,9 +700,8 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             conn.commit()
             
             print(f"✅ Liquidación procesada exitosamente:")
-            print(f"   - Órdenes procesadas: {ordenes_procesadas}")
+            print(f"   - Órdenes procesadas: {len(ordenes_validas)}")
             print(f"   - Órdenes actualizadas: {ordenes_actualizadas}")
-            print(f"   - Órdenes no encontradas: {ordenes_no_encontradas}")
             print(f"   - Monto total: {monto_total}")
             
             return {
@@ -660,16 +710,16 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                 "retail": "Cencosud",
                 "archivo": nombre_archivo,
                 "numero_liquidacion": numero_liquidacion_final,
-                "ordenes_procesadas": ordenes_procesadas,
+                "ordenes_procesadas": len(ordenes_validas),
                 "ordenes_actualizadas": ordenes_actualizadas,
-                "ordenes_no_encontradas": ordenes_no_encontradas,
-                "ordenes_con_error": len(errores),
+                "ordenes_no_encontradas": 0,
+                "ordenes_con_error": len(errores_procesamiento),
                 "monto_total": monto_total,
                 "monto_ventas": monto_ventas,
                 "monto_devoluciones": monto_devoluciones,
                 "fecha_liquidacion": fecha_liquidacion.isoformat() if fecha_liquidacion else None,
                 "fecha_procesamiento": datetime.now().isoformat(),
-                "errores": errores[:10]  # Solo mostrar primeros 10 errores
+                "errores": errores_procesamiento[:10] if errores_procesamiento else []
             }
             
         except Exception as e:
@@ -685,8 +735,13 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
         print(f"Traceback: {traceback.format_exc()}")
         return {
             "success": False,
-            "message": f"Error procesando Cencosud: {str(e)}",
+            "message": f"Error procesando archivo de Cencosud: {str(e)}",
             "retail": "Cencosud",
             "archivo": nombre_archivo,
+            "ordenes_procesadas": 0,
+            "ordenes_actualizadas": 0,
+            "ordenes_no_encontradas": 0,
+            "ordenes_con_error": 0,
+            "monto_total": 0,
             "errores": [str(e)]
         }
