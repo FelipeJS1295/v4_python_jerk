@@ -30,7 +30,7 @@ from routers import (
     image_router,
     usuarios_jinja,
     trabajadores_jinja,
-    liquidaciones,  # NUEVO: Router de liquidaciones
+    liquidaciones  # Nuevo router
 )
 
 from routers import camaras
@@ -46,7 +46,8 @@ from routers.config import (
     proveedores as config_proveedores,
 )
 
-from routers.auth import router as auth_router, obtener_usuario_actual
+from routers.auth import router as auth_router
+from routers.usuarios import obtener_usuario_actual
 
 # App y configuración
 app = FastAPI()
@@ -163,9 +164,6 @@ app.include_router(usuarios_jinja.router)
 app.include_router(trabajadores_jinja.router)
 app.include_router(camaras.router)
 
-# NUEVO: Router de Liquidaciones
-app.include_router(liquidaciones.router)
-
 # Routers de configuración
 app.include_router(config_clientes.router)
 app.include_router(config_insumos.router)
@@ -180,6 +178,7 @@ app.include_router(facturas.router)
 
 # Routers de Finanzas
 app.include_router(finanzas.router)
+app.include_router(liquidaciones.router)  # Agregar router de liquidaciones
 
 # Routers de E-commerce
 app.include_router(ecomerce.router)

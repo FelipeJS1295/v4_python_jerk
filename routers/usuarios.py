@@ -1,14 +1,94 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db import conectar_mysql
 from schemas.usuario_schema import UsuarioLogin
-from utils.auth import hashear_contraseña, verificar_contraseña, crear_token
+from utils.auth import hashear_contraseña, verificar_contraseña, crear_token, verificar_token
 from datetime import timedelta
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+import jwt
+from typing import Optional
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 templates = Jinja2Templates(directory="templates")
+security = HTTPBearer(auto_error=False)
+
+def obtener_usuario_actual(request: Request) -> Optional[dict]:
+    """Obtener usuario actual desde el token en cookies o headers"""
+    try:
+        # Intentar obtener token desde cookies
+        token = request.cookies.get("access_token")
+        
+        # Si no hay en cookies, intentar desde headers
+        if not token:
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header.split(" ")[1]
+        
+        if not token:
+            return None
+        
+        # Verificar y decodificar token
+        payload = verificar_token(token)
+        if not payload:
+            return None
+        
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        
+        # Obtener datos del usuario desde la base de datos
+        conn = conectar_mysql()
+        cursor = conn.cursor(dictionary=True)
+        
+        try:
+            cursor.execute("""
+                SELECT id, nombre_usuario, email, rol, activo 
+                FROM users 
+                WHERE id = %s AND activo = 1
+            """, (user_id,))
+            
+            usuario = cursor.fetchone()
+            return usuario
+            
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        print(f"Error obteniendo usuario actual: {str(e)}")
+        return None
+
+@router.get("/verificar-sesion")
+async def verificar_sesion(request: Request):
+    """Verificar si la sesión del usuario es válida"""
+    try:
+        usuario = obtener_usuario_actual(request)
+        
+        if usuario:
+            return {
+                "valid": True,
+                "usuario": {
+                    "id": usuario.get("id"),
+                    "nombre_usuario": usuario.get("nombre_usuario"),
+                    "email": usuario.get("email"),
+                    "rol": usuario.get("rol")
+                }
+            }
+        else:
+            return {
+                "valid": False,
+                "usuario": None
+            }
+            
+    except Exception as e:
+        print(f"Error en verificar_sesion: {str(e)}")
+        return {
+            "valid": False,
+            "usuario": None,
+            "error": str(e)
+        }
 
 @router.post("/login")
 def login(datos: UsuarioLogin):
@@ -43,6 +123,19 @@ def login(datos: UsuarioLogin):
     finally:
         cursor.close()
         conn.close()
+
+@router.post("/logout")
+async def logout():
+    """Cerrar sesión del usuario"""
+    try:
+        response = JSONResponse(content={"message": "Sesión cerrada exitosamente"})
+        response.delete_cookie("access_token")
+        return response
+    except Exception as e:
+        return JSONResponse(
+            content={"message": "Error al cerrar sesión", "error": str(e)},
+            status_code=500
+        )
 
 @router.get("/listar")
 def listar_usuarios():
