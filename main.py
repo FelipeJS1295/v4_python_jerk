@@ -30,7 +30,7 @@ from routers import (
     image_router,
     usuarios_jinja,
     trabajadores_jinja,
-    liquidaciones  # Nuevo router
+    liquidaciones
 )
 
 from routers import camaras
@@ -71,6 +71,8 @@ RUTAS_PUBLICAS = {
     "/auth/login",
     "/auth/logout", 
     "/usuarios/login",
+    "/usuarios/logout",
+    "/usuarios/verificar-sesion",
 }
 
 def es_ruta_publica(path: str) -> bool:
@@ -87,26 +89,31 @@ async def verificar_autenticacion(request: Request, call_next):
     """Middleware para verificar autenticación en todas las rutas protegidas"""
     
     ruta_actual = request.url.path
+    print(f"Ruta solicitada: {ruta_actual}")
     
     # Verificar si es una ruta pública
     if es_ruta_publica(ruta_actual):
+        print(f"Ruta pública, permitiendo acceso: {ruta_actual}")
         response = await call_next(request)
         return response
     
     # Para rutas protegidas, verificar autenticación
     usuario = obtener_usuario_actual(request)
+    print(f"Usuario obtenido: {usuario}")
     
     if not usuario:
+        print(f"No autenticado, redirigiendo desde: {ruta_actual}")
         # No autenticado, redirigir según la ruta
         if ruta_actual == "/":
             # Para la ruta raíz, mostrar el login directamente
             return templates.TemplateResponse("auth/login.html", {"request": request})
         else:
             # Para otras rutas, redirigir a login
-            return RedirectResponse(url="/auth/login", status_code=302)
+            return RedirectResponse(url="/usuarios/login", status_code=302)
     
     # Usuario válido, agregar al request state
     request.state.usuario = usuario
+    print(f"Usuario autenticado: {usuario['nombre_usuario']}")
     
     # Continuar con la solicitud
     response = await call_next(request)
@@ -118,6 +125,7 @@ def home(request: Request):
     """Dashboard principal - Protegido por middleware"""
     # El middleware ya verificó la autenticación
     usuario = getattr(request.state, 'usuario', None)
+    print(f"Home - Usuario en state: {usuario}")
     
     if usuario:
         return templates.TemplateResponse("dashboard.html", {
@@ -126,6 +134,7 @@ def home(request: Request):
         })
     else:
         # Fallback (no debería pasar por el middleware)
+        print("Fallback a login desde home")
         return templates.TemplateResponse("auth/login.html", {"request": request})
 
 # ===== RUTA DE DASHBOARD ADICIONAL =====
@@ -178,7 +187,7 @@ app.include_router(facturas.router)
 
 # Routers de Finanzas
 app.include_router(finanzas.router)
-app.include_router(liquidaciones.router)  # Agregar router de liquidaciones
+app.include_router(liquidaciones.router)
 
 # Routers de E-commerce
 app.include_router(ecomerce.router)

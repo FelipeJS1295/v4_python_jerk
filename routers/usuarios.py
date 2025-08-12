@@ -110,15 +110,31 @@ def login(datos: UsuarioLogin):
         # Crear token
         token = crear_token({"sub": str(user["id"])}, timedelta(hours=8))
         
-        return {
+        # Crear respuesta con cookie
+        response_data = {
             "access_token": token,
             "token_type": "bearer",
             "usuario": {
                 "id": user["id"],
                 "nombre_usuario": user["nombre_usuario"],
                 "rol": user["rol"]
-            }
+            },
+            "redirect": "/"  # Indicar redirección
         }
+        
+        response = JSONResponse(content=response_data)
+        
+        # Establecer cookie segura
+        response.set_cookie(
+            key="access_token",
+            value=token,
+            max_age=28800,  # 8 horas en segundos
+            httponly=True,  # Evita acceso desde JavaScript
+            secure=False,   # Cambiar a True en producción con HTTPS
+            samesite="lax"  # Protección CSRF
+        )
+        
+        return response
         
     finally:
         cursor.close()
@@ -279,3 +295,13 @@ def vista_usuarios(request: Request):
         conn.close()
     
     return templates.TemplateResponse("configuracion/usuarios.html", {"request": request, "usuarios": usuarios})
+
+@router.get("/login", response_class=HTMLResponse)
+async def mostrar_login(request: Request):
+    """Mostrar página de login"""
+    return templates.TemplateResponse("auth/login.html", {"request": request})
+
+@router.get("/login/", response_class=HTMLResponse)
+async def mostrar_login_slash(request: Request):
+    """Mostrar página de login con slash final"""
+    return templates.TemplateResponse("auth/login.html", {"request": request})
