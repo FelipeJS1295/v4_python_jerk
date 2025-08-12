@@ -25,6 +25,22 @@ router = APIRouter(prefix="/liquidaciones", tags=["liquidaciones"])
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "..", "templates"))
 
+# Configuración de base de datos desde variables de entorno
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "localhost"),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", ""),
+    "database": os.getenv("DB_NAME", "integracion")
+}
+
+def obtener_conexion_db():
+    """Obtener conexión a la base de datos"""
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        return conn
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error conectando a la base de datos: {str(e)}")
+
 # ===== RUTAS DE VISTAS =====
 
 @router.get("/")
@@ -188,20 +204,15 @@ async def obtener_detalle_orden(numero_orden: str):
 async def procesar_liquidacion_retail(retail: str, contenido: bytes, nombre_archivo: str):
     """Procesar liquidación según el retail específico"""
     
-    # Mapeo de procesadores por retail
-    procesadores = {
-        "falabella": procesar_liquidacion_falabella,
-        "cencosud": procesar_liquidacion_cencosud,
-        "walmart": procesar_liquidacion_walmart,
-        "ripley": procesar_liquidacion_ripley,
-        "hites": procesar_liquidacion_hites
-    }
+    # Verificar si el retail está configurado
+    if retail.lower() not in RETAIL_CONFIG:
+        raise HTTPException(status_code=400, detail=f"Retail '{retail}' no está configurado")
     
-    procesador = procesadores.get(retail.lower())
-    if not procesador:
-        raise HTTPException(status_code=400, detail=f"Retail {retail} no soportado")
-    
-    return await procesador(contenido, nombre_archivo)
+    # Solo Cencosud está configurado por ahora
+    if retail.lower() == "cencosud":
+        return await procesar_liquidacion_cencosud(contenido, nombre_archivo)
+    else:
+        raise HTTPException(status_code=400, detail=f"Procesamiento para retail '{retail}' no implementado aún")
 
 async def procesar_liquidacion_falabella(contenido: bytes, nombre_archivo: str):
     """Procesar liquidación específica de Falabella"""
@@ -250,8 +261,8 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str):
         # )
         # cursor = conn.cursor()
         
-        # ID del cliente Cencosud (debes configurar esto)
-        CLIENTE_CENCOSUD_ID = 2  # Ajustar según tu BD
+        # ID del cliente Cencosud (según tu tabla clientes)
+        CLIENTE_CENCOSUD_ID = RETAIL_CONFIG["cencosud"]["cliente_id"]  # ID = 2
         
         # Procesar cada fila del Excel
         for index, row in df.iterrows():
