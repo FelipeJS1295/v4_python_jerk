@@ -249,7 +249,7 @@ function renderizarLiquidaciones(liquidaciones) {
                   title="Descargar">
             <i class="fas fa-download"></i>
           </button>
-          <button onclick="eliminar(${liquidacion.id})" 
+          <button onclick="eliminar('${liquidacion.numero_liquidacion}')" 
                   class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
                   title="Eliminar">
             <i class="fas fa-trash"></i>
@@ -340,10 +340,28 @@ async function descargarArchivo(id) {
   console.log('Descargar archivo de liquidación:', id);
 }
 
-async function eliminar(id) {
-  if (confirm('¿Estás seguro de eliminar esta liquidación?')) {
-    // TODO: Implementar eliminación
-    console.log('Eliminar liquidación:', id);
+async function eliminar(numeroLiquidacion) {
+  if (confirm('¿Estás seguro de eliminar esta liquidación? Esta acción eliminará los datos de liquidación de todas las órdenes asociadas.')) {
+    try {
+      const response = await fetch(`/liquidaciones/api/liquidaciones/${numeroLiquidacion}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`Liquidación eliminada exitosamente. ${result.ordenes_afectadas} órdenes afectadas.`);
+        cargarLiquidaciones(); // Recargar la lista
+      } else {
+        alert(`Error al eliminar: ${result.detail || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error de conexión al eliminar la liquidación');
+    }
   }
 }
 
