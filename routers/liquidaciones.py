@@ -519,31 +519,38 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             
             for index, row in df.iterrows():
                 try:
-                    numero_orden = str(row['número orden']).strip()
+                    numero_orden_excel = str(row['número orden']).strip()
                     
-                    # Buscar la orden en ventas_retail
+                    # PARA CENCOSUD: Agregar '0' al final del número de orden del Excel
+                    # porque en la BD terminan en 0 pero en el Excel vienen sin ese 0
+                    numero_orden_bd = numero_orden_excel + '0'
+                    
+                    print(f"📋 Fila {index + 1}: Excel={numero_orden_excel} -> BD={numero_orden_bd}")
+                    
+                    # Buscar la orden en ventas_retail usando el número con '0' agregado
                     query_buscar = """
                     SELECT id, numero_orden FROM ventas_retail 
                     WHERE numero_orden = %s AND cliente_id = %s
                     """
                     
-                    cursor.execute(query_buscar, (numero_orden, CLIENTE_CENCOSUD_ID))
+                    cursor.execute(query_buscar, (numero_orden_bd, CLIENTE_CENCOSUD_ID))
                     venta_encontrada = cursor.fetchone()
                     
                     if venta_encontrada:
                         ordenes_validas.append({
-                            'numero_orden': numero_orden,
+                            'numero_orden_excel': numero_orden_excel,  # Número original del Excel
+                            'numero_orden_bd': numero_orden_bd,        # Número para buscar en BD
                             'venta_id': venta_encontrada[0],
                             'fila_excel': index + 1,
                             'data': row
                         })
-                        print(f"✅ Orden {numero_orden} encontrada en BD")
+                        print(f"✅ Orden {numero_orden_excel} encontrada en BD como {numero_orden_bd}")
                     else:
                         ordenes_no_encontradas.append({
-                            'numero_orden': numero_orden,
+                            'numero_orden': numero_orden_excel,
                             'fila_excel': index + 1
                         })
-                        print(f"❌ Orden {numero_orden} NO encontrada en BD")
+                        print(f"❌ Orden {numero_orden_excel} NO encontrada en BD (buscado como {numero_orden_bd})")
                         
                 except Exception as e:
                     ordenes_no_encontradas.append({
@@ -597,7 +604,8 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             for orden_data in ordenes_validas:
                 try:
                     row = orden_data['data']
-                    numero_orden = orden_data['numero_orden']
+                    numero_orden_excel = orden_data['numero_orden_excel']  # Número del Excel
+                    numero_orden_bd = orden_data['numero_orden_bd']        # Número para BD
                     
                     tipo = str(row['tipo']).strip()
                     monto_pago = float(row['monto a pagar']) if pd.notna(row['monto a pagar']) else 0
@@ -605,6 +613,8 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     numero_liquidacion_fila = str(row['número liq.factura']).strip() if pd.notna(row['número liq.factura']) else None
                     nro_solicitud = str(row['nro solicitud liq.factura']).strip() if pd.notna(row['nro solicitud liq.factura']) else None
                     estado_liquidacion_excel = str(row['estado de liq.factura']).strip() if pd.notna(row['estado de liq.factura']) else 'pendiente'
+                    
+                    print(f"🔄 Actualizando orden Excel:{numero_orden_excel} -> BD:{numero_orden_bd}")
                     
                     # Mapear tipo a enum
                     if tipo.lower() in ['venta', 'ventas']:
@@ -629,7 +639,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     
                     monto_total += monto_pago
                     
-                    # Actualizar la orden existente con los datos de liquidación
+                    # Actualizar la orden existente usando el número de BD (con el 0)
                     query_update = """
                     UPDATE ventas_retail SET 
                         monto_pago_liquidacion = %s,
@@ -650,7 +660,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                         nro_solicitud,                 # fecha_procesamiento_liquidacion
                         estado_liquidacion,            # estado_liquidacion
                         estado_pago,                   # estado_pago
-                        numero_orden,                  # WHERE numero_orden
+                        numero_orden_bd,               # WHERE numero_orden (usar número BD con 0)
                         CLIENTE_CENCOSUD_ID           # WHERE cliente_id
                     )
                     
@@ -658,13 +668,13 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     
                     if cursor.rowcount > 0:
                         ordenes_actualizadas += 1
-                        print(f"✅ Orden {numero_orden} actualizada exitosamente")
+                        print(f"✅ Orden {numero_orden_excel} actualizada exitosamente en BD")
                     else:
-                        errores_procesamiento.append(f"Orden {numero_orden} no se pudo actualizar (sin cambios)")
-                        print(f"⚠️ Orden {numero_orden} no se pudo actualizar")
+                        errores_procesamiento.append(f"Orden {numero_orden_excel} no se pudo actualizar")
+                        print(f"⚠️ Orden {numero_orden_excel} no se pudo actualizar")
                     
                 except Exception as e:
-                    error_msg = f"Error actualizando orden {numero_orden}: {str(e)}"
+                    error_msg = f"Error actualizando orden {numero_orden_excel}: {str(e)}"
                     errores_procesamiento.append(error_msg)
                     print(f"❌ {error_msg}")
                     continue
