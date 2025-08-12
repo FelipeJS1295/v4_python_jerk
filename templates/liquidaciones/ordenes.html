@@ -1,0 +1,806 @@
+{% extends "base.html" %}
+
+{% block title %}Liquidaciones - Estado de Órdenes{% endblock %}
+{% block header %}Estado de Órdenes{% endblock %}
+{% block breadcrumb %}Liquidaciones / Estado de Órdenes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Botón volver -->
+  <div>
+    <a href="/liquidaciones" class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-800 transition-colors">
+      <i class="fas fa-arrow-left"></i>
+      <span>Volver a Liquidaciones</span>
+    </a>
+  </div>
+
+  <!-- Header con filtros avanzados -->
+  <div class="content-card rounded-2xl p-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      
+      <!-- Título -->
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800">Estado de Órdenes</h2>
+        <p class="text-slate-600 mt-1">Consulta el estado de pago de las órdenes por retail</p>
+      </div>
+      
+      <!-- Filtros -->
+      <div class="flex flex-wrap gap-3">
+        <div class="relative">
+          <input type="text" 
+                 id="buscar-orden" 
+                 placeholder="Buscar por N° orden..." 
+                 class="search-input pl-10 pr-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500 w-64">
+          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+        </div>
+        
+        <select id="filtro-retail" class="search-input px-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500">
+          <option value="">Todos los Retail</option>
+          <option value="falabella">Falabella</option>
+          <option value="cencosud">Cencosud</option>
+          <option value="walmart">Walmart</option>
+          <option value="ripley">Ripley</option>
+          <option value="hites">Hites</option>
+        </select>
+        
+        <select id="filtro-estado" class="search-input px-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500">
+          <option value="">Todos los Estados</option>
+          <option value="Pagado">Pagado</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="En Proceso">En Proceso</option>
+          <option value="Rechazado">Rechazado</option>
+        </select>
+        
+        <input type="date" id="fecha-desde" class="search-input px-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500">
+        <input type="date" id="fecha-hasta" class="search-input px-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500">
+        
+        <button onclick="aplicarFiltros()" class="btn-primary px-4 py-2 rounded-lg text-sm font-medium text-white hover:scale-105 transition-all">
+          <i class="fas fa-search mr-2"></i>Buscar
+        </button>
+        
+        <button onclick="limpiarFiltros()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors">
+          <i class="fas fa-times mr-2"></i>Limpiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas rápidas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="content-card rounded-xl p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-600 text-sm font-medium">Total Órdenes</p>
+          <p class="text-xl font-bold text-slate-800" id="stat-total">-</p>
+        </div>
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <i class="fas fa-shopping-cart text-blue-600"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-card rounded-xl p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-600 text-sm font-medium">Pagadas</p>
+          <p class="text-xl font-bold text-green-600" id="stat-pagadas">-</p>
+        </div>
+        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+          <i class="fas fa-check-circle text-green-600"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-card rounded-xl p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-600 text-sm font-medium">Pendientes</p>
+          <p class="text-xl font-bold text-amber-600" id="stat-pendientes">-</p>
+        </div>
+        <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+          <i class="fas fa-clock text-amber-600"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-card rounded-xl p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-600 text-sm font-medium">En Proceso</p>
+          <p class="text-xl font-bold text-blue-600" id="stat-proceso">-</p>
+        </div>
+        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <i class="fas fa-spinner text-blue-600"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-card rounded-xl p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-slate-600 text-sm font-medium">Monto Total</p>
+          <p class="text-lg font-bold text-slate-800" id="stat-monto">-</p>
+        </div>
+        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+          <i class="fas fa-dollar-sign text-purple-600"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de órdenes -->
+  <div class="content-card rounded-2xl overflow-hidden">
+    
+    <!-- Header de la tabla con exportar -->
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-800">Órdenes</h3>
+        
+        <div class="flex gap-2">
+          <button onclick="exportarExcel()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors">
+            <i class="fas fa-file-excel mr-2 text-green-600"></i>Exportar Excel
+          </button>
+          <button onclick="exportarCSV()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors">
+            <i class="fas fa-file-csv mr-2 text-blue-600"></i>Exportar CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="text-left py-4 px-6 font-semibold text-slate-700">
+              <button onclick="ordenarPor('numero_orden')" class="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                N° Orden
+                <i class="fas fa-sort text-xs"></i>
+              </button>
+            </th>
+            <th class="text-left py-4 px-6 font-semibold text-slate-700">
+              <button onclick="ordenarPor('retail')" class="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                Retail
+                <i class="fas fa-sort text-xs"></i>
+              </button>
+            </th>
+            <th class="text-left py-4 px-6 font-semibold text-slate-700">
+              <button onclick="ordenarPor('fecha_orden')" class="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                Fecha Orden
+                <i class="fas fa-sort text-xs"></i>
+              </button>
+            </th>
+            <th class="text-right py-4 px-6 font-semibold text-slate-700">
+              <button onclick="ordenarPor('monto')" class="flex items-center gap-2 hover:text-blue-600 transition-colors ml-auto">
+                Monto
+                <i class="fas fa-sort text-xs"></i>
+              </button>
+            </th>
+            <th class="text-center py-4 px-6 font-semibold text-slate-700">
+              <button onclick="ordenarPor('estado_pago')" class="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                Estado
+                <i class="fas fa-sort text-xs"></i>
+              </button>
+            </th>
+            <th class="text-left py-4 px-6 font-semibold text-slate-700">
+              <button onclick="ordenarPor('fecha_pago')" class="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                Fecha Pago
+                <i class="fas fa-sort text-xs"></i>
+              </button>
+            </th>
+            <th class="text-left py-4 px-6 font-semibold text-slate-700">Liquidación</th>
+            <th class="text-center py-4 px-6 font-semibold text-slate-700">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-ordenes" class="divide-y divide-slate-200">
+          <!-- Contenido cargado dinámicamente -->
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Loading -->
+    <div id="loading-ordenes" class="py-12 text-center">
+      <div class="inline-flex items-center gap-3 text-slate-500">
+        <i class="fas fa-spinner fa-spin text-xl"></i>
+        <span>Cargando órdenes...</span>
+      </div>
+    </div>
+    
+    <!-- Paginación -->
+    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <p class="text-sm text-slate-600" id="info-paginacion">Mostrando 0 de 0 órdenes</p>
+          
+          <select id="limite-pagina" onchange="cambiarLimite()" class="search-input px-3 py-1 rounded text-sm border-0 focus:ring-2 focus:ring-blue-500">
+            <option value="10">10 por página</option>
+            <option value="25">25 por página</option>
+            <option value="50">50 por página</option>
+            <option value="100">100 por página</option>
+          </select>
+        </div>
+        
+        <div class="flex items-center space-x-2" id="controles-paginacion">
+          <!-- Controles de paginación cargados dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de detalle de orden -->
+<div id="modal-detalle-orden" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    
+    <!-- Header del modal -->
+    <div class="px-6 py-4 border-b border-slate-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-semibold text-slate-800">Detalle de Orden</h3>
+          <p class="text-slate-600 text-sm" id="modal-numero-orden">N° Orden: -</p>
+        </div>
+        <button onclick="cerrarModalDetalle()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+          <i class="fas fa-times text-slate-500 text-xl"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Contenido del modal -->
+    <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+      
+      <!-- Información principal -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div class="content-card rounded-xl p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-store text-blue-600"></i>
+            </div>
+            <div>
+              <p class="text-sm text-slate-600 font-medium">Retail</p>
+              <p class="font-semibold text-slate-800" id="detalle-retail">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="content-card rounded-xl p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-dollar-sign text-green-600"></i>
+            </div>
+            <div>
+              <p class="text-sm text-slate-600 font-medium">Monto</p>
+              <p class="font-semibold text-slate-800" id="detalle-monto">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="content-card rounded-xl p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-calendar text-purple-600"></i>
+            </div>
+            <div>
+              <p class="text-sm text-slate-600 font-medium">Fecha Orden</p>
+              <p class="font-semibold text-slate-800" id="detalle-fecha-orden">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado y pago -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="content-card rounded-xl p-6">
+          <h4 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-info-circle text-blue-600"></i>
+            Estado de Pago
+          </h4>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">Estado:</span>
+              <span id="detalle-estado-badge" class="px-3 py-1 rounded-full text-sm font-medium">-</span>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">Fecha de Pago:</span>
+              <span class="font-medium text-slate-800" id="detalle-fecha-pago">-</span>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-slate-600">N° Liquidación:</span>
+              <span class="font-medium text-slate-800" id="detalle-liquidacion">-</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="content-card rounded-xl p-6">
+          <h4 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <i class="fas fa-box text-green-600"></i>
+            Resumen de Productos
+          </h4>
+          
+          <div class="space-y-3" id="detalle-productos">
+            <!-- Productos cargados dinámicamente -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial de cambios -->
+      <div class="content-card rounded-xl p-6">
+        <h4 class="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <i class="fas fa-history text-amber-600"></i>
+          Historial de Estados
+        </h4>
+        
+        <div class="space-y-3" id="detalle-historial">
+          <!-- Historial cargado dinámicamente -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer del modal -->
+    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+      <div class="flex justify-end gap-3">
+        <button onclick="cerrarModalDetalle()" class="btn-secondary px-6 py-2 rounded-lg font-medium">
+          Cerrar
+        </button>
+        <button onclick="actualizarEstadoOrden()" class="btn-primary px-6 py-2 text-white rounded-lg font-medium">
+          <i class="fas fa-edit mr-2"></i>
+          Actualizar Estado
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ordenesData = [];
+let filtrosActivos = {};
+let ordenActual = { campo: '', direccion: 'asc' };
+let paginaActual = 1;
+let limite = 10;
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  cargarOrdenes();
+  
+  // Event listeners para búsqueda en tiempo real
+  document.getElementById('buscar-orden').addEventListener('input', debounce(aplicarFiltros, 500));
+});
+
+async function cargarOrdenes() {
+  try {
+    mostrarLoading(true);
+    
+    // Construir parámetros de filtro
+    const params = new URLSearchParams({
+      ...filtrosActivos,
+      page: paginaActual,
+      limit: limite
+    });
+    
+    const response = await fetch(`/liquidaciones/api/ordenes/estado?${params}`);
+    const data = await response.json();
+    
+    if (response.ok) {
+      ordenesData = data.ordenes;
+      renderizarOrdenes(ordenesData);
+      actualizarEstadisticas(ordenesData);
+    } else {
+      console.error('Error al cargar órdenes:', data.detail);
+      mostrarError('Error al cargar las órdenes');
+    }
+    
+  } catch (error) {
+    console.error('Error de conexión:', error);
+    mostrarError('Error de conexión con el servidor');
+  } finally {
+    mostrarLoading(false);
+  }
+}
+
+function renderizarOrdenes(ordenes) {
+  const tbody = document.getElementById('tabla-ordenes');
+  
+  if (ordenes.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-12 text-slate-500">
+          <i class="fas fa-search text-4xl mb-4 text-slate-300"></i>
+          <p class="text-lg mb-2">No se encontraron órdenes</p>
+          <p class="text-sm">Intenta ajustar los filtros de búsqueda</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = ordenes.map(orden => `
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="py-4 px-6">
+        <div>
+          <p class="font-semibold text-slate-800">${orden.numero_orden}</p>
+          <p class="text-xs text-slate-500">${orden.numero_orden.includes('-') ? orden.numero_orden.split('-')[0] : ''}</p>
+        </div>
+      </td>
+      <td class="py-4 px-6">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRetailClases(orden.retail)}">
+          ${orden.retail}
+        </span>
+      </td>
+      <td class="py-4 px-6 text-slate-600">
+        ${formatearFecha(orden.fecha_orden)}
+      </td>
+      <td class="py-4 px-6 text-right font-semibold text-slate-800">
+        ${formatearMoneda(orden.monto)}
+      </td>
+      <td class="py-4 px-6 text-center">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getEstadoClases(orden.estado_pago)}">
+          <i class="${getEstadoIcono(orden.estado_pago)} mr-1"></i>
+          ${orden.estado_pago}
+        </span>
+      </td>
+      <td class="py-4 px-6 text-slate-600">
+        ${orden.fecha_pago ? formatearFecha(orden.fecha_pago) : '-'}
+      </td>
+      <td class="py-4 px-6">
+        ${orden.numero_liquidacion ? `
+          <span class="text-sm text-blue-600 font-medium">${orden.numero_liquidacion}</span>
+        ` : '<span class="text-slate-400">-</span>'}
+      </td>
+      <td class="py-4 px-6">
+        <div class="flex justify-center gap-2">
+          <button onclick="verDetalleOrden('${orden.numero_orden}')" 
+                  class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                  title="Ver detalle">
+            <i class="fas fa-eye"></i>
+          </button>
+          ${orden.estado_pago === 'Pendiente' ? `
+            <button onclick="marcarComoPagado('${orden.numero_orden}')" 
+                    class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
+                    title="Marcar como pagado">
+              <i class="fas fa-check"></i>
+            </button>
+          ` : ''}
+          <button onclick="descargarComprobante('${orden.numero_orden}')" 
+                  class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" 
+                  title="Descargar comprobante">
+            <i class="fas fa-download"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function actualizarEstadisticas(ordenes) {
+  const stats = {
+    total: ordenes.length,
+    pagadas: ordenes.filter(o => o.estado_pago === 'Pagado').length,
+    pendientes: ordenes.filter(o => o.estado_pago === 'Pendiente').length,
+    proceso: ordenes.filter(o => o.estado_pago === 'En Proceso').length,
+    monto: ordenes.reduce((sum, o) => sum + o.monto, 0)
+  };
+  
+  document.getElementById('stat-total').textContent = stats.total;
+  document.getElementById('stat-pagadas').textContent = stats.pagadas;
+  document.getElementById('stat-pendientes').textContent = stats.pendientes;
+  document.getElementById('stat-proceso').textContent = stats.proceso;
+  document.getElementById('stat-monto').textContent = formatearMoneda(stats.monto);
+}
+
+function aplicarFiltros() {
+  filtrosActivos = {
+    numero_orden: document.getElementById('buscar-orden').value.trim(),
+    retail: document.getElementById('filtro-retail').value,
+    estado: document.getElementById('filtro-estado').value,
+    fecha_desde: document.getElementById('fecha-desde').value,
+    fecha_hasta: document.getElementById('fecha-hasta').value
+  };
+  
+  // Remover filtros vacíos
+  Object.keys(filtrosActivos).forEach(key => {
+    if (!filtrosActivos[key]) delete filtrosActivos[key];
+  });
+  
+  paginaActual = 1;
+  cargarOrdenes();
+}
+
+function limpiarFiltros() {
+  document.getElementById('buscar-orden').value = '';
+  document.getElementById('filtro-retail').value = '';
+  document.getElementById('filtro-estado').value = '';
+  document.getElementById('fecha-desde').value = '';
+  document.getElementById('fecha-hasta').value = '';
+  
+  filtrosActivos = {};
+  paginaActual = 1;
+  cargarOrdenes();
+}
+
+function ordenarPor(campo) {
+  if (ordenActual.campo === campo) {
+    ordenActual.direccion = ordenActual.direccion === 'asc' ? 'desc' : 'asc';
+  } else {
+    ordenActual = { campo, direccion: 'asc' };
+  }
+  
+  ordenesData.sort((a, b) => {
+    let valorA = a[campo];
+    let valorB = b[campo];
+    
+    // Manejar diferentes tipos de datos
+    if (campo === 'monto') {
+      valorA = parseFloat(valorA) || 0;
+      valorB = parseFloat(valorB) || 0;
+    } else if (campo.includes('fecha')) {
+      valorA = new Date(valorA || '1900-01-01');
+      valorB = new Date(valorB || '1900-01-01');
+    } else {
+      valorA = (valorA || '').toString().toLowerCase();
+      valorB = (valorB || '').toString().toLowerCase();
+    }
+    
+    if (valorA < valorB) return ordenActual.direccion === 'asc' ? -1 : 1;
+    if (valorA > valorB) return ordenActual.direccion === 'asc' ? 1 : -1;
+    return 0;
+  });
+  
+  renderizarOrdenes(ordenesData);
+}
+
+async function verDetalleOrden(numeroOrden) {
+  try {
+    const response = await fetch(`/liquidaciones/api/ordenes/${numeroOrden}`);
+    const orden = await response.json();
+    
+    if (response.ok) {
+      mostrarModalDetalle(orden);
+    } else {
+      console.error('Error al obtener detalle:', orden.detail);
+    }
+    
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+function mostrarModalDetalle(orden) {
+  // Llenar información básica
+  document.getElementById('modal-numero-orden').textContent = `N° Orden: ${orden.numero_orden}`;
+  document.getElementById('detalle-retail').textContent = orden.retail;
+  document.getElementById('detalle-monto').textContent = formatearMoneda(orden.monto);
+  document.getElementById('detalle-fecha-orden').textContent = formatearFecha(orden.fecha_orden);
+  document.getElementById('detalle-fecha-pago').textContent = orden.fecha_pago ? formatearFecha(orden.fecha_pago) : 'No pagado';
+  document.getElementById('detalle-liquidacion').textContent = orden.numero_liquidacion || 'Sin liquidación';
+  
+  // Estado con badge
+  const estadoBadge = document.getElementById('detalle-estado-badge');
+  estadoBadge.textContent = orden.estado_pago;
+  estadoBadge.className = `px-3 py-1 rounded-full text-sm font-medium ${getEstadoClases(orden.estado_pago)}`;
+  
+  // Productos
+  const productosContainer = document.getElementById('detalle-productos');
+  if (orden.productos && orden.productos.length > 0) {
+    productosContainer.innerHTML = orden.productos.map(producto => `
+      <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
+        <div>
+          <p class="font-medium text-slate-800">${producto.sku}</p>
+          <p class="text-sm text-slate-600">Cantidad: ${producto.cantidad}</p>
+        </div>
+        <p class="font-medium text-slate-800">${formatearMoneda(producto.precio_unitario)}</p>
+      </div>
+    `).join('');
+  } else {
+    productosContainer.innerHTML = '<p class="text-slate-500 text-sm">No hay información de productos</p>';
+  }
+  
+  // Historial (simulado)
+  const historialContainer = document.getElementById('detalle-historial');
+  historialContainer.innerHTML = `
+    <div class="flex items-center gap-3 py-2">
+      <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+      <div class="flex-1">
+        <p class="text-sm font-medium text-slate-800">Orden creada</p>
+        <p class="text-xs text-slate-500">${formatearFecha(orden.fecha_orden)}</p>
+      </div>
+    </div>
+    ${orden.fecha_pago ? `
+      <div class="flex items-center gap-3 py-2">
+        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-800">Pago procesado</p>
+          <p class="text-xs text-slate-500">${formatearFecha(orden.fecha_pago)}</p>
+        </div>
+      </div>
+    ` : `
+      <div class="flex items-center gap-3 py-2">
+        <div class="w-3 h-3 bg-amber-500 rounded-full"></div>
+        <div class="flex-1">
+          <p class="text-sm font-medium text-slate-800">Pendiente de pago</p>
+          <p class="text-xs text-slate-500">En espera de liquidación</p>
+        </div>
+      </div>
+    `}
+  `;
+  
+  // Mostrar modal
+  document.getElementById('modal-detalle-orden').classList.remove('hidden');
+}
+
+function cerrarModalDetalle() {
+  document.getElementById('modal-detalle-orden').classList.add('hidden');
+}
+
+async function marcarComoPagado(numeroOrden) {
+  if (confirm('¿Confirmas que esta orden ha sido pagada?')) {
+    try {
+      // TODO: Implementar API para actualizar estado
+      console.log('Marcando como pagado:', numeroOrden);
+      
+      // Simular actualización exitosa
+      alert('Orden marcada como pagada exitosamente');
+      cargarOrdenes();
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al actualizar el estado de la orden');
+    }
+  }
+}
+
+async function actualizarEstadoOrden() {
+  // TODO: Implementar modal para actualizar estado
+  alert('Funcionalidad de actualización de estado en desarrollo');
+}
+
+async function descargarComprobante(numeroOrden) {
+  try {
+    // TODO: Implementar descarga de comprobante
+    console.log('Descargando comprobante para:', numeroOrden);
+    alert('Descarga de comprobante en desarrollo');
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al descargar el comprobante');
+  }
+}
+
+async function exportarExcel() {
+  try {
+    // TODO: Implementar exportación a Excel
+    console.log('Exportando a Excel...');
+    alert('Exportación a Excel en desarrollo');
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al exportar a Excel');
+  }
+}
+
+async function exportarCSV() {
+  try {
+    // Crear CSV con datos actuales
+    const headers = ['N° Orden', 'Retail', 'Fecha Orden', 'Monto', 'Estado', 'Fecha Pago', 'N° Liquidación'];
+    const csvContent = [
+      headers.join(','),
+      ...ordenesData.map(orden => [
+        orden.numero_orden,
+        orden.retail,
+        orden.fecha_orden,
+        orden.monto,
+        orden.estado_pago,
+        orden.fecha_pago || '',
+        orden.numero_liquidacion || ''
+      ].join(','))
+    ].join('\n');
+    
+    // Descargar archivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `ordenes_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al exportar a CSV');
+  }
+}
+
+function cambiarLimite() {
+  limite = parseInt(document.getElementById('limite-pagina').value);
+  paginaActual = 1;
+  cargarOrdenes();
+}
+
+function mostrarLoading(mostrar) {
+  const loading = document.getElementById('loading-ordenes');
+  const tabla = document.getElementById('tabla-ordenes');
+  
+  if (mostrar) {
+    loading.classList.remove('hidden');
+    tabla.classList.add('hidden');
+  } else {
+    loading.classList.add('hidden');
+    tabla.classList.remove('hidden');
+  }
+}
+
+function mostrarError(mensaje) {
+  const tbody = document.getElementById('tabla-ordenes');
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="8" class="text-center py-12 text-red-500">
+        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+        <p class="text-lg mb-2">Error</p>
+        <p class="text-sm">${mensaje}</p>
+      </td>
+    </tr>
+  `;
+}
+
+// Funciones auxiliares
+function formatearFecha(fecha) {
+  if (!fecha) return '-';
+  return new Date(fecha).toLocaleDateString('es-CL', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function formatearMoneda(monto) {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP'
+  }).format(monto);
+}
+
+function getEstadoClases(estado) {
+  const clases = {
+    'Pagado': 'bg-green-100 text-green-800',
+    'Pendiente': 'bg-amber-100 text-amber-800',
+    'En Proceso': 'bg-blue-100 text-blue-800',
+    'Rechazado': 'bg-red-100 text-red-800'
+  };
+  return clases[estado] || 'bg-gray-100 text-gray-800';
+}
+
+function getEstadoIcono(estado) {
+  const iconos = {
+    'Pagado': 'fas fa-check-circle',
+    'Pendiente': 'fas fa-clock',
+    'En Proceso': 'fas fa-spinner',
+    'Rechazado': 'fas fa-times-circle'
+  };
+  return iconos[estado] || 'fas fa-question-circle';
+}
+
+function getRetailClases(retail) {
+  const clases = {
+    'Falabella': 'bg-red-100 text-red-800',
+    'Cencosud': 'bg-blue-100 text-blue-800',
+    'Walmart': 'bg-yellow-100 text-yellow-800',
+    'Ripley': 'bg-purple-100 text-purple-800',
+    'Hites': 'bg-green-100 text-green-800'
+  };
+  return clases[retail] || 'bg-gray-100 text-gray-800';
+}
+
+// Utilidad para debounce en búsqueda
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+</script>
+
+{% endblock %}

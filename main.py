@@ -30,6 +30,7 @@ from routers import (
     image_router,
     usuarios_jinja,
     trabajadores_jinja,
+    liquidaciones,  # NUEVO: Router de liquidaciones
 )
 
 from routers import camaras
@@ -161,6 +162,9 @@ app.include_router(configuracion.router)
 app.include_router(usuarios_jinja.router)
 app.include_router(trabajadores_jinja.router)
 app.include_router(camaras.router)
+
+# NUEVO: Router de Liquidaciones
+app.include_router(liquidaciones.router)
 
 # Routers de configuración
 app.include_router(config_clientes.router)

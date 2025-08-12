@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}Liquidaciones - Cargar{% endblock %}
+{% block header %}Cargar Liquidación{% endblock %}
+{% block breadcrumb %}Liquidaciones / Cargar Liquidación{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Botón volver -->
+  <div>
+    <a href="/liquidaciones" class="inline-flex items-center gap-2 text-slate-600 hover:text-slate-800 transition-colors">
+      <i class="fas fa-arrow-left"></i>
+      <span>Volver a Liquidaciones</span>
+    </a>
+  </div>
+
+  <!-- Formulario de carga -->
+  <div class="content-card rounded-2xl p-8">
+    <div class="max-w-2xl mx-auto">
+      
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+          <i class="fas fa-upload text-2xl text-white"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800">Cargar Nueva Liquidación</h2>
+        <p class="text-slate-600 mt-2">Sube el archivo de liquidación de pagos de retail</p>
+      </div>
+
+      <!-- Formulario -->
+      <form id="form-liquidacion" class="space-y-6">
+        
+        <!-- Selección de Retail -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-3">Retail *</label>
+          <select id="retail" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option value="">Selecciona un retail</option>
+            <option value="falabella">Falabella</option>
+            <option value="cencosud">Cencosud</option>
+            <option value="walmart">Walmart</option>
+            <option value="ripley">Ripley</option>
+            <option value="hites">Hites</option>
+          </select>
+        </div>
+
+        <!-- Número de Liquidación (Opcional) -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-3">Número de Liquidación</label>
+          <input type="text" 
+                 id="numero-liquidacion" 
+                 placeholder="Ej: LIQ-FAL-2024-001 (opcional)"
+                 class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <p class="text-sm text-slate-500 mt-2">Si no se especifica, se generará automáticamente</p>
+        </div>
+
+        <!-- Área de carga de archivo -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-3">Archivo de Liquidación *</label>
+          
+          <!-- Drop zone -->
+          <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 cursor-pointer">
+            <div id="drop-content">
+              <i class="fas fa-cloud-upload-alt text-4xl text-slate-400 mb-4"></i>
+              <p class="text-lg font-medium text-slate-700 mb-2">Arrastra tu archivo aquí</p>
+              <p class="text-slate-500 mb-4">o haz clic para seleccionar</p>
+              <div class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-file-upload mr-2"></i>
+                Seleccionar Archivo
+              </div>
+              <p class="text-xs text-slate-400 mt-4">Formatos soportados: .xlsx, .xls, .csv (máx. 10MB)</p>
+            </div>
+            
+            <!-- Archivo seleccionado -->
+            <div id="file-info" class="hidden">
+              <div class="inline-flex items-center gap-3 bg-white border border-slate-200 rounded-lg p-4">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-file-excel text-green-600 text-xl"></i>
+                </div>
+                <div class="text-left flex-1">
+                  <p class="font-medium text-slate-800" id="file-name">archivo.xlsx</p>
+                  <p class="text-sm text-slate-500" id="file-size">2.5 MB</p>
+                </div>
+                <button type="button" onclick="removerArchivo()" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <input type="file" 
+                 id="archivo" 
+                 accept=".xlsx,.xls,.csv" 
+                 class="hidden" 
+                 required>
+        </div>
+
+        <!-- Información del retail seleccionado -->
+        <div id="retail-info" class="hidden p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+              <i class="fas fa-info-circle text-blue-600"></i>
+            </div>
+            <div>
+              <h4 class="font-semibold text-blue-800 mb-2">Formato esperado para <span id="retail-nombre">Retail</span></h4>
+              <div id="retail-descripcion" class="text-sm text-blue-700">
+                <!-- Contenido dinámico según retail -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex gap-4 pt-4">
+          <button type="button" 
+                  onclick="window.location.href='/liquidaciones'" 
+                  class="flex-1 px-6 py-3 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition-colors">
+            Cancelar
+          </button>
+          
+          <button type="submit" 
+                  id="btn-cargar"
+                  class="flex-1 btn-primary px-6 py-3 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <i class="fas fa-upload"></i>
+            <span>Cargar Liquidación</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Progreso de carga -->
+  <div id="progress-container" class="hidden content-card rounded-2xl p-6">
+    <div class="max-w-2xl mx-auto">
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 bg-blue-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <i class="fas fa-spinner fa-spin text-blue-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-800">Procesando Liquidación</h3>
+        <p class="text-slate-600">Por favor espera mientras procesamos el archivo...</p>
+      </div>
+      
+      <div class="w-full bg-slate-200 rounded-full h-3 mb-4">
+        <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+      
+      <div class="text-center">
+        <p class="text-sm text-slate-600" id="progress-text">Iniciando proceso...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resultado del procesamiento -->
+  <div id="result-container" class="hidden content-card rounded-2xl p-6">
+    <div class="max-w-2xl mx-auto text-center">
+      <div id="result-success" class="hidden">
+        <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <i class="fas fa-check text-green-600 text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-slate-800 mb-2">¡Liquidación Procesada!</h3>
+        <p class="text-slate-600 mb-6">El archivo se ha procesado correctamente</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="p-4 bg-green-50 rounded-xl">
+            <p class="text-sm text-green-600 font-medium">Órdenes Procesadas</p>
+            <p class="text-2xl font-bold text-green-800" id="result-ordenes">0</p>
+          </div>
+          <div class="p-4 bg-blue-50 rounded-xl">
+            <p class="text-sm text-blue-600 font-medium">Monto Total</p>
+            <p class="text-xl font-bold text-blue-800" id="result-monto">$0</p>
+          </div>
+          <div class="p-4 bg-purple-50 rounded-xl">
+            <p class="text-sm text-purple-600 font-medium">N° Liquidación</p>
+            <p class="text-sm font-bold text-purple-800" id="result-numero">-</p>
+          </div>
+        </div>
+        
+        <div class="flex gap-4">
+          <button onclick="nuevaLiquidacion()" 
+                  class="flex-1 btn-secondary px-6 py-3 rounded-xl font-medium">
+            Cargar Otra
+          </button>
+          <a href="/liquidaciones" 
+             class="flex-1 btn-primary px-6 py-3 text-white rounded-xl font-medium text-center">
+            Ver Liquidaciones
+          </a>
+        </div>
+      </div>
+      
+      <div id="result-error" class="hidden">
+        <div class="w-16 h-16 bg-red-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+          <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-slate-800 mb-2">Error en el Procesamiento</h3>
+        <p class="text-slate-600 mb-6" id="error-message">Ocurrió un error al procesar el archivo</p>
+        
+        <div class="flex gap-4">
+          <button onclick="volverFormulario()" 
+                  class="flex-1 btn-secondary px-6 py-3 rounded-xl font-medium">
+            Volver a Intentar
+          </button>
+          <a href="/liquidaciones" 
+             class="flex-1 btn-primary px-6 py-3 text-white rounded-xl font-medium text-center">
+            Ver Liquidaciones
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Variables globales
+let archivoSeleccionado = null;
+
+// Información de formatos por retail
+const formatosRetail = {
+  falabella: {
+    nombre: 'Falabella',
+    descripcion: `
+      <ul class="space-y-1">
+        <li>• Columnas requeridas: Número de Orden, Fecha, Monto, Estado</li>
+        <li>• Formato de fecha: DD/MM/YYYY</li>
+        <li>• Los montos deben estar en pesos chilenos</li>
+      </ul>
+    `
+  },
+  cencosud: {
+    nombre: 'Cencosud',
+    descripcion: `
+      <ul class="space-y-1">
+        <li>• Columnas requeridas: Order ID, Date, Amount, Status</li>
+        <li>• Formato de fecha: YYYY-MM-DD</li>
+        <li>• Los montos pueden incluir separadores de miles</li>
+      </ul>
+    `
+  },
+  walmart: {
+    nombre: 'Walmart',
+    descripcion: `
+      <ul class="space-y-1">
+        <li>• Columnas requeridas: Order Number, Order Date, Total Amount</li>
+        <li>• Formato de fecha: MM/DD/YYYY</li>
+        <li>• Incluye información de comisiones</li>
+      </ul>
+    `
+  },
+  ripley: {
+    nombre: 'Ripley',
+    descripcion: `
+      <ul class="space-y-1">
+        <li>• Columnas requeridas: N° Pedido, Fecha Pedido, Monto Neto</li>
+        <li>• Formato de fecha: DD-MM-YYYY</li>
+        <li>• Separar monto neto de IVA</li>
+      </ul>
+    `
+  },
+  hites: {
+    nombre: 'Hites',
+    descripcion: `
+      <ul class="space-y-1">
+        <li>• Columnas requeridas: Código Venta, Fecha, Valor Total</li>
+        <li>• Formato de fecha: DD/MM/AA</li>
+        <li>• Incluye descuentos aplicados</li>
+      </ul>
+    `
+  }
+};
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+  setupEventListeners();
+});
+
+function setupEventListeners() {
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('archivo');
+  const retailSelect = document.getElementById('retail');
+  const form = document.getElementById('form-liquidacion');
+
+  // Eventos del retail
+  retailSelect.addEventListener('change', function() {
+    mostrarInfoRetail(this.value);
+  });
+
+  // Eventos de drag & drop
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', handleDragOver);
+  dropZone.addEventListener('drop', handleDrop);
+  dropZone.addEventListener('dragleave', handleDragLeave);
+
+  // Evento de selección de archivo
+  fileInput.addEventListener('change', handleFileSelect);
+
+  // Evento del formulario
+  form.addEventListener('submit', handleSubmit);
+}
+
+function mostrarInfoRetail(retail) {
+  const infoContainer = document.getElementById('retail-info');
+  const nombreSpan = document.getElementById('retail-nombre');
+  const descripcionDiv = document.getElementById('retail-descripcion');
+
+  if (retail && formatosRetail[retail]) {
+    nombreSpan.textContent = formatosRetail[retail].nombre;
+    descripcionDiv.innerHTML = formatosRetail[retail].descripcion;
+    infoContainer.classList.remove('hidden');
+  } else {
+    infoContainer.classList.add('hidden');
+  }
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+}
+
+function handleDragLeave(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+  
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    procesarArchivo(files[0]);
+  }
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) {
+    procesarArchivo(file);
+  }
+}
+
+function procesarArchivo(file) {
+  // Validar tipo de archivo
+  const tiposPermitidos = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+    'text/csv'
+  ];
+  
+  if (!tiposPermitidos.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+    alert('Formato de archivo no válido. Solo se permiten archivos .xlsx, .xls o .csv');
+    return;
+  }
+
+  // Validar tamaño
+  if (file.size > 10 * 1024 * 1024) { // 10MB
+    alert('El archivo es demasiado grande. Máximo 10MB permitido.');
+    return;
+  }
+
+  archivoSeleccionado = file;
+  mostrarInfoArchivo(file);
+}
+
+function mostrarInfoArchivo(file) {
+  const dropContent = document.getElementById('drop-content');
+  const fileInfo = document.getElementById('file-info');
+  const fileName = document.getElementById('file-name');
+  const fileSize = document.getElementById('file-size');
+
+  dropContent.classList.add('hidden');
+  fileInfo.classList.remove('hidden');
+  
+  fileName.textContent = file.name;
+  fileSize.textContent = formatearTamaño(file.size);
+}
+
+function removerArchivo() {
+  const dropContent = document.getElementById('drop-content');
+  const fileInfo = document.getElementById('file-info');
+  const fileInput = document.getElementById('archivo');
+
+  archivoSeleccionado = null;
+  fileInput.value = '';
+  
+  dropContent.classList.remove('hidden');
+  fileInfo.classList.add('hidden');
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  
+  const retail = document.getElementById('retail').value;
+  const numeroLiquidacion = document.getElementById('numero-liquidacion').value;
+  
+  if (!retail) {
+    alert('Por favor selecciona un retail');
+    return;
+  }
+  
+  if (!archivoSeleccionado) {
+    alert('Por favor selecciona un archivo');
+    return;
+  }
+
+  // Mostrar progreso
+  mostrarProgreso();
+  
+  try {
+    // Crear FormData
+    const formData = new FormData();
+    formData.append('archivo', archivoSeleccionado);
+    formData.append('retail', retail);
+    if (numeroLiquidacion) {
+      formData.append('numero_liquidacion', numeroLiquidacion);
+    }
+
+    // Simular progreso
+    simularProgreso();
+
+    // Enviar archivo
+    const response = await fetch('/liquidaciones/api/cargar', {
+      method: 'POST',
+      body: formData
+    });
+
+    const resultado = await response.json();
+
+    if (response.ok) {
+      mostrarResultadoExito(resultado);
+    } else {
+      mostrarResultadoError(resultado.detail || 'Error desconocido');
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarResultadoError('Error de conexión con el servidor');
+  }
+}
+
+function mostrarProgreso() {
+  document.querySelector('.content-card').classList.add('hidden');
+  document.getElementById('progress-container').classList.remove('hidden');
+}
+
+function simularProgreso() {
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  
+  const etapas = [
+    { porcentaje: 20, texto: 'Validando archivo...' },
+    { porcentaje: 40, texto: 'Leyendo datos...' },
+    { porcentaje: 60, texto: 'Procesando órdenes...' },
+    { porcentaje: 80, texto: 'Actualizando base de datos...' },
+    { porcentaje: 100, texto: 'Finalizando...' }
+  ];
+
+  let etapaActual = 0;
+  const intervalo = setInterval(() => {
+    if (etapaActual < etapas.length) {
+      const etapa = etapas[etapaActual];
+      progressBar.style.width = etapa.porcentaje + '%';
+      progressText.textContent = etapa.texto;
+      etapaActual++;
+    } else {
+      clearInterval(intervalo);
+    }
+  }, 800);
+}
+
+function mostrarResultadoExito(resultado) {
+  document.getElementById('progress-container').classList.add('hidden');
+  document.getElementById('result-container').classList.remove('hidden');
+  document.getElementById('result-success').classList.remove('hidden');
+  
+  document.getElementById('result-ordenes').textContent = resultado.ordenes_procesadas;
+  document.getElementById('result-monto').textContent = formatearMoneda(resultado.monto_total);
+  document.getElementById('result-numero').textContent = resultado.numero_liquidacion;
+}
+
+function mostrarResultadoError(mensaje) {
+  document.getElementById('progress-container').classList.add('hidden');
+  document.getElementById('result-container').classList.remove('hidden');
+  document.getElementById('result-error').classList.remove('hidden');
+  
+  document.getElementById('error-message').textContent = mensaje;
+}
+
+function nuevaLiquidacion() {
+  // Resetear formulario
+  document.getElementById('form-liquidacion').reset();
+  removerArchivo();
+  
+  // Mostrar formulario
+  document.querySelector('.content-card').classList.remove('hidden');
+  document.getElementById('result-container').classList.add('hidden');
+  document.getElementById('result-success').classList.add('hidden');
+  document.getElementById('result-error').classList.add('hidden');
+}
+
+function volverFormulario() {
+  // Mostrar formulario
+  document.querySelector('.content-card').classList.remove('hidden');
+  document.getElementById('result-container').classList.add('hidden');
+  document.getElementById('result-success').classList.add('hidden');
+  document.getElementById('result-error').classList.add('hidden');
+}
+
+// Funciones auxiliares
+function formatearTamaño(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const tamaños = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + tamaños[i];
+}
+
+function formatearMoneda(monto) {
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP'
+  }).format(monto);
+}
+</script>
+
+{% endblock %}
