@@ -1,258 +1,243 @@
 {% extends "base.html" %}
 
 {% block title %}Liquidaciones - Lista{% endblock %}
+
 {% block header %}Liquidaciones{% endblock %}
-{% block breadcrumb %}Liquidaciones / Lista{% endblock %}
+
+{% block breadcrumb %}Finanzas > Liquidaciones{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-  
-  <!-- Header con filtros -->
-  <div class="content-card rounded-2xl p-6">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-      
-      <!-- Título y botón nuevo -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-800">Lista de Liquidaciones</h2>
-          <p class="text-slate-600 mt-1">Gestiona las liquidaciones de pagos de retail</p>
-        </div>
-        
-        <a href="/liquidaciones/cargar" 
-           class="btn-primary px-6 py-3 text-white rounded-xl font-medium hover:scale-105 transition-all duration-200 flex items-center gap-2">
-          <i class="fas fa-plus w-4 h-4"></i>
-          <span>Nueva Liquidación</span>
-        </a>
+  <!-- Header con acciones -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900">Gestión de Liquidaciones</h2>
+        <p class="text-sm text-gray-600 mt-1">Administra las liquidaciones de todos los retails</p>
       </div>
       
-      <!-- Filtros -->
-      <div class="flex flex-wrap gap-3">
-        <select id="filtro-retail" class="search-input px-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500">
-          <option value="">Todos los Retail</option>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a href="/liquidaciones/cargar" 
+           class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+          <i class="fas fa-upload mr-2"></i>
+          Cargar Liquidación
+        </a>
+        
+        <a href="/liquidaciones/ordenes" 
+           class="inline-flex items-center justify-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors">
+          <i class="fas fa-list-alt mr-2"></i>
+          Estado Órdenes
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Retail</label>
+        <select id="filtro-retail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="">Todos los retails</option>
           <option value="falabella">Falabella</option>
           <option value="cencosud">Cencosud</option>
           <option value="walmart">Walmart</option>
           <option value="ripley">Ripley</option>
           <option value="hites">Hites</option>
         </select>
-        
-        <input type="date" id="fecha-desde" class="search-input px-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500">
-        <input type="date" id="fecha-hasta" class="search-input px-4 py-2 rounded-lg text-sm border-0 focus:ring-2 focus:ring-blue-500">
-        
-        <button onclick="aplicarFiltros()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors">
-          <i class="fas fa-filter mr-2"></i>Filtrar
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Desde</label>
+        <input type="date" id="fecha-desde" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Hasta</label>
+        <input type="date" id="fecha-hasta" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+      </div>
+      
+      <div class="flex items-end">
+        <button onclick="aplicarFiltros()" class="w-full px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors">
+          <i class="fas fa-search mr-2"></i>
+          Filtrar
         </button>
-        
-        <button onclick="limpiarFiltros()" class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100 transition-colors">
-          <i class="fas fa-times mr-2"></i>Limpiar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Estadísticas rápidas -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="content-card rounded-xl p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-slate-600 text-sm font-medium">Total Liquidaciones</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-total">0</p>
-        </div>
-        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-          <i class="fas fa-file-invoice-dollar text-blue-600 text-xl"></i>
-        </div>
-      </div>
-    </div>
-    
-    <div class="content-card rounded-xl p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-slate-600 text-sm font-medium">Monto Total</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-monto">$0</p>
-        </div>
-        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-          <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
-        </div>
-      </div>
-    </div>
-    
-    <div class="content-card rounded-xl p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-slate-600 text-sm font-medium">Órdenes Pagadas</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-ordenes">0</p>
-        </div>
-        <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-          <i class="fas fa-check-circle text-emerald-600 text-xl"></i>
-        </div>
-      </div>
-    </div>
-    
-    <div class="content-card rounded-xl p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-slate-600 text-sm font-medium">Pendientes</p>
-          <p class="text-2xl font-bold text-slate-800" id="stat-pendientes">0</p>
-        </div>
-        <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-          <i class="fas fa-clock text-amber-600 text-xl"></i>
-        </div>
       </div>
     </div>
   </div>
 
   <!-- Tabla de liquidaciones -->
-  <div class="content-card rounded-2xl overflow-hidden">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
     <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead class="bg-slate-50 border-b border-slate-200">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
           <tr>
-            <th class="text-left py-4 px-6 font-semibold text-slate-700">Liquidación</th>
-            <th class="text-left py-4 px-6 font-semibold text-slate-700">Retail</th>
-            <th class="text-left py-4 px-6 font-semibold text-slate-700">Fecha</th>
-            <th class="text-right py-4 px-6 font-semibold text-slate-700">Monto</th>
-            <th class="text-center py-4 px-6 font-semibold text-slate-700">Órdenes</th>
-            <th class="text-center py-4 px-6 font-semibold text-slate-700">Estado</th>
-            <th class="text-center py-4 px-6 font-semibold text-slate-700">Acciones</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Liquidación
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Retail
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Fecha
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Órdenes
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Monto Total
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Estado
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Acciones
+            </th>
           </tr>
         </thead>
-        <tbody id="tabla-liquidaciones" class="divide-y divide-slate-200">
-          <!-- Contenido cargado dinámicamente -->
+        <tbody id="tabla-liquidaciones" class="bg-white divide-y divide-gray-200">
+          <!-- Los datos se cargan dinámicamente -->
         </tbody>
       </table>
     </div>
     
-    <!-- Paginación -->
-    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
-      <div class="flex items-center justify-between">
-        <p class="text-sm text-slate-600" id="info-paginacion">Mostrando 0 de 0 liquidaciones</p>
-        
-        <div class="flex items-center space-x-2" id="controles-paginacion">
-          <!-- Controles de paginación cargados dinámicamente -->
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal de detalles -->
-<div id="modal-detalle" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-  <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-200">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-slate-800">Detalle de Liquidación</h3>
-        <button onclick="cerrarModal()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-          <i class="fas fa-times text-slate-500"></i>
-        </button>
+    <!-- Loading state -->
+    <div id="loading" class="flex items-center justify-center py-12">
+      <div class="flex items-center space-x-2 text-gray-500">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <span>Cargando liquidaciones...</span>
       </div>
     </div>
     
-    <div class="p-6 overflow-y-auto" id="contenido-detalle">
-      <!-- Contenido del detalle -->
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden text-center py-12">
+      <div class="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+        <i class="fas fa-file-invoice text-2xl text-gray-400"></i>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No hay liquidaciones</h3>
+      <p class="text-gray-500">No se encontraron liquidaciones con los filtros aplicados.</p>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div id="paginacion" class="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-lg">
+    <div class="flex-1 flex justify-between sm:hidden">
+      <button id="btn-anterior-mobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        Anterior
+      </button>
+      <button id="btn-siguiente-mobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        Siguiente
+      </button>
+    </div>
+    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm text-gray-700">
+          Mostrando <span id="inicio-rango" class="font-medium">1</span> a <span id="fin-rango" class="font-medium">10</span> de <span id="total-resultados" class="font-medium">0</span> resultados
+        </p>
+      </div>
+      <div>
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          <button id="btn-anterior" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <div id="numeros-pagina" class="flex">
+            <!-- Los números de página se generan dinámicamente -->
+          </div>
+          <button id="btn-siguiente" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </nav>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 let paginaActual = 1;
-let limite = 10;
+const limite = 10;
 
-// Cargar liquidaciones al iniciar
 document.addEventListener('DOMContentLoaded', function() {
   cargarLiquidaciones();
 });
 
-async function cargarLiquidaciones(pagina = 1) {
+async function cargarLiquidaciones() {
   try {
-    paginaActual = pagina;
+    mostrarLoading(true);
     
-    // Obtener filtros
     const retail = document.getElementById('filtro-retail').value;
     const fechaDesde = document.getElementById('fecha-desde').value;
     const fechaHasta = document.getElementById('fecha-hasta').value;
     
-    // Construir URL con parámetros
-    let url = `/liquidaciones/api/liquidaciones?page=${pagina}&limit=${limite}`;
-    if (retail) url += `&retail=${retail}`;
-    if (fechaDesde) url += `&fecha_desde=${fechaDesde}`;
-    if (fechaHasta) url += `&fecha_hasta=${fechaHasta}`;
+    const params = new URLSearchParams({
+      page: paginaActual,
+      limit: limite
+    });
     
-    const response = await fetch(url);
+    if (retail) params.append('retail', retail);
+    if (fechaDesde) params.append('fecha_desde', fechaDesde);
+    if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+    
+    const response = await fetch(`/liquidaciones/api/liquidaciones?${params}`);
     const data = await response.json();
     
     if (response.ok) {
-      renderizarLiquidaciones(data.liquidaciones);
-      actualizarEstadisticas(data.liquidaciones);
-      actualizarPaginacion(data);
+      mostrarLiquidaciones(data.liquidaciones);
+      actualizarPaginacion(data.total, data.page, data.limit);
     } else {
-      console.error('Error al cargar liquidaciones:', data.detail);
+      mostrarError('Error al cargar liquidaciones');
     }
-    
   } catch (error) {
-    console.error('Error de conexión:', error);
+    console.error('Error:', error);
+    mostrarError('Error de conexión');
+  } finally {
+    mostrarLoading(false);
   }
 }
 
-function renderizarLiquidaciones(liquidaciones) {
+function mostrarLiquidaciones(liquidaciones) {
   const tbody = document.getElementById('tabla-liquidaciones');
+  const emptyState = document.getElementById('empty-state');
   
   if (liquidaciones.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="text-center py-8 text-slate-500">
-          <i class="fas fa-file-invoice-dollar text-4xl mb-4 text-slate-300"></i>
-          <p>No se encontraron liquidaciones</p>
-        </td>
-      </tr>
-    `;
+    tbody.innerHTML = '';
+    emptyState.classList.remove('hidden');
     return;
   }
   
+  emptyState.classList.add('hidden');
+  
   tbody.innerHTML = liquidaciones.map(liquidacion => `
-    <tr class="hover:bg-slate-50 transition-colors">
-      <td class="py-4 px-6">
-        <div>
-          <p class="font-semibold text-slate-800">${liquidacion.numero_liquidacion}</p>
-          <p class="text-sm text-slate-500">${liquidacion.archivo_original}</p>
-        </div>
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">${liquidacion.numero_liquidacion || 'N/A'}</div>
+        <div class="text-sm text-gray-500">${liquidacion.archivo_original || ''}</div>
       </td>
-      <td class="py-4 px-6">
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           ${liquidacion.retail}
         </span>
       </td>
-      <td class="py-4 px-6 text-slate-600">
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         ${formatearFecha(liquidacion.fecha_liquidacion)}
       </td>
-      <td class="py-4 px-6 text-right font-semibold text-slate-800">
-        ${formatearMoneda(liquidacion.monto_total)}
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${liquidacion.cantidad_ordenes || 0}
       </td>
-      <td class="py-4 px-6 text-center">
-        <span class="inline-flex items-center px-2 py-1 rounded-lg text-sm font-medium bg-slate-100 text-slate-700">
-          ${liquidacion.cantidad_ordenes}
-        </span>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${formatearMonto(liquidacion.monto_total)}
       </td>
-      <td class="py-4 px-6 text-center">
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getEstadoClases(liquidacion.estado)}">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEstadoClasses(liquidacion.estado)}">
           ${liquidacion.estado}
         </span>
       </td>
-      <td class="py-4 px-6">
-        <div class="flex justify-center gap-2">
-          <button onclick="verDetalle(${liquidacion.id})" 
-                  class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
-                  title="Ver detalle">
+      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div class="flex items-center space-x-2">
+          <button onclick="verDetalle(${liquidacion.id})" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
             <i class="fas fa-eye"></i>
           </button>
-          <button onclick="descargarArchivo(${liquidacion.id})" 
-                  class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
-                  title="Descargar">
+          <button onclick="descargarArchivo('${liquidacion.archivo_original}')" class="text-green-600 hover:text-green-900" title="Descargar archivo">
             <i class="fas fa-download"></i>
-          </button>
-          <button onclick="eliminar('${liquidacion.numero_liquidacion}')" 
-                  class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
-                  title="Eliminar">
-            <i class="fas fa-trash"></i>
           </button>
         </div>
       </td>
@@ -260,135 +245,81 @@ function renderizarLiquidaciones(liquidaciones) {
   `).join('');
 }
 
-function actualizarEstadisticas(liquidaciones) {
-  // Solo mostrar estadísticas si hay datos reales
-  document.getElementById('stat-total').textContent = liquidaciones.length;
-  document.getElementById('stat-monto').textContent = liquidaciones.length > 0 ? formatearMoneda(liquidaciones.reduce((sum, liq) => sum + liq.monto_total, 0)) : '$0';
-  document.getElementById('stat-ordenes').textContent = liquidaciones.length > 0 ? liquidaciones.reduce((sum, liq) => sum + liq.cantidad_ordenes, 0) : '0';
-  document.getElementById('stat-pendientes').textContent = liquidaciones.length > 0 ? liquidaciones.filter(liq => liq.estado !== 'Procesada').length : '0';
-}
-
-function actualizarPaginacion(data) {
-  const info = document.getElementById('info-paginacion');
-  const controles = document.getElementById('controles-paginacion');
-  
-  const inicio = (data.page - 1) * data.limit + 1;
-  const fin = Math.min(data.page * data.limit, data.total);
-  
-  info.textContent = `Mostrando ${inicio}-${fin} de ${data.total} liquidaciones`;
-  
-  // Generar controles de paginación
-  const totalPaginas = Math.ceil(data.total / data.limit);
-  let controlesHTML = '';
-  
-  // Botón anterior
-  if (data.page > 1) {
-    controlesHTML += `
-      <button onclick="cargarLiquidaciones(${data.page - 1})" 
-              class="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
-        Anterior
-      </button>
-    `;
-  }
-  
-  // Números de página
-  for (let i = Math.max(1, data.page - 2); i <= Math.min(totalPaginas, data.page + 2); i++) {
-    const esActual = i === data.page;
-    controlesHTML += `
-      <button onclick="cargarLiquidaciones(${i})" 
-              class="px-3 py-2 text-sm ${esActual ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'} border border-slate-300 rounded-lg">
-        ${i}
-      </button>
-    `;
-  }
-  
-  // Botón siguiente
-  if (data.page < totalPaginas) {
-    controlesHTML += `
-      <button onclick="cargarLiquidaciones(${data.page + 1})" 
-              class="px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg hover:bg-slate-50">
-        Siguiente
-      </button>
-    `;
-  }
-  
-  controles.innerHTML = controlesHTML;
+function mostrarLoading(mostrar) {
+  const loading = document.getElementById('loading');
+  loading.style.display = mostrar ? 'flex' : 'none';
 }
 
 function aplicarFiltros() {
-  cargarLiquidaciones(1);
+  paginaActual = 1;
+  cargarLiquidaciones();
 }
 
-function limpiarFiltros() {
-  document.getElementById('filtro-retail').value = '';
-  document.getElementById('fecha-desde').value = '';
-  document.getElementById('fecha-hasta').value = '';
-  cargarLiquidaciones(1);
-}
-
-async function verDetalle(id) {
-  // TODO: Implementar vista de detalle
-  document.getElementById('modal-detalle').classList.remove('hidden');
-}
-
-function cerrarModal() {
-  document.getElementById('modal-detalle').classList.add('hidden');
-}
-
-async function descargarArchivo(id) {
-  // TODO: Implementar descarga
-  console.log('Descargar archivo de liquidación:', id);
-}
-
-async function eliminar(numeroLiquidacion) {
-  if (confirm('¿Estás seguro de eliminar esta liquidación? Esta acción eliminará los datos de liquidación de todas las órdenes asociadas.')) {
-    try {
-      const response = await fetch(`/liquidaciones/api/liquidaciones/${numeroLiquidacion}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        alert(`Liquidación eliminada exitosamente. ${result.ordenes_afectadas} órdenes afectadas.`);
-        cargarLiquidaciones(); // Recargar la lista
-      } else {
-        alert(`Error al eliminar: ${result.detail || 'Error desconocido'}`);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error de conexión al eliminar la liquidación');
-    }
+function getEstadoClasses(estado) {
+  switch (estado) {
+    case 'Procesada':
+      return 'bg-green-100 text-green-800';
+    case 'Pendiente':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'Error':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
 }
 
-// Funciones auxiliares
 function formatearFecha(fecha) {
-  return new Date(fecha).toLocaleDateString('es-CL', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  if (!fecha) return 'N/A';
+  return new Date(fecha).toLocaleDateString('es-CL');
 }
 
-function formatearMoneda(monto) {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP'
-  }).format(monto);
+function formatearMonto(monto) {
+  if (!monto) return '$0';
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(monto);
 }
 
-function getEstadoClases(estado) {
-  const clases = {
-    'Procesada': 'bg-green-100 text-green-800',
-    'Pendiente': 'bg-yellow-100 text-yellow-800',
-    'Error': 'bg-red-100 text-red-800'
+function verDetalle(id) {
+  // TODO: Implementar vista de detalle
+  console.log('Ver detalle liquidación:', id);
+}
+
+function descargarArchivo(archivo) {
+  // TODO: Implementar descarga de archivo
+  console.log('Descargar archivo:', archivo);
+}
+
+function actualizarPaginacion(total, pagina, limite) {
+  const totalPaginas = Math.ceil(total / limite);
+  
+  document.getElementById('inicio-rango').textContent = ((pagina - 1) * limite) + 1;
+  document.getElementById('fin-rango').textContent = Math.min(pagina * limite, total);
+  document.getElementById('total-resultados').textContent = total;
+  
+  // Habilitar/deshabilitar botones
+  const btnAnterior = document.getElementById('btn-anterior');
+  const btnSiguiente = document.getElementById('btn-siguiente');
+  
+  btnAnterior.disabled = pagina <= 1;
+  btnSiguiente.disabled = pagina >= totalPaginas;
+  
+  btnAnterior.onclick = () => {
+    if (paginaActual > 1) {
+      paginaActual--;
+      cargarLiquidaciones();
+    }
   };
-  return clases[estado] || 'bg-gray-100 text-gray-800';
+  
+  btnSiguiente.onclick = () => {
+    if (paginaActual < totalPaginas) {
+      paginaActual++;
+      cargarLiquidaciones();
+    }
+  };
+}
+
+function mostrarError(mensaje) {
+  // TODO: Implementar notificación de error
+  console.error(mensaje);
 }
 </script>
-
 {% endblock %}

@@ -10,6 +10,8 @@ pm2 logs jerkhome-admin
 
 uvicorn main:app --reload --port 8000 
 
+mysql -u root -p"Memo2812**"
+
 
 ngnix que funciona en jerkhome
 # /etc/nginx/sites-available/jerkhome.cl
