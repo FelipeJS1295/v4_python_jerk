@@ -730,13 +730,32 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
     cursor = None
     
     try:
+        print(f"🔍 Obteniendo detalle de liquidación ID: {liquidacion_id}")
+        
         conn = obtener_conexion_db()
         cursor = conn.cursor(dictionary=True)
         
-        # 1. Obtener información básica de la liquidación
+        # 1. Verificar que las tablas existan
+        cursor.execute("SHOW TABLES LIKE 'liquidaciones'")
+        tabla_liquidaciones = cursor.fetchone()
+        
+        if not tabla_liquidaciones:
+            print("⚠️ Tabla liquidaciones no existe")
+            raise HTTPException(status_code=404, detail="Tabla liquidaciones no encontrada")
+        
+        cursor.execute("SHOW TABLES LIKE 'ventas_retail'")
+        tabla_ventas = cursor.fetchone()
+        
+        if not tabla_ventas:
+            print("⚠️ Tabla ventas_retail no existe")
+            # Crear respuesta con datos básicos sin órdenes
+            return await obtener_liquidacion_sin_ordenes(cursor, liquidacion_id)
+        
+        # 2. Obtener información básica de la liquidación
         query_liquidacion = """
         SELECT 
             l.id,
+            l.cliente_id,
             CASE 
                 WHEN l.cliente_id = 1 THEN 'Falabella'
                 WHEN l.cliente_id = 2 THEN 'Cencosud' 
@@ -749,18 +768,12 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
             l.fecha_liquidacion,
             l.monto_total,
             l.cantidad_ordenes,
-            CASE 
-                WHEN l.estado = 'procesada' THEN 'Procesada'
-                WHEN l.estado = 'pendiente' THEN 'Pendiente'
-                WHEN l.estado = 'error' THEN 'Error'
-                ELSE 'Desconocido'
-            END as estado,
+            l.estado,
             l.archivo_original,
             l.fecha_creacion,
             l.ordenes_procesadas,
             l.ordenes_actualizadas,
-            l.ordenes_no_encontradas,
-            l.cliente_id
+            l.ordenes_no_encontradas
         FROM liquidaciones l
         WHERE l.id = %s
         """
@@ -769,9 +782,27 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
         liquidacion = cursor.fetchone()
         
         if not liquidacion:
+            print(f"❌ Liquidación {liquidacion_id} no encontrada")
             raise HTTPException(status_code=404, detail="Liquidación no encontrada")
         
-        # 2. Obtener SOLO órdenes asociadas a esta liquidación
+        print(f"✅ Liquidación encontrada: {liquidacion['numero_liquidacion']}")
+        
+        # 3. Verificar si la columna liquidacion_id existe en ventas_retail
+        try:
+            cursor.execute("DESCRIBE ventas_retail")
+            columnas = cursor.fetchall()
+            columnas_nombres = [col['Field'] for col in columnas]
+            
+            if 'liquidacion_id' not in columnas_nombres:
+                print("⚠️ Columna liquidacion_id no existe en ventas_retail")
+                # Buscar órdenes por número de liquidación como fallback
+                return await obtener_ordenes_por_numero_liquidacion(cursor, liquidacion, liquidacion_id)
+            
+        except Exception as e:
+            print(f"⚠️ Error verificando columnas: {str(e)}")
+            return await obtener_liquidacion_sin_ordenes_simple(liquidacion)
+        
+        # 4. Obtener órdenes asociadas a esta liquidación
         query_ordenes = """
         SELECT 
             v.id,
@@ -792,7 +823,9 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
         cursor.execute(query_ordenes, (liquidacion_id,))
         ordenes = cursor.fetchall()
         
-        # 3. Armar lista y estadísticas
+        print(f"📊 Órdenes encontradas: {len(ordenes)}")
+        
+        # 5. Procesar órdenes y estadísticas
         ordenes_pagadas = []
         ordenes_no_pagadas = []
         
@@ -803,16 +836,17 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
                 'fecha_orden': orden['fecha_orden'].isoformat() if orden['fecha_orden'] else None,
                 'monto_orden': float(orden['monto_orden']) if orden['monto_orden'] else 0,
                 'tipo_liquidacion': orden['tipo_liquidacion'] or 'venta',
-                'estado_pago': orden['estado_pago']
+                'estado_pago': orden['estado_pago'] or 'pendiente'
             }
             
-            # Verificar si está pagada basándose en estado_pago
-            if orden['estado_pago'] and orden['estado_pago'].lower() in ['pagado', 'pagada']:
+            # Clasificar según estado de pago
+            if orden['estado_pago'] and orden['estado_pago'].lower() in ['pagado', 'pagada', 'cerrada']:
                 registro['monto_pago'] = float(orden['monto_pago_liquidacion']) if orden['monto_pago_liquidacion'] else 0
                 ordenes_pagadas.append(registro)
             else:
                 ordenes_no_pagadas.append(registro)
         
+        # 6. Calcular estadísticas
         total_ordenes_pagadas = len(ordenes_pagadas)
         total_ordenes_no_pagadas = len(ordenes_no_pagadas)
         monto_total_pagado = sum(o.get('monto_pago', 0) for o in ordenes_pagadas)
@@ -823,16 +857,25 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
         ordenes_devoluciones = [o for o in ordenes_pagadas if o['tipo_liquidacion'] == 'devolucion']
         ordenes_cancelaciones = [o for o in ordenes_pagadas if o['tipo_liquidacion'] == 'cancelacion']
         
+        # 7. Formatear estado para el frontend
+        estado_formateado = liquidacion['estado']
+        if estado_formateado == 'procesada':
+            estado_formateado = 'Procesada'
+        elif estado_formateado == 'pendiente':
+            estado_formateado = 'Pendiente'
+        elif estado_formateado == 'error':
+            estado_formateado = 'Error'
+        
         return {
             "liquidacion": {
                 "id": liquidacion['id'],
                 "retail": liquidacion['retail'],
-                "numero_liquidacion": liquidacion['numero_liquidacion'],
+                "numero_liquidacion": liquidacion['numero_liquidacion'] or 'N/A',
                 "fecha_liquidacion": liquidacion['fecha_liquidacion'].isoformat() if liquidacion['fecha_liquidacion'] else None,
                 "monto_total": float(liquidacion['monto_total']) if liquidacion['monto_total'] else 0,
                 "cantidad_ordenes": liquidacion['cantidad_ordenes'] or 0,
-                "estado": liquidacion['estado'],
-                "archivo_original": liquidacion['archivo_original'],
+                "estado": estado_formateado,
+                "archivo_original": liquidacion['archivo_original'] or '',
                 "fecha_creacion": liquidacion['fecha_creacion'].isoformat() if liquidacion['fecha_creacion'] else None,
                 "ordenes_procesadas": liquidacion['ordenes_procesadas'] or 0,
                 "ordenes_actualizadas": liquidacion['ordenes_actualizadas'] or 0,
@@ -858,10 +901,11 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
     except HTTPException:
         raise
     except mysql.connector.Error as db_error:
-        print(f"⚠️ Error de base de datos al obtener detalle: {str(db_error)}")
+        print(f"⚠️ Error de base de datos: {str(db_error)}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(db_error)}")
     except Exception as e:
-        print(f"⚠️ Error al obtener detalle de liquidación: {str(e)}")
+        print(f"⚠️ Error general: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     finally:
@@ -869,6 +913,190 @@ async def obtener_liquidacion_detalle(liquidacion_id: int):
             cursor.close()
         if conn:
             conn.close()
+
+async def obtener_liquidacion_sin_ordenes(cursor, liquidacion_id):
+    """Función auxiliar para obtener liquidación sin tabla ventas_retail"""
+    try:
+        query_liquidacion = """
+        SELECT 
+            l.id,
+            l.cliente_id,
+            CASE 
+                WHEN l.cliente_id = 1 THEN 'Falabella'
+                WHEN l.cliente_id = 2 THEN 'Cencosud' 
+                WHEN l.cliente_id = 3 THEN 'Walmart'
+                WHEN l.cliente_id = 4 THEN 'Ripley'
+                WHEN l.cliente_id = 5 THEN 'Hites'
+                ELSE 'Desconocido'
+            END as retail,
+            l.numero_liquidacion,
+            l.fecha_liquidacion,
+            l.monto_total,
+            l.cantidad_ordenes,
+            l.estado,
+            l.archivo_original,
+            l.fecha_creacion,
+            l.ordenes_procesadas,
+            l.ordenes_actualizadas,
+            l.ordenes_no_encontradas
+        FROM liquidaciones l
+        WHERE l.id = %s
+        """
+        
+        cursor.execute(query_liquidacion, (liquidacion_id,))
+        liquidacion = cursor.fetchone()
+        
+        if not liquidacion:
+            raise HTTPException(status_code=404, detail="Liquidación no encontrada")
+        
+        return await obtener_liquidacion_sin_ordenes_simple(liquidacion)
+        
+    except Exception as e:
+        print(f"Error en obtener_liquidacion_sin_ordenes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def obtener_liquidacion_sin_ordenes_simple(liquidacion):
+    """Crear respuesta básica sin órdenes"""
+    
+    estado_formateado = liquidacion['estado']
+    if estado_formateado == 'procesada':
+        estado_formateado = 'Procesada'
+    elif estado_formateado == 'pendiente':
+        estado_formateado = 'Pendiente'
+    elif estado_formateado == 'error':
+        estado_formateado = 'Error'
+    
+    return {
+        "liquidacion": {
+            "id": liquidacion['id'],
+            "retail": liquidacion['retail'],
+            "numero_liquidacion": liquidacion['numero_liquidacion'] or 'N/A',
+            "fecha_liquidacion": liquidacion['fecha_liquidacion'].isoformat() if liquidacion['fecha_liquidacion'] else None,
+            "monto_total": float(liquidacion['monto_total']) if liquidacion['monto_total'] else 0,
+            "cantidad_ordenes": liquidacion['cantidad_ordenes'] or 0,
+            "estado": estado_formateado,
+            "archivo_original": liquidacion['archivo_original'] or '',
+            "fecha_creacion": liquidacion['fecha_creacion'].isoformat() if liquidacion['fecha_creacion'] else None,
+            "ordenes_procesadas": liquidacion['ordenes_procesadas'] or 0,
+            "ordenes_actualizadas": liquidacion['ordenes_actualizadas'] or 0,
+            "ordenes_no_encontradas": liquidacion['ordenes_no_encontradas'] or 0
+        },
+        "estadisticas": {
+            "total_ordenes_pagadas": 0,
+            "total_ordenes_no_pagadas": 0,
+            "monto_total_pagado": 0,
+            "monto_total_pendiente": 0,
+            "monto_ventas": 0,
+            "monto_devoluciones": 0,
+            "monto_cancelaciones": 0,
+            "cantidad_ventas": 0,
+            "cantidad_devoluciones": 0,
+            "cantidad_cancelaciones": 0
+        },
+        "ordenes_pagadas": [],
+        "ordenes_no_pagadas": [],
+        "success": True
+    }
+
+async def obtener_ordenes_por_numero_liquidacion(cursor, liquidacion, liquidacion_id):
+    """Función auxiliar para buscar órdenes por número de liquidación"""
+    try:
+        # Buscar órdenes que coincidan con el número de liquidación
+        query_ordenes_fallback = """
+        SELECT 
+            v.id,
+            v.numero_orden,
+            v.fecha_venta AS fecha_orden,
+            v.total AS monto_orden,
+            v.monto_pago_liquidacion,
+            v.tipo_liquidacion,
+            v.fecha_liquidacion,
+            v.numero_liquidacion,
+            v.estado_liquidacion,
+            v.estado_pago
+        FROM ventas_retail v
+        WHERE v.numero_liquidacion = %s AND v.cliente_id = %s
+        ORDER BY v.fecha_venta DESC
+        """
+        
+        cursor.execute(query_ordenes_fallback, (liquidacion['numero_liquidacion'], liquidacion['cliente_id']))
+        ordenes = cursor.fetchall()
+        
+        print(f"📊 Órdenes encontradas por número: {len(ordenes)}")
+        
+        # Procesar igual que antes
+        ordenes_pagadas = []
+        ordenes_no_pagadas = []
+        
+        for orden in ordenes:
+            registro = {
+                'id': orden['id'],
+                'numero_orden': orden['numero_orden'],
+                'fecha_orden': orden['fecha_orden'].isoformat() if orden['fecha_orden'] else None,
+                'monto_orden': float(orden['monto_orden']) if orden['monto_orden'] else 0,
+                'tipo_liquidacion': orden['tipo_liquidacion'] or 'venta',
+                'estado_pago': orden['estado_pago'] or 'pendiente'
+            }
+            
+            if orden['estado_pago'] and orden['estado_pago'].lower() in ['pagado', 'pagada', 'cerrada']:
+                registro['monto_pago'] = float(orden['monto_pago_liquidacion']) if orden['monto_pago_liquidacion'] else 0
+                ordenes_pagadas.append(registro)
+            else:
+                ordenes_no_pagadas.append(registro)
+        
+        # Calcular estadísticas
+        total_ordenes_pagadas = len(ordenes_pagadas)
+        total_ordenes_no_pagadas = len(ordenes_no_pagadas)
+        monto_total_pagado = sum(o.get('monto_pago', 0) for o in ordenes_pagadas)
+        monto_total_pendiente = sum(o['monto_orden'] for o in ordenes_no_pagadas)
+        
+        ordenes_ventas = [o for o in ordenes_pagadas if o['tipo_liquidacion'] == 'venta']
+        ordenes_devoluciones = [o for o in ordenes_pagadas if o['tipo_liquidacion'] == 'devolucion']
+        ordenes_cancelaciones = [o for o in ordenes_pagadas if o['tipo_liquidacion'] == 'cancelacion']
+        
+        estado_formateado = liquidacion['estado']
+        if estado_formateado == 'procesada':
+            estado_formateado = 'Procesada'
+        elif estado_formateado == 'pendiente':
+            estado_formateado = 'Pendiente'
+        elif estado_formateado == 'error':
+            estado_formateado = 'Error'
+        
+        return {
+            "liquidacion": {
+                "id": liquidacion['id'],
+                "retail": liquidacion['retail'],
+                "numero_liquidacion": liquidacion['numero_liquidacion'] or 'N/A',
+                "fecha_liquidacion": liquidacion['fecha_liquidacion'].isoformat() if liquidacion['fecha_liquidacion'] else None,
+                "monto_total": float(liquidacion['monto_total']) if liquidacion['monto_total'] else 0,
+                "cantidad_ordenes": liquidacion['cantidad_ordenes'] or 0,
+                "estado": estado_formateado,
+                "archivo_original": liquidacion['archivo_original'] or '',
+                "fecha_creacion": liquidacion['fecha_creacion'].isoformat() if liquidacion['fecha_creacion'] else None,
+                "ordenes_procesadas": liquidacion['ordenes_procesadas'] or 0,
+                "ordenes_actualizadas": liquidacion['ordenes_actualizadas'] or 0,
+                "ordenes_no_encontradas": liquidacion['ordenes_no_encontradas'] or 0
+            },
+            "estadisticas": {
+                "total_ordenes_pagadas": total_ordenes_pagadas,
+                "total_ordenes_no_pagadas": total_ordenes_no_pagadas,
+                "monto_total_pagado": monto_total_pagado,
+                "monto_total_pendiente": monto_total_pendiente,
+                "monto_ventas": sum(o.get('monto_pago', 0) for o in ordenes_ventas),
+                "monto_devoluciones": sum(o.get('monto_pago', 0) for o in ordenes_devoluciones),
+                "monto_cancelaciones": sum(o.get('monto_pago', 0) for o in ordenes_cancelaciones),
+                "cantidad_ventas": len(ordenes_ventas),
+                "cantidad_devoluciones": len(ordenes_devoluciones),
+                "cantidad_cancelaciones": len(ordenes_cancelaciones)
+            },
+            "ordenes_pagadas": ordenes_pagadas,
+            "ordenes_no_pagadas": ordenes_no_pagadas,
+            "success": True
+        }
+        
+    except Exception as e:
+        print(f"Error en obtener_ordenes_por_numero_liquidacion: {str(e)}")
+        return await obtener_liquidacion_sin_ordenes_simple(liquidacion)
 
 
 @router.delete("/api/liquidaciones/{liquidacion_id}")
