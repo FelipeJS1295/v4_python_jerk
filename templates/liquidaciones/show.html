@@ -1,0 +1,711 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Liquidación{% endblock %}
+
+{% block header %}Detalle de Liquidación{% endblock %}
+
+{% block breadcrumb %}Finanzas > Liquidaciones > Detalle{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header con navegación -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="flex items-center space-x-4">
+        <a href="/liquidaciones" 
+           class="text-gray-600 hover:text-gray-900 transition-colors">
+          <i class="fas fa-arrow-left text-lg"></i>
+        </a>
+        <div>
+          <h2 class="text-xl font-semibold text-gray-900" id="titulo-liquidacion">
+            Cargando...
+          </h2>
+          <p class="text-sm text-gray-600 mt-1">Detalle completo de la liquidación</p>
+        </div>
+      </div>
+      
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button onclick="descargarArchivo()" 
+                id="btn-descargar"
+                class="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+          <i class="fas fa-download mr-2"></i>
+          Descargar Archivo
+        </button>
+        
+        <button onclick="confirmarEliminar()" 
+                id="btn-eliminar"
+                class="inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+          <i class="fas fa-trash mr-2"></i>
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div id="loading" class="flex items-center justify-center py-12">
+    <div class="flex items-center space-x-2 text-gray-500">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span>Cargando detalle de liquidación...</span>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div id="error-state" class="hidden bg-red-50 border border-red-200 rounded-lg p-6">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <i class="fas fa-exclamation-circle text-red-400 text-xl"></i>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-red-800">Error al cargar liquidación</h3>
+        <div class="mt-2 text-sm text-red-700">
+          <span id="mensaje-error"></span>
+        </div>
+        <div class="mt-4">
+          <button onclick="cargarDetalle()" 
+                  class="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200 transition-colors">
+            Intentar nuevamente
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div id="contenido-principal" class="hidden space-y-6">
+    
+    <!-- Información básica de la liquidación -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Información General</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Número de Liquidación</label>
+          <p class="mt-1 text-lg font-semibold text-gray-900" id="numero-liquidacion">-</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Retail</label>
+          <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" id="retail-badge">-</span>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Fecha de Liquidación</label>
+          <p class="mt-1 text-lg font-semibold text-gray-900" id="fecha-liquidacion">-</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Estado</label>
+          <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" id="estado-badge">-</span>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 pt-6 border-t border-gray-200">
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Monto Total</label>
+          <p class="mt-1 text-2xl font-bold text-gray-900" id="monto-total">-</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Órdenes Procesadas</label>
+          <p class="mt-1 text-lg font-semibold text-gray-900" id="ordenes-procesadas">-</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-500">Fecha de Creación</label>
+          <p class="mt-1 text-sm text-gray-600" id="fecha-creacion">-</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas por tipo -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+          <div class="p-2 bg-green-100 rounded-lg">
+            <i class="fas fa-shopping-cart text-green-600 text-xl"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Ventas</p>
+            <p class="text-2xl font-bold text-gray-900" id="monto-ventas">$0</p>
+            <p class="text-sm text-gray-500" id="cantidad-ventas">0 órdenes</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+          <div class="p-2 bg-yellow-100 rounded-lg">
+            <i class="fas fa-undo text-yellow-600 text-xl"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Devoluciones</p>
+            <p class="text-2xl font-bold text-gray-900" id="monto-devoluciones">$0</p>
+            <p class="text-sm text-gray-500" id="cantidad-devoluciones">0 órdenes</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center">
+          <div class="p-2 bg-red-100 rounded-lg">
+            <i class="fas fa-times-circle text-red-600 text-xl"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Cancelaciones</p>
+            <p class="text-2xl font-bold text-gray-900" id="monto-cancelaciones">$0</p>
+            <p class="text-sm text-gray-500" id="cantidad-cancelaciones">0 órdenes</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs para órdenes -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8 px-6">
+          <button onclick="cambiarTab('pagadas')" 
+                  id="tab-pagadas"
+                  class="py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
+            <i class="fas fa-check-circle mr-2"></i>
+            Órdenes Pagadas <span id="count-pagadas" class="ml-1 bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs">0</span>
+          </button>
+          <button onclick="cambiarTab('no-pagadas')" 
+                  id="tab-no-pagadas"
+                  class="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            <i class="fas fa-clock mr-2"></i>
+            Órdenes Pendientes <span id="count-no-pagadas" class="ml-1 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">0</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Contenido de tabs -->
+      <div class="p-6">
+        
+        <!-- Tab Órdenes Pagadas -->
+        <div id="content-pagadas" class="tab-content">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Número de Orden
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha Orden
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Monto Orden
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Monto Pagado
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tipo
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="tabla-ordenes-pagadas" class="bg-white divide-y divide-gray-200">
+                <!-- Datos dinámicos -->
+              </tbody>
+            </table>
+            
+            <div id="empty-pagadas" class="hidden text-center py-12">
+              <div class="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i class="fas fa-check-circle text-2xl text-gray-400"></i>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">No hay órdenes pagadas</h3>
+              <p class="text-gray-500">Esta liquidación no tiene órdenes procesadas.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Órdenes No Pagadas -->
+        <div id="content-no-pagadas" class="tab-content hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Número de Orden
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fecha Orden
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Monto Pendiente
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="tabla-ordenes-no-pagadas" class="bg-white divide-y divide-gray-200">
+                <!-- Datos dinámicos -->
+              </tbody>
+            </table>
+            
+            <div id="empty-no-pagadas" class="hidden text-center py-12">
+              <div class="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <i class="fas fa-check-circle text-2xl text-green-600"></i>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">Todas las órdenes están pagadas</h3>
+              <p class="text-gray-500">No hay órdenes pendientes para este retail.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div id="modal-eliminar" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="mt-3 text-center">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mt-4">Confirmar Eliminación</h3>
+      <div class="mt-2 px-7 py-3">
+        <p class="text-sm text-gray-500">
+          ¿Estás seguro de que deseas eliminar la liquidación 
+          <span id="numero-liquidacion-eliminar" class="font-semibold text-gray-900"></span>?
+        </p>
+        <p class="text-sm text-red-600 mt-2">
+          Esta acción no se puede deshacer.
+        </p>
+      </div>
+      <div class="flex items-center justify-center gap-3 mt-4">
+        <button id="btn-cancelar-eliminar" 
+                class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 transition-colors">
+          Cancelar
+        </button>
+        <button id="btn-confirmar-eliminar" 
+                class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 transition-colors">
+          <span id="texto-btn-eliminar">Eliminar</span>
+          <i id="loading-btn-eliminar" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast de notificación -->
+<div id="toast-notificacion" class="hidden fixed top-4 right-4 z-50 max-w-sm">
+  <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+    <div class="flex items-start">
+      <div class="flex-shrink-0">
+        <i id="toast-icon" class="text-xl"></i>
+      </div>
+      <div class="ml-3 flex-1">
+        <p id="toast-mensaje" class="text-sm font-medium text-gray-900"></p>
+      </div>
+      <div class="ml-4 flex-shrink-0">
+        <button onclick="ocultarToast()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let liquidacionData = null;
+const liquidacionId = {{ liquidacion_id }};
+
+document.addEventListener('DOMContentLoaded', function() {
+  cargarDetalle();
+  
+  // Configurar modal de eliminación
+  document.getElementById('fecha-creacion').textContent = formatearFechaCompleta(liquidacion.fecha_creacion);
+  
+  // Badges
+  const retailBadge = document.getElementById('retail-badge');
+  retailBadge.textContent = liquidacion.retail;
+  retailBadge.className = `mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getRetailClasses(liquidacion.retail)}`;
+  
+  const estadoBadge = document.getElementById('estado-badge');
+  estadoBadge.textContent = liquidacion.estado;
+  estadoBadge.className = `mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getEstadoClasses(liquidacion.estado)}`;
+  
+  // Estadísticas por tipo
+  document.getElementById('monto-ventas').textContent = formatearMonto(estadisticas.monto_ventas);
+  document.getElementById('cantidad-ventas').textContent = `${estadisticas.cantidad_ventas} órdenes`;
+  document.getElementById('monto-devoluciones').textContent = formatearMonto(estadisticas.monto_devoluciones);
+  document.getElementById('cantidad-devoluciones').textContent = `${estadisticas.cantidad_devoluciones} órdenes`;
+  document.getElementById('monto-cancelaciones').textContent = formatearMonto(estadisticas.monto_cancelaciones);
+  document.getElementById('cantidad-cancelaciones').textContent = `${estadisticas.cantidad_cancelaciones} órdenes`;
+  
+  // Contadores de tabs
+  document.getElementById('count-pagadas').textContent = estadisticas.total_ordenes_pagadas;
+  document.getElementById('count-no-pagadas').textContent = estadisticas.total_ordenes_no_pagadas;
+  
+  // Mostrar órdenes
+  mostrarOrdenesPagadas(data.ordenes_pagadas);
+  mostrarOrdenesNoPagadas(data.ordenes_no_pagadas);
+  
+  // Configurar botones
+  const btnDescargar = document.getElementById('btn-descargar');
+  if (liquidacion.archivo_original) {
+    btnDescargar.disabled = false;
+    btnDescargar.onclick = () => descargarArchivo(liquidacion.archivo_original);
+  } else {
+    btnDescargar.disabled = true;
+  }
+  
+  // Mostrar contenido
+  document.getElementById('contenido-principal').classList.remove('hidden');
+}
+
+function mostrarOrdenesPagadas(ordenes) {
+  const tbody = document.getElementById('tabla-ordenes-pagadas');
+  const emptyState = document.getElementById('empty-pagadas');
+  
+  if (!ordenes || ordenes.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  
+  emptyState.classList.add('hidden');
+  
+  tbody.innerHTML = ordenes.map(orden => `
+    <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">${orden.numero_orden}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        ${formatearFecha(orden.fecha_orden)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${formatearMonto(orden.monto_orden)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        ${formatearMonto(orden.monto_pago)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTipoClasses(orden.tipo_liquidacion)}">
+          ${getTipoTexto(orden.tipo_liquidacion)}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <i class="fas fa-check-circle mr-1"></i>
+          ${orden.estado_pago}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function mostrarOrdenesNoPagadas(ordenes) {
+  const tbody = document.getElementById('tabla-ordenes-no-pagadas');
+  const emptyState = document.getElementById('empty-no-pagadas');
+  
+  if (!ordenes || ordenes.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  
+  emptyState.classList.add('hidden');
+  
+  tbody.innerHTML = ordenes.map(orden => `
+    <tr class="hover:bg-gray-50 transition-colors">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">${orden.numero_orden}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        ${formatearFecha(orden.fecha_orden)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        ${formatearMonto(orden.monto_orden)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <i class="fas fa-clock mr-1"></i>
+          ${orden.estado_pago}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <button onclick="verOrdenDetalle('${orden.numero_orden}')" 
+                class="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded hover:bg-blue-50" 
+                title="Ver detalle de orden">
+          <i class="fas fa-eye text-sm"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function cambiarTab(tab) {
+  // Desactivar todos los tabs
+  document.getElementById('tab-pagadas').className = 'py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+  document.getElementById('tab-no-pagadas').className = 'py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
+  
+  // Ocultar contenido
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.add('hidden');
+  });
+  
+  // Activar tab seleccionado
+  if (tab === 'pagadas') {
+    document.getElementById('tab-pagadas').className = 'py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600';
+    document.getElementById('content-pagadas').classList.remove('hidden');
+  } else if (tab === 'no-pagadas') {
+    document.getElementById('tab-no-pagadas').className = 'py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600';
+    document.getElementById('content-no-pagadas').classList.remove('hidden');
+  }
+}
+
+function mostrarLoading(mostrar) {
+  const loading = document.getElementById('loading');
+  const contenido = document.getElementById('contenido-principal');
+  
+  if (mostrar) {
+    loading.classList.remove('hidden');
+    contenido.classList.add('hidden');
+  } else {
+    loading.classList.add('hidden');
+  }
+}
+
+function mostrarError(mensaje) {
+  const errorDiv = document.getElementById('error-state');
+  const mensajeError = document.getElementById('mensaje-error');
+  
+  mensajeError.textContent = mensaje;
+  errorDiv.classList.remove('hidden');
+}
+
+function ocultarError() {
+  document.getElementById('error-state').classList.add('hidden');
+}
+
+function confirmarEliminar() {
+  if (!liquidacionData) return;
+  
+  document.getElementById('numero-liquidacion-eliminar').textContent = liquidacionData.liquidacion.numero_liquidacion;
+  document.getElementById('modal-eliminar').classList.remove('hidden');
+  
+  // Reset del botón
+  const btnEliminar = document.getElementById('btn-confirmar-eliminar');
+  const textoBtn = document.getElementById('texto-btn-eliminar');
+  const loadingIcon = document.getElementById('loading-btn-eliminar');
+  
+  btnEliminar.disabled = false;
+  textoBtn.textContent = 'Eliminar';
+  loadingIcon.classList.add('hidden');
+}
+
+function cerrarModalEliminar() {
+  document.getElementById('modal-eliminar').classList.add('hidden');
+}
+
+async function eliminarLiquidacion() {
+  if (!liquidacionData) return;
+  
+  const btnEliminar = document.getElementById('btn-confirmar-eliminar');
+  const textoBtn = document.getElementById('texto-btn-eliminar');
+  const loadingIcon = document.getElementById('loading-btn-eliminar');
+  
+  try {
+    // Mostrar loading
+    btnEliminar.disabled = true;
+    textoBtn.textContent = 'Eliminando...';
+    loadingIcon.classList.remove('hidden');
+    
+    const response = await fetch(`/liquidaciones/api/liquidaciones/${liquidacionId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // Éxito - redirigir a lista
+      mostrarToast('success', `Liquidación ${liquidacionData.liquidacion.numero_liquidacion} eliminada exitosamente`);
+      
+      setTimeout(() => {
+        window.location.href = '/liquidaciones';
+      }, 2000);
+      
+    } else {
+      const errorMsg = data.message || data.error || 'Error desconocido al eliminar';
+      mostrarToast('error', errorMsg);
+    }
+    
+  } catch (error) {
+    console.error('Error al eliminar liquidación:', error);
+    mostrarToast('error', 'Error de conexión al eliminar liquidación');
+  } finally {
+    // Reset del botón
+    btnEliminar.disabled = false;
+    textoBtn.textContent = 'Eliminar';
+    loadingIcon.classList.add('hidden');
+  }
+}
+
+function descargarArchivo(archivo) {
+  if (!archivo) {
+    mostrarToast('error', 'No hay archivo disponible para descargar');
+    return;
+  }
+  console.log('Descargar archivo:', archivo);
+  // TODO: Implementar descarga de archivo
+  mostrarToast('info', `Funcionalidad en desarrollo. Archivo: ${archivo}`);
+}
+
+function verOrdenDetalle(numeroOrden) {
+  console.log('Ver detalle de orden:', numeroOrden);
+  // TODO: Implementar vista de detalle de orden
+  mostrarToast('info', `Funcionalidad en desarrollo. Orden: ${numeroOrden}`);
+}
+
+function mostrarToast(tipo, mensaje) {
+  const toast = document.getElementById('toast-notificacion');
+  const icon = document.getElementById('toast-icon');
+  const mensajeEl = document.getElementById('toast-mensaje');
+  
+  // Configurar icono y colores según el tipo
+  if (tipo === 'success') {
+    icon.className = 'fas fa-check-circle text-green-500 text-xl';
+    toast.querySelector('.bg-white, .bg-red-50, .bg-blue-50').className = 'bg-green-50 border border-green-200 rounded-lg shadow-lg p-4';
+  } else if (tipo === 'error') {
+    icon.className = 'fas fa-exclamation-circle text-red-500 text-xl';
+    toast.querySelector('.bg-white, .bg-green-50, .bg-blue-50').className = 'bg-red-50 border border-red-200 rounded-lg shadow-lg p-4';
+  } else if (tipo === 'info') {
+    icon.className = 'fas fa-info-circle text-blue-500 text-xl';
+    toast.querySelector('.bg-white, .bg-green-50, .bg-red-50').className = 'bg-blue-50 border border-blue-200 rounded-lg shadow-lg p-4';
+  }
+  
+  mensajeEl.textContent = mensaje;
+  toast.classList.remove('hidden');
+  
+  // Auto-ocultar después de 5 segundos
+  setTimeout(ocultarToast, 5000);
+}
+
+function ocultarToast() {
+  document.getElementById('toast-notificacion').classList.add('hidden');
+}
+
+// Funciones de formato
+function formatearFecha(fecha) {
+  if (!fecha) return 'N/A';
+  try {
+    return new Date(fecha).toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch (e) {
+    return 'N/A';
+  }
+}
+
+function formatearFechaCompleta(fecha) {
+  if (!fecha) return 'N/A';
+  try {
+    return new Date(fecha).toLocaleString('es-CL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return 'N/A';
+  }
+}
+
+function formatearMonto(monto) {
+  if (!monto || monto === 0) return '$0';
+  try {
+    return new Intl.NumberFormat('es-CL', { 
+      style: 'currency', 
+      currency: 'CLP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(monto);
+  } catch (e) {
+    return `${monto.toLocaleString()}`;
+  }
+}
+
+function getRetailClasses(retail) {
+  if (!retail) return 'bg-gray-100 text-gray-800';
+  
+  switch (retail.toLowerCase()) {
+    case 'falabella':
+      return 'bg-blue-100 text-blue-800';
+    case 'cencosud':
+      return 'bg-green-100 text-green-800';
+    case 'walmart':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'ripley':
+      return 'bg-purple-100 text-purple-800';
+    case 'hites':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function getEstadoClasses(estado) {
+  if (!estado) return 'bg-gray-100 text-gray-800';
+  
+  switch (estado.toLowerCase()) {
+    case 'procesada':
+      return 'bg-green-100 text-green-800';
+    case 'pendiente':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'error':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function getTipoClasses(tipo) {
+  if (!tipo) return 'bg-gray-100 text-gray-800';
+  
+  switch (tipo.toLowerCase()) {
+    case 'venta':
+      return 'bg-green-100 text-green-800';
+    case 'devolucion':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'cancelacion':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function getTipoTexto(tipo) {
+  if (!tipo) return 'N/A';
+  
+  switch (tipo.toLowerCase()) {
+    case 'venta':
+      return 'Venta';
+    case 'devolucion':
+      return 'Devolución';
+    case 'cancelacion':
+      return 'Cancelación';
+    default:
+      return tipo;
+  }
+}
+</script>
+{% endblock %}

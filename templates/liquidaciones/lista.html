@@ -536,9 +536,8 @@ function ocultarToast() {
 }
 
 function verDetalle(id) {
-  console.log('Ver detalle liquidación:', id);
-  // TODO: Implementar modal o página de detalle
-  alert(`Funcionalidad en desarrollo. ID: ${id}`);
+  // Navegar a la página de detalle
+  window.location.href = `/liquidaciones/${id}`;
 }
 
 function descargarArchivo(archivo) {
