@@ -60,6 +60,217 @@ async def cargar_liquidacion(request: Request):
         print(f"Error en vista cargar_liquidacion: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/pendientes")
+async def ordenes_pendientes(request: Request):
+    """Vista de órdenes pendientes de liquidaciones"""
+    try:
+        return templates.TemplateResponse("liquidaciones/pendientes.html", {
+            "request": request
+        })
+    except Exception as e:
+        print(f"Error en vista ordenes_pendientes: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/ordenes-pendientes")
+async def obtener_ordenes_pendientes(
+    page: int = 1,
+    limit: int = 50,
+    retail: Optional[str] = None,
+    liquidacion_id: Optional[int] = None
+):
+    """Obtener lista de órdenes pendientes de liquidaciones"""
+    conn = None
+    cursor = None
+    
+    try:
+        conn = obtener_conexion_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar si la tabla existe
+        cursor.execute("SHOW TABLES LIKE 'ordenes_liquidacion_pendientes'")
+        tabla_existe = cursor.fetchone()
+        
+        if not tabla_existe:
+            return {
+                "ordenes": [],
+                "total": 0,
+                "page": page,
+                "limit": limit,
+                "mensaje": "No hay órdenes pendientes"
+            }
+        
+        # Query base
+        query = """
+        SELECT 
+            olp.id,
+            olp.numero_orden,
+            olp.monto_pago,
+            olp.tipo_liquidacion,
+            olp.fecha_liquidacion,
+            olp.numero_liquidacion,
+            olp.fila_excel,
+            olp.estado,
+            olp.fecha_creacion,
+            l.numero_liquidacion as liquidacion_numero,
+            CASE 
+                WHEN olp.cliente_id = 1 THEN 'Falabella'
+                WHEN olp.cliente_id = 2 THEN 'Cencosud' 
+                WHEN olp.cliente_id = 3 THEN 'Walmart'
+                WHEN olp.cliente_id = 4 THEN 'Ripley'
+                WHEN olp.cliente_id = 5 THEN 'Hites'
+                ELSE 'Desconocido'
+            END as retail
+        FROM ordenes_liquidacion_pendientes olp
+        LEFT JOIN liquidaciones l ON olp.liquidacion_id = l.id
+        WHERE 1=1
+        """
+        
+        params = []
+        
+        # Aplicar filtros
+        if retail:
+            retail_info = None
+            for key, value in RETAIL_CONFIG.items():
+                if value["nombre"].lower() == retail.lower():
+                    retail_info = value
+                    break
+            if retail_info:
+                query += " AND olp.cliente_id = %s"
+                params.append(retail_info["cliente_id"])
+        
+        if liquidacion_id:
+            query += " AND olp.liquidacion_id = %s"
+            params.append(liquidacion_id)
+        
+        # Solo órdenes pendientes
+        query += " AND olp.estado = 'pendiente'"
+        
+        # Ordenar
+        query += " ORDER BY olp.fecha_creacion DESC"
+        
+        # Contar total
+        count_query = query.replace(
+            "SELECT olp.id, olp.numero_orden, olp.monto_pago, olp.tipo_liquidacion, olp.fecha_liquidacion, olp.numero_liquidacion, olp.fila_excel, olp.estado, olp.fecha_creacion, l.numero_liquidacion as liquidacion_numero, CASE WHEN olp.cliente_id = 1 THEN 'Falabella' WHEN olp.cliente_id = 2 THEN 'Cencosud' WHEN olp.cliente_id = 3 THEN 'Walmart' WHEN olp.cliente_id = 4 THEN 'Ripley' WHEN olp.cliente_id = 5 THEN 'Hites' ELSE 'Desconocido' END as retail",
+            "SELECT COUNT(*) as total"
+        )
+        
+        cursor.execute(count_query, params)
+        total_result = cursor.fetchone()
+        total = total_result['total'] if total_result else 0
+        
+        # Aplicar paginación
+        offset = (page - 1) * limit
+        query += " LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        cursor.execute(query, params)
+        ordenes = cursor.fetchall()
+        
+        # Formatear datos
+        ordenes_formateadas = []
+        for orden in ordenes:
+            orden_formateada = {
+                "id": orden["id"],
+                "numero_orden": orden["numero_orden"],
+                "retail": orden["retail"],
+                "monto_pago": float(orden["monto_pago"]) if orden["monto_pago"] else 0,
+                "tipo_liquidacion": orden["tipo_liquidacion"],
+                "fecha_liquidacion": orden["fecha_liquidacion"].isoformat() if orden["fecha_liquidacion"] else None,
+                "numero_liquidacion": orden["numero_liquidacion"],
+                "liquidacion_numero": orden["liquidacion_numero"],
+                "fila_excel": orden["fila_excel"],
+                "estado": orden["estado"],
+                "fecha_creacion": orden["fecha_creacion"].isoformat() if orden["fecha_creacion"] else None
+            }
+            ordenes_formateadas.append(orden_formateada)
+        
+        return {
+            "ordenes": ordenes_formateadas,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "success": True
+        }
+        
+    except mysql.connector.Error as db_error:
+        print(f"❌ Error de base de datos: {str(db_error)}")
+        return {
+            "ordenes": [],
+            "total": 0,
+            "page": page,
+            "limit": limit,
+            "error": f"Error de base de datos: {str(db_error)}",
+            "success": False
+        }
+    except Exception as e:
+        print(f"❌ Error al obtener órdenes pendientes: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        return {
+            "ordenes": [],
+            "total": 0,
+            "page": page,
+            "limit": limit,
+            "error": f"Error interno: {str(e)}",
+            "success": False
+        }
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@router.delete("/api/ordenes-pendientes/{orden_id}")
+async def eliminar_orden_pendiente(orden_id: int):
+    """Eliminar una orden pendiente específica"""
+    conn = None
+    cursor = None
+    
+    try:
+        conn = obtener_conexion_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar que la orden existe
+        cursor.execute("SELECT id, numero_orden FROM ordenes_liquidacion_pendientes WHERE id = %s", (orden_id,))
+        orden = cursor.fetchone()
+        
+        if not orden:
+            raise HTTPException(status_code=404, detail="Orden pendiente no encontrada")
+        
+        # Eliminar la orden
+        cursor.execute("DELETE FROM ordenes_liquidacion_pendientes WHERE id = %s", (orden_id,))
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="No se pudo eliminar la orden pendiente")
+        
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": f"Orden pendiente {orden['numero_orden']} eliminada exitosamente",
+            "orden_eliminada": {
+                "id": orden_id,
+                "numero_orden": orden['numero_orden']
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except mysql.connector.Error as db_error:
+        if conn:
+            conn.rollback()
+        print(f"❌ Error de base de datos: {str(db_error)}")
+        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(db_error)}")
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"❌ Error al eliminar orden pendiente: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 @router.get("/ordenes")
 async def estado_ordenes(request: Request):
     """Vista del estado de órdenes"""
@@ -825,6 +1036,73 @@ def crear_tabla_liquidaciones(cursor):
     except Exception as e:
         print(f"Error creando tabla liquidaciones: {str(e)}")
 
+def crear_tabla_ordenes_pendientes(cursor):
+    """Crear tabla para órdenes no encontradas en liquidaciones"""
+    try:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ordenes_liquidacion_pendientes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            liquidacion_id INT,
+            numero_orden VARCHAR(100),
+            monto_pago DECIMAL(15,2) DEFAULT 0,
+            tipo_liquidacion ENUM('venta', 'devolucion', 'cancelacion') DEFAULT 'venta',
+            fecha_liquidacion DATE,
+            numero_liquidacion VARCHAR(100),
+            fecha_procesamiento_liquidacion VARCHAR(255),
+            estado_liquidacion_excel VARCHAR(100),
+            cliente_id INT,
+            fila_excel INT,
+            data_completa JSON,
+            estado ENUM('pendiente', 'procesada', 'error') DEFAULT 'pendiente',
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            
+            INDEX idx_liquidacion_id (liquidacion_id),
+            INDEX idx_numero_orden (numero_orden),
+            INDEX idx_cliente_id (cliente_id),
+            INDEX idx_estado (estado),
+            
+            FOREIGN KEY (liquidacion_id) REFERENCES liquidaciones(id) ON DELETE CASCADE
+        )
+        """)
+        print("✅ Tabla ordenes_liquidacion_pendientes creada/verificada")
+    except Exception as e:
+        print(f"Error creando tabla ordenes_liquidacion_pendientes: {str(e)}")
+
+# ===== FUNCIONES AUXILIARES =====
+
+def crear_tabla_liquidaciones(cursor):
+    """Crear tabla liquidaciones si no existe"""
+    try:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS liquidaciones (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            cliente_id INT,
+            numero_liquidacion VARCHAR(100),
+            fecha_liquidacion DATE,
+            monto_total DECIMAL(15,2) DEFAULT 0,
+            cantidad_ordenes INT DEFAULT 0,
+            estado ENUM('pendiente', 'procesada', 'error') DEFAULT 'pendiente',
+            archivo_original VARCHAR(255),
+            ordenes_procesadas INT DEFAULT 0,
+            ordenes_actualizadas INT DEFAULT 0,
+            ordenes_no_encontradas INT DEFAULT 0,
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            
+            INDEX idx_cliente_fecha (cliente_id, fecha_liquidacion),
+            INDEX idx_numero_liquidacion (numero_liquidacion),
+            INDEX idx_fecha_liquidacion (fecha_liquidacion)
+        )
+        """)
+        
+        # También crear la tabla de órdenes pendientes
+        crear_tabla_ordenes_pendientes(cursor)
+        
+        print("✅ Tabla liquidaciones creada/verificada")
+    except Exception as e:
+        print(f"Error creando tabla liquidaciones: {str(e)}")
+
 async def procesar_liquidacion_retail(retail: str, contenido: bytes, nombre_archivo: str, numero_liquidacion: Optional[str] = None):
     """Procesar liquidación según el retail específico"""
     
@@ -843,7 +1121,7 @@ async def procesar_liquidacion_retail(retail: str, contenido: bytes, nombre_arch
         }
 
 async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, numero_liquidacion: Optional[str] = None):
-    """Procesar liquidación específica de Cencosud con validación previa completa"""
+    """Procesar liquidación específica de Cencosud - SIEMPRE guarda la liquidación"""
     try:
         # Leer archivo Excel
         df = pd.read_excel(BytesIO(contenido), sheet_name='transacciones')
@@ -886,9 +1164,9 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             except:
                 pass
             
-            print(f"🔍 Iniciando validación de {len(df)} órdenes del Excel")
+            print(f"🔍 Procesando {len(df)} órdenes del Excel - NUEVA LÓGICA: Siempre guardar")
             
-            # PASO 1: VALIDACIÓN PREVIA - Verificar que TODAS las órdenes existan
+            # PASO 1: SEPARAR órdenes encontradas y no encontradas
             ordenes_no_encontradas = []
             ordenes_validas = []
             
@@ -897,12 +1175,11 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     numero_orden_excel = str(row['número orden']).strip()
                     
                     # PARA CENCOSUD: Agregar '0' al final del número de orden del Excel
-                    # porque en la BD terminan en 0 pero en el Excel vienen sin ese 0
                     numero_orden_bd = numero_orden_excel + '0'
                     
                     print(f"📋 Fila {index + 1}: Excel={numero_orden_excel} -> BD={numero_orden_bd}")
                     
-                    # Buscar la orden en ventas_retail usando el número con '0' agregado
+                    # Buscar la orden en ventas_retail
                     query_buscar = """
                     SELECT id, numero_orden FROM ventas_retail 
                     WHERE numero_orden = %s AND cliente_id = %s
@@ -913,8 +1190,8 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     
                     if venta_encontrada:
                         ordenes_validas.append({
-                            'numero_orden_excel': numero_orden_excel,  # Número original del Excel
-                            'numero_orden_bd': numero_orden_bd,        # Número para buscar en BD
+                            'numero_orden_excel': numero_orden_excel,
+                            'numero_orden_bd': numero_orden_bd,
                             'venta_id': venta_encontrada[0],
                             'fila_excel': index + 1,
                             'data': row
@@ -922,64 +1199,83 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                         print(f"✅ Orden {numero_orden_excel} encontrada en BD como {numero_orden_bd}")
                     else:
                         ordenes_no_encontradas.append({
-                            'numero_orden': numero_orden_excel,
-                            'fila_excel': index + 1
+                            'numero_orden_excel': numero_orden_excel,
+                            'numero_orden_bd': numero_orden_bd,
+                            'fila_excel': index + 1,
+                            'data': row
                         })
-                        print(f"❌ Orden {numero_orden_excel} NO encontrada en BD (buscado como {numero_orden_bd})")
+                        print(f"⚠️ Orden {numero_orden_excel} NO encontrada - se guardará como pendiente")
                         
                 except Exception as e:
                     ordenes_no_encontradas.append({
-                        'numero_orden': str(row.get('número orden', 'N/A')),
+                        'numero_orden_excel': str(row.get('número orden', 'N/A')),
+                        'numero_orden_bd': '',
                         'fila_excel': index + 1,
+                        'data': row,
                         'error': str(e)
                     })
             
-            # Si hay órdenes no encontradas, DETENER el proceso
-            if ordenes_no_encontradas:
-                print(f"❌ Se encontraron {len(ordenes_no_encontradas)} órdenes que no existen en la base de datos")
-                
-                # Crear mensaje detallado de error
-                mensaje_error = f"No se pudo procesar la liquidación. Se encontraron {len(ordenes_no_encontradas)} órdenes que no existen en la base de datos:"
-                
-                ordenes_faltantes_texto = []
-                for orden in ordenes_no_encontradas[:10]:  # Mostrar máximo 10
-                    ordenes_faltantes_texto.append(f"• Orden: {orden['numero_orden']} (Fila {orden['fila_excel']} del Excel)")
-                
-                if len(ordenes_no_encontradas) > 10:
-                    ordenes_faltantes_texto.append(f"• ... y {len(ordenes_no_encontradas) - 10} órdenes más")
-                
-                return {
-                    "success": False,
-                    "message": mensaje_error,
-                    "retail": "Cencosud",
-                    "archivo": nombre_archivo,
-                    "ordenes_procesadas": len(df),
-                    "ordenes_actualizadas": 0,
-                    "ordenes_no_encontradas": len(ordenes_no_encontradas),
-                    "ordenes_con_error": 0,
-                    "monto_total": 0,
-                    "monto_ventas": 0,
-                    "monto_devoluciones": 0,
-                    "errores": ordenes_faltantes_texto,
-                    "detalle_ordenes_faltantes": ordenes_no_encontradas  # Para el frontend
-                }
+            print(f"📊 Resumen: {len(ordenes_validas)} encontradas, {len(ordenes_no_encontradas)} no encontradas")
             
-            print(f"✅ Todas las órdenes ({len(ordenes_validas)}) existen en la base de datos. Procediendo con la actualización...")
-            
-            # PASO 2: PROCESAMIENTO - Todas las órdenes son válidas, proceder con las actualizaciones
-            ordenes_actualizadas = 0
+            # PASO 2: GUARDAR LIQUIDACIÓN (siempre se guarda)
             monto_total = 0
+            
+            # Calcular monto total de todas las órdenes (encontradas y no encontradas)
+            for orden_data in ordenes_validas + ordenes_no_encontradas:
+                try:
+                    row = orden_data['data']
+                    monto_pago = float(row['monto a pagar']) if pd.notna(row['monto a pagar']) else 0
+                    monto_total += monto_pago
+                except:
+                    pass
+            
+            # Determinar estado de la liquidación
+            if len(ordenes_no_encontradas) == 0:
+                estado_liquidacion = 'procesada'  # Todas las órdenes fueron encontradas
+            elif len(ordenes_validas) == 0:
+                estado_liquidacion = 'error'      # Ninguna orden fue encontrada
+            else:
+                estado_liquidacion = 'procesada'  # Parcialmente procesada (pero exitosa)
+            
+            # Insertar registro de liquidación
+            query_liquidacion = """
+            INSERT INTO liquidaciones (
+                cliente_id, numero_liquidacion, fecha_liquidacion, 
+                monto_total, cantidad_ordenes, estado, archivo_original,
+                ordenes_procesadas, ordenes_actualizadas, ordenes_no_encontradas,
+                fecha_creacion
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            """
+            
+            valores_liquidacion = (
+                CLIENTE_CENCOSUD_ID,
+                numero_liquidacion_final,
+                fecha_liquidacion,
+                monto_total,
+                len(df),  # Total de órdenes en el Excel
+                estado_liquidacion,
+                nombre_archivo,
+                len(df),  # Órdenes procesadas
+                len(ordenes_validas),  # Órdenes actualizadas exitosamente
+                len(ordenes_no_encontradas)  # Órdenes no encontradas
+            )
+            
+            cursor.execute(query_liquidacion, valores_liquidacion)
+            liquidacion_id = cursor.lastrowid
+            
+            print(f"✅ Liquidación {liquidacion_id} guardada con estado: {estado_liquidacion}")
+            
+            # PASO 3: ACTUALIZAR órdenes encontradas en ventas_retail
+            ordenes_actualizadas = 0
             monto_ventas = 0
             monto_devoluciones = 0
-            errores_procesamiento = []
-            
-            print("🔄 Iniciando actualizaciones de órdenes")
+            errores_actualizacion = []
             
             for orden_data in ordenes_validas:
                 try:
                     row = orden_data['data']
-                    numero_orden_excel = orden_data['numero_orden_excel']  # Número del Excel
-                    numero_orden_bd = orden_data['numero_orden_bd']        # Número para BD
+                    numero_orden_excel = orden_data['numero_orden_excel']
+                    numero_orden_bd = orden_data['numero_orden_bd']
                     
                     tipo = str(row['tipo']).strip()
                     monto_pago = float(row['monto a pagar']) if pd.notna(row['monto a pagar']) else 0

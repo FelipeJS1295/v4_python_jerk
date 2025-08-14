@@ -523,6 +523,36 @@ function mostrarResultadoExito(resultado) {
   document.getElementById('result-ordenes').textContent = resultado.ordenes_procesadas;
   document.getElementById('result-monto').textContent = formatearMoneda(resultado.monto_total);
   document.getElementById('result-numero').textContent = resultado.numero_liquidacion;
+  
+  // Mostrar información adicional si hay órdenes pendientes
+  if (resultado.ordenes_no_encontradas > 0) {
+    mostrarInformacionPendientes(resultado);
+  }
+}
+
+function mostrarInformacionPendientes(resultado) {
+  // Crear elemento de información adicional
+  const infoAdicional = document.createElement('div');
+  infoAdicional.className = 'mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg';
+  infoAdicional.innerHTML = `
+    <div class="flex items-start">
+      <div class="flex-shrink-0">
+        <i class="fas fa-info-circle text-yellow-600"></i>
+      </div>
+      <div class="ml-3">
+        <h4 class="text-sm font-medium text-yellow-800">Procesamiento Parcial</h4>
+        <div class="mt-2 text-sm text-yellow-700">
+          <p><strong>${resultado.ordenes_actualizadas}</strong> órdenes fueron actualizadas exitosamente.</p>
+          <p><strong>${resultado.ordenes_no_encontradas}</strong> órdenes no se encontraron en el sistema y se guardaron como pendientes.</p>
+          <p class="mt-2">Las órdenes pendientes podrán ser procesadas cuando se agreguen al sistema.</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Insertar después de las estadísticas
+  const estadisticas = document.querySelector('#result-success .grid');
+  estadisticas.insertAdjacentElement('afterend', infoAdicional);
 }
 
 function mostrarResultadoError(mensaje, resultado = null) {
