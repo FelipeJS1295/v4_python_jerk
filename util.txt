@@ -14,6 +14,8 @@ mysql -u root -p"Memo2812**"
 
 USE integracion;
 
+
+
 ngnix que funciona en jerkhome
 # /etc/nginx/sites-available/jerkhome.cl
 
