@@ -1168,7 +1168,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
         
         # Validar columnas requeridas para Cencosud (en minúsculas)
         columnas_requeridas_map = {
-            'número orden': ['número orden', 'numero orden', 'nro orden', 'orden'],
+            'nro suborden': ['nro suborden', 'número orden', 'numero orden', 'nro orden', 'orden', 'suborden'],
             'tipo': ['tipo', 'tipo liquidacion', 'tipo_liquidacion'],
             'monto a pagar': ['monto a pagar', 'monto pagar', 'monto', 'valor'],
             'fecha liq.factura': ['fecha liq.factura', 'fecha liquidacion', 'fecha liq', 'fecha'],
@@ -1211,9 +1211,9 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
         for index, row in df_renamed.iterrows():
             try:
                 # Extraer y limpiar cada campo de forma segura
-                numero_orden = str(row.get('número orden', '')).strip()
-                if numero_orden in ['nan', 'NaN', '', 'None']:
-                    numero_orden = ''
+                numero_suborden = str(row.get('nro suborden', '')).strip()
+                if numero_suborden in ['nan', 'NaN', '', 'None']:
+                    numero_suborden = ''
                 
                 tipo = str(row.get('tipo', '')).strip()
                 if tipo in ['nan', 'NaN', '', 'None']:
@@ -1254,13 +1254,13 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                 if estado_liquidacion_excel in ['nan', 'NaN', '', 'None']:
                     estado_liquidacion_excel = 'pendiente'
                 
-                # Validar que al menos tengamos número de orden
-                if not numero_orden:
-                    errores_fila.append(f"Fila {index + 2}: Número de orden vacío")
+                # Validar que al menos tengamos número de suborden
+                if not numero_suborden:
+                    errores_fila.append(f"Fila {index + 2}: Número de suborden vacío")
                     continue
                 
                 fila_procesada = {
-                    'numero_orden_excel': numero_orden,
+                    'numero_suborden': numero_suborden,
                     'tipo': tipo,
                     'monto_pago': monto_pago,
                     'fecha_liquidacion': fecha_liquidacion,
@@ -1271,7 +1271,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                 }
                 
                 filas_validas.append(fila_procesada)
-                print(f"✅ Fila {index + 2}: Orden {numero_orden} procesada")
+                print(f"✅ Fila {index + 2}: Suborden {numero_suborden} procesada")
                 
             except Exception as e:
                 error_msg = f"Fila {index + 2}: Error procesando datos - {str(e)}"
@@ -1316,14 +1316,14 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             ordenes_validas = []
             
             for fila_data in filas_validas:
-                numero_orden_excel = fila_data['numero_orden_excel']
+                numero_suborden = fila_data['numero_suborden']
                 
-                # PARA CENCOSUD: Agregar '0' al final del número de orden del Excel
-                numero_orden_bd = numero_orden_excel + '0'
+                # PARA CENCOSUD: Usar el número de suborden DIRECTAMENTE (SIN agregar 0)
+                numero_orden_bd = numero_suborden
                 
-                print(f"🔍 Fila {fila_data['fila_excel']}: Excel={numero_orden_excel} -> BD={numero_orden_bd}")
+                print(f"🔍 Fila {fila_data['fila_excel']}: Suborden={numero_suborden} -> BD={numero_orden_bd}")
                 
-                # Buscar la orden en ventas_retail
+                # Buscar la orden en ventas_retail usando el número de suborden directamente
                 query_buscar = """
                 SELECT id, numero_orden FROM ventas_retail 
                 WHERE numero_orden = %s AND cliente_id = %s
@@ -1336,11 +1336,11 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     fila_data['numero_orden_bd'] = numero_orden_bd
                     fila_data['venta_id'] = venta_encontrada['id']
                     ordenes_validas.append(fila_data)
-                    print(f"✅ Orden {numero_orden_excel} encontrada en BD como {numero_orden_bd}")
+                    print(f"✅ Suborden {numero_suborden} encontrada en BD")
                 else:
                     fila_data['numero_orden_bd'] = numero_orden_bd
                     ordenes_no_encontradas.append(fila_data)
-                    print(f"⚠️ Orden {numero_orden_excel} NO encontrada - se guardará como pendiente")
+                    print(f"⚠️ Suborden {numero_suborden} NO encontrada - se guardará como pendiente")
             
             print(f"📊 Resumen: {len(ordenes_validas)} encontradas, {len(ordenes_no_encontradas)} no encontradas")
             
@@ -1389,7 +1389,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             
             for fila_data in ordenes_validas:
                 try:
-                    numero_orden_excel = fila_data['numero_orden_excel']
+                    numero_suborden = fila_data['numero_suborden']
                     numero_orden_bd = fila_data['numero_orden_bd']
                     
                     tipo = fila_data['tipo']
@@ -1399,7 +1399,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     nro_solicitud = fila_data['nro_solicitud']
                     estado_liquidacion_excel = fila_data['estado_liquidacion_excel']
                     
-                    print(f"📝 Actualizando orden Excel:{numero_orden_excel} -> BD:{numero_orden_bd}")
+                    print(f"📝 Actualizando suborden: {numero_suborden} en BD")
                     
                     # Mapear tipo a enum
                     if tipo.lower() in ['venta', 'ventas']:
@@ -1420,7 +1420,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                         estado_liquidacion = 'pendiente'
                         estado_pago = 'pendiente'
                     
-                    # Actualizar la orden existente usando el número de BD (con el 0)
+                    # Actualizar la orden existente usando el número de suborden directamente
                     query_update = """
                     UPDATE ventas_retail SET 
                         monto_pago_liquidacion = %s,
@@ -1441,7 +1441,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                         nro_solicitud,                 # fecha_procesamiento_liquidacion
                         estado_liquidacion,            # estado_liquidacion
                         estado_pago,                   # estado_pago
-                        numero_orden_bd,               # WHERE numero_orden (usar número BD con 0)
+                        numero_orden_bd,               # WHERE numero_orden (usar número de suborden directamente)
                         CLIENTE_CENCOSUD_ID           # WHERE cliente_id
                     )
                     
@@ -1449,13 +1449,13 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     
                     if cursor.rowcount > 0:
                         ordenes_actualizadas += 1
-                        print(f"✅ Orden {numero_orden_excel} actualizada exitosamente en BD")
+                        print(f"✅ Suborden {numero_suborden} actualizada exitosamente en BD")
                     else:
-                        errores_actualizacion.append(f"Orden {numero_orden_excel} no se pudo actualizar")
-                        print(f"⚠️ Orden {numero_orden_excel} no se pudo actualizar")
+                        errores_actualizacion.append(f"Suborden {numero_suborden} no se pudo actualizar")
+                        print(f"⚠️ Suborden {numero_suborden} no se pudo actualizar")
                     
                 except Exception as e:
-                    error_msg = f"Error actualizando orden {numero_orden_excel}: {str(e)}"
+                    error_msg = f"Error actualizando suborden {numero_suborden}: {str(e)}"
                     errores_actualizacion.append(error_msg)
                     print(f"❌ {error_msg}")
                     continue
@@ -1485,7 +1485,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     
                     valores_pendiente = (
                         liquidacion_id,
-                        fila_data['numero_orden_excel'],
+                        fila_data['numero_suborden'],  # Usar numero_suborden
                         fila_data['monto_pago'],
                         tipo_liquidacion,
                         fila_data['fecha_liquidacion'],
@@ -1501,7 +1501,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     ordenes_pendientes_guardadas += 1
                     
                 except Exception as e:
-                    print(f"❌ Error guardando orden pendiente {fila_data['numero_orden_excel']}: {str(e)}")
+                    print(f"❌ Error guardando suborden pendiente {fila_data['numero_suborden']}: {str(e)}")
                     continue
             
             # Commit de la transacción
@@ -1535,7 +1535,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             if ordenes_no_encontradas:
                 resultado["detalle_ordenes_faltantes"] = [
                     {
-                        "numero_orden": fila['numero_orden_excel'],
+                        "numero_orden": fila['numero_suborden'],  # Usar numero_suborden
                         "fila_excel": fila['fila_excel'],
                         "monto": fila['monto_pago']
                     }
