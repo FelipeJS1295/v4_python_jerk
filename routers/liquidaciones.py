@@ -1604,7 +1604,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             # PASO 3: ACTUALIZAR órdenes encontradas en ventas_retail
             ordenes_actualizadas = 0
             errores_actualizacion = []
-            
+
             for fila_data in ordenes_validas:
                 try:
                     numero_suborden = fila_data['numero_suborden']
@@ -1617,7 +1617,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     nro_solicitud = fila_data['nro_solicitud']
                     estado_liquidacion_excel = fila_data['estado_liquidacion_excel']
                     
-                    print(f"📝 Actualizando suborden: {numero_suborden} en BD")
+                    print(f"📝 Actualizando suborden: {numero_suborden} en BD con liquidacion_id: {liquidacion_id}")
                     
                     # Mapear tipo a enum
                     if tipo.lower() in ['venta', 'ventas']:
@@ -1629,8 +1629,8 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                     
                     # Mapear estado de liquidación
                     if estado_liquidacion_excel.lower() in ['pagada', 'pagado', 'cerrada', 'finalizada']:
-                        estado_liquidacion = 'cerrada'
-                        estado_pago = 'pagada'
+                        estado_liquidacion = 'procesada'  # CORREGIDO: usar 'procesada' en lugar de 'cerrada'
+                        estado_pago = 'pagado'             # CORREGIDO: usar 'pagado' en lugar de 'pagada'
                     elif estado_liquidacion_excel.lower() in ['pendiente', 'proceso']:
                         estado_liquidacion = 'pendiente'
                         estado_pago = 'pendiente'
@@ -1638,7 +1638,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                         estado_liquidacion = 'pendiente'
                         estado_pago = 'pendiente'
                     
-                    # Actualizar la orden existente usando el número de suborden directamente
+                    # CORREGIDO: Actualizar la orden existente incluyendo liquidacion_id
                     query_update = """
                     UPDATE ventas_retail SET 
                         monto_pago_liquidacion = %s,
@@ -1660,16 +1660,25 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
                         nro_solicitud,                 # fecha_procesamiento_liquidacion
                         estado_liquidacion,            # estado_liquidacion
                         estado_pago,                   # estado_pago
-                        liquidacion_id,                # liquidacion_id (nuevo)
+                        liquidacion_id,                # liquidacion_id ← ESTE ES EL CAMPO CLAVE
                         numero_orden_bd,               # WHERE numero_orden
                         CLIENTE_CENCOSUD_ID             # WHERE cliente_id
                     )
                     
+                    print(f"🔍 Ejecutando UPDATE con liquidacion_id = {liquidacion_id}")
                     cursor.execute(query_update, valores)
                     
                     if cursor.rowcount > 0:
                         ordenes_actualizadas += 1
-                        print(f"✅ Suborden {numero_suborden} actualizada exitosamente en BD")
+                        print(f"✅ Suborden {numero_suborden} actualizada con liquidacion_id = {liquidacion_id}")
+                        
+                        # VERIFICACIÓN: Confirmar que se guardó correctamente
+                        cursor.execute("SELECT liquidacion_id FROM ventas_retail WHERE numero_orden = %s", (numero_orden_bd,))
+                        verificacion = cursor.fetchone()
+                        if verificacion and verificacion['liquidacion_id'] == liquidacion_id:
+                            print(f"✅ Verificado: liquidacion_id = {liquidacion_id} guardado correctamente")
+                        else:
+                            print(f"⚠️ ADVERTENCIA: liquidacion_id no se guardó correctamente para {numero_suborden}")
                     else:
                         errores_actualizacion.append(f"Suborden {numero_suborden} no se pudo actualizar")
                         print(f"⚠️ Suborden {numero_suborden} no se pudo actualizar")
