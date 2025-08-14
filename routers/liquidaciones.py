@@ -1097,6 +1097,26 @@ async def obtener_ordenes_por_numero_liquidacion(cursor, liquidacion, liquidacio
     except Exception as e:
         print(f"Error en obtener_ordenes_por_numero_liquidacion: {str(e)}")
         return await obtener_liquidacion_sin_ordenes_simple(liquidacion)
+    
+
+@router.get("/api/test/{liquidacion_id}")
+async def test_liquidacion(liquidacion_id: int):
+    """Endpoint de prueba para debuggear"""
+    try:
+        conn = obtener_conexion_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT COUNT(*) as count FROM liquidaciones WHERE id = %s", (liquidacion_id,))
+        result = cursor.fetchone()
+        
+        return {"liquidacion_id": liquidacion_id, "exists": result['count'] > 0, "success": True}
+    except Exception as e:
+        return {"error": str(e), "success": False}
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 
 @router.delete("/api/liquidaciones/{liquidacion_id}")
