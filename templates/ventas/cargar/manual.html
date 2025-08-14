@@ -8,12 +8,14 @@
 <div class="space-y-6">
   
   <!-- Panel de Instrucciones -->
-  <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+  <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
     <div class="flex items-start space-x-3">
-      <i class="fas fa-info-circle text-blue-600 text-xl mt-1"></i>
+      <svg class="w-5 h-5 text-slate-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+      </svg>
       <div>
-        <h3 class="text-lg font-semibold text-blue-800 mb-2">Carga Manual de Ventas</h3>
-        <ul class="text-sm text-blue-700 space-y-1">
+        <h3 class="text-sm font-medium text-slate-800 mb-1">Carga Manual de Ventas</h3>
+        <ul class="text-xs text-slate-600 space-y-0.5">
           <li>• Complete los datos básicos de la venta</li>
           <li>• Agregue los productos uno por uno con sus cantidades</li>
           <li>• Revise la vista preliminar antes de guardar</li>
@@ -24,63 +26,65 @@
   </div>
 
   <!-- Formulario de Venta -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h3 class="text-lg font-semibold text-slate-800 mb-6">Datos de la Venta</h3>
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-medium text-slate-900 mb-6">Datos de la Venta</h3>
     
     <form id="form-venta-manual" class="space-y-6">
       <!-- Datos Principales -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Cliente *</label>
-          <select id="cliente-id" name="cliente_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Cliente *</label>
+          <select id="cliente-id" name="cliente_id" required class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
             <option value="">Seleccionar cliente...</option>
           </select>
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">N° de Orden *</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">N° de Orden *</label>
           <input type="text" id="numero-orden" name="numero_orden" required 
                  placeholder="Ej: ORD-2024-001" 
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha de Compra *</label>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Fecha de Compra *</label>
           <input type="date" id="fecha-compra" name="fecha_compra" required 
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
         </div>
       </div>
 
       <!-- Sección de Productos -->
       <div class="border-t border-slate-200 pt-6">
-        <h4 class="text-lg font-semibold text-slate-800 mb-4">Productos</h4>
+        <h4 class="text-base font-medium text-slate-900 mb-4">Productos</h4>
         
         <!-- Agregar Producto -->
-        <div class="bg-slate-50 rounded-lg p-4 mb-4">
+        <div class="bg-slate-50 rounded-md p-4 mb-4">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">Producto</label>
-              <select id="producto-select" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+              <label class="block text-sm font-medium text-slate-700 mb-1">Producto</label>
+              <select id="producto-select" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
                 <option value="">Seleccionar producto...</option>
               </select>
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">Cantidad</label>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Cantidad</label>
               <input type="number" id="cantidad-input" min="1" value="1" 
-                     class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+                     class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Entrega</label>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Fecha Entrega</label>
               <input type="date" id="fecha-entrega-input" 
-                     class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+                     class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500">
             </div>
             
             <div class="flex items-end">
               <button type="button" id="btn-agregar-producto" 
-                      class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 transition-colors">
-                <i class="fas fa-plus text-sm"></i>
+                      class="w-full px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800 flex items-center justify-center space-x-2 text-sm transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
                 <span>Agregar</span>
               </button>
             </div>
@@ -93,25 +97,34 @@
         </div>
         
         <div id="sin-productos" class="text-center py-8 text-slate-500">
-          <i class="fas fa-box-open text-3xl mb-2"></i>
-          <p>No hay productos agregados</p>
+          <svg class="w-12 h-12 mx-auto text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+          </svg>
+          <p class="text-sm">No hay productos agregados</p>
         </div>
       </div>
 
       <!-- Botones de Acción -->
       <div class="flex justify-end space-x-3 pt-6 border-t border-slate-200">
-        <a href="/ventas/vista" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors">
-          <i class="fas fa-arrow-left text-sm"></i>
+        <a href="/ventas/vista" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 flex items-center space-x-2 text-sm transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
           <span>Volver</span>
         </a>
         <button type="button" id="btn-vista-previa" 
-                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors" disabled>
-          <i class="fas fa-eye text-sm"></i>
+                class="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 text-sm transition-colors" disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
           <span>Vista Previa</span>
         </button>
         <button type="submit" id="btn-guardar-venta" 
-                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors" disabled>
-          <i class="fas fa-save text-sm"></i>
+                class="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 text-sm transition-colors" disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+          </svg>
           <span>Guardar Venta</span>
         </button>
       </div>
@@ -121,23 +134,25 @@
   <!-- Modal de Vista Previa -->
   <div id="modal-vista-previa" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-96 overflow-hidden">
-        <div class="p-6 border-b border-slate-200">
-          <h3 class="text-lg font-semibold text-slate-800">Vista Previa de la Venta</h3>
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-hidden">
+        <div class="p-4 border-b border-slate-200">
+          <h3 class="text-lg font-medium text-slate-900">Vista Previa de la Venta</h3>
         </div>
         
-        <div class="p-6 overflow-y-auto max-h-64">
+        <div class="p-4 overflow-y-auto max-h-64">
           <div id="contenido-vista-previa">
             <!-- Contenido generado dinámicamente -->
           </div>
         </div>
         
-        <div class="p-6 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
-          <button id="btn-cerrar-preview" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+          <button id="btn-cerrar-preview" class="px-4 py-2 bg-white border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 text-sm transition-colors">
             Cerrar
           </button>
-          <button id="btn-confirmar-guardar" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-            <i class="fas fa-save mr-2"></i>
+          <button id="btn-confirmar-guardar" class="px-4 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-900 text-sm transition-colors">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+            </svg>
             Confirmar y Guardar
           </button>
         </div>
@@ -148,12 +163,12 @@
   <!-- Modal de Resultado -->
   <div id="modal-resultado" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
         <div id="contenido-resultado">
           <!-- Contenido dinámico -->
         </div>
         <div class="flex justify-end mt-6">
-          <button id="btn-modal-cerrar" class="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+          <button id="btn-modal-cerrar" class="px-4 py-2 bg-slate-600 text-white rounded-md hover:bg-slate-700 text-sm transition-colors">
             Cerrar
           </button>
         </div>
@@ -204,6 +219,11 @@ document.addEventListener('DOMContentLoaded', function() {
   btnCerrarPreview.addEventListener('click', () => modalVistaPrevia.classList.add('hidden'));
   btnConfirmarGuardar.addEventListener('click', guardarVenta);
   btnModalCerrar.addEventListener('click', () => modalResultado.classList.add('hidden'));
+  
+  // Event listeners para verificar formulario
+  clienteSelect.addEventListener('change', verificarFormulario);
+  numeroOrden.addEventListener('input', verificarFormulario);
+  fechaCompra.addEventListener('change', verificarFormulario);
 });
 
 async function cargarClientes() {
@@ -218,27 +238,34 @@ async function cargarClientes() {
         option.textContent = cliente.nombre;
         clienteSelect.appendChild(option);
       });
+    } else {
+      console.error('Error al cargar clientes:', response.status);
     }
   } catch (error) {
     console.error('Error cargando clientes:', error);
+    mostrarError('Error al cargar clientes');
   }
 }
 
 async function cargarProductos() {
   try {
-    const response = await fetch('/configuracion/productos/api');
+    const response = await fetch('/ventas/productos');
     if (response.ok) {
       const productos = await response.json();
       productoSelect.innerHTML = '<option value="">Seleccionar producto...</option>';
       productos.forEach(producto => {
         const option = document.createElement('option');
         option.value = producto.nombre;
-        option.textContent = `${producto.nombre} (${producto.sku})`;
+        option.textContent = `${producto.nombre} (${producto.sku || 'Sin SKU'})`;
         productoSelect.appendChild(option);
       });
+    } else {
+      console.error('Error al cargar productos:', response.status);
+      mostrarError('Error al cargar productos');
     }
   } catch (error) {
     console.error('Error cargando productos:', error);
+    mostrarError('Error al cargar productos');
   }
 }
 
@@ -248,7 +275,7 @@ function agregarProducto() {
   const fechaEntrega = fechaEntregaInput.value;
   
   if (!producto || !cantidad || !fechaEntrega) {
-    alert('Complete todos los campos del producto');
+    mostrarError('Complete todos los campos del producto');
     return;
   }
   
@@ -285,18 +312,20 @@ function actualizarListaProductos() {
   productosAgregados.innerHTML = '';
   productosVenta.forEach((item, index) => {
     const div = document.createElement('div');
-    div.className = 'flex items-center justify-between bg-white border border-slate-200 rounded-lg p-4';
+    div.className = 'flex items-center justify-between bg-white border border-slate-200 rounded-md p-3';
     div.innerHTML = `
       <div class="flex-1">
         <div class="flex items-center space-x-4">
           <div class="flex-1">
-            <p class="font-medium text-slate-800">${item.producto}</p>
-            <p class="text-sm text-slate-600">Cantidad: ${item.cantidad} | Entrega: ${formatearFecha(item.fecha_entrega)}</p>
+            <p class="font-medium text-slate-900 text-sm">${item.producto}</p>
+            <p class="text-xs text-slate-600">Cantidad: ${item.cantidad} | Entrega: ${formatearFecha(item.fecha_entrega)}</p>
           </div>
         </div>
       </div>
-      <button onclick="eliminarProducto(${index})" class="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors">
-        <i class="fas fa-trash text-sm"></i>
+      <button onclick="eliminarProducto(${index})" class="p-1 text-slate-400 hover:text-red-600 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
       </button>
     `;
     productosAgregados.appendChild(div);
@@ -323,30 +352,30 @@ function mostrarVistaPrevia() {
     <div class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700">Cliente:</label>
-          <p class="text-slate-900">${clienteNombre}</p>
+          <label class="block text-xs font-medium text-slate-700">Cliente:</label>
+          <p class="text-sm text-slate-900">${clienteNombre}</p>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700">N° Orden:</label>
-          <p class="text-slate-900">${numeroOrden.value}</p>
+          <label class="block text-xs font-medium text-slate-700">N° Orden:</label>
+          <p class="text-sm text-slate-900">${numeroOrden.value}</p>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700">Fecha Compra:</label>
-          <p class="text-slate-900">${formatearFecha(fechaCompra.value)}</p>
+          <label class="block text-xs font-medium text-slate-700">Fecha Compra:</label>
+          <p class="text-sm text-slate-900">${formatearFecha(fechaCompra.value)}</p>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700">Total Unidades:</label>
-          <p class="text-slate-900 font-semibold">${totalUnidades}</p>
+          <label class="block text-xs font-medium text-slate-700">Total Unidades:</label>
+          <p class="text-sm text-slate-900 font-medium">${totalUnidades}</p>
         </div>
       </div>
       
       <div>
-        <label class="block text-sm font-medium text-slate-700 mb-2">Productos:</label>
+        <label class="block text-xs font-medium text-slate-700 mb-2">Productos:</label>
         <div class="space-y-2">
           ${productosVenta.map(p => `
-            <div class="bg-slate-50 p-3 rounded">
+            <div class="bg-slate-50 p-3 rounded text-sm">
               <p class="font-medium">${p.producto}</p>
-              <p class="text-sm text-slate-600">Cantidad: ${p.cantidad} | Entrega: ${formatearFecha(p.fecha_entrega)}</p>
+              <p class="text-xs text-slate-600">Cantidad: ${p.cantidad} | Entrega: ${formatearFecha(p.fecha_entrega)}</p>
             </div>
           `).join('')}
         </div>
@@ -397,8 +426,10 @@ async function guardarVenta() {
 function mostrarResultadoExito(mensaje) {
   contenidoResultado.innerHTML = `
     <div class="flex items-center mb-4">
-      <i class="fas fa-check-circle text-green-600 text-2xl mr-3"></i>
-      <h3 class="text-lg font-semibold text-slate-800">¡Éxito!</h3>
+      <svg class="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <h3 class="text-lg font-medium text-slate-900">¡Éxito!</h3>
     </div>
     <p class="text-slate-600">${mensaje}</p>
   `;
@@ -413,24 +444,24 @@ function mostrarResultadoExito(mensaje) {
 function mostrarResultadoError(mensaje) {
   contenidoResultado.innerHTML = `
     <div class="flex items-center mb-4">
-      <i class="fas fa-exclamation-circle text-red-600 text-2xl mr-3"></i>
-      <h3 class="text-lg font-semibold text-slate-800">Error</h3>
+      <svg class="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <h3 class="text-lg font-medium text-slate-900">Error</h3>
     </div>
     <p class="text-slate-600">${mensaje}</p>
   `;
   modalResultado.classList.remove('hidden');
 }
 
+function mostrarError(mensaje) {
+  console.error(mensaje);
+  // Aquí podrías mostrar una notificación toast o similar
+}
+
 function formatearFecha(fecha) {
   const date = new Date(fecha + 'T00:00:00');
   return date.toLocaleDateString('es-CL');
 }
-
-// Event listeners para verificar formulario
-document.addEventListener('DOMContentLoaded', function() {
-  clienteSelect.addEventListener('change', verificarFormulario);
-  numeroOrden.addEventListener('input', verificarFormulario);
-  fechaCompra.addEventListener('change', verificarFormulario);
-});
 </script>
 {% endblock %}

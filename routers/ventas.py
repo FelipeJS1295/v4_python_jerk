@@ -11,6 +11,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse
 from collections import defaultdict
+from schemas.venta_schema import VentaManualRequest, VentaManualResponse
 
 router = APIRouter(prefix="/ventas", tags=["Ventas"])
 
@@ -1196,3 +1197,104 @@ def procesar_datos_nubox(datos):
             resultado.append(fila_nubox)
     
     return resultado
+
+@router.get("/productos")
+async def obtener_productos():
+    """Obtener lista de productos para dropdown"""
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        query = """
+        SELECT id, sku, nombre, precio_venta 
+        FROM productos 
+        WHERE sku IS NOT NULL AND nombre IS NOT NULL
+        ORDER BY nombre
+        """
+        
+        cursor.execute(query)
+        productos = cursor.fetchall()
+        
+        return productos
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener productos: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@router.post("/manual/guardar", response_model=VentaManualResponse)
+async def guardar_venta_manual(venta_data: VentaManualRequest):
+    """Guardar venta manual con múltiples productos"""
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True, buffered=True)
+    
+    try:
+        ventas_creadas = 0
+        
+        for producto_item in venta_data.productos:
+            # Crear una venta por cada unidad del producto
+            for i in range(producto_item.cantidad):
+                # Definir columnas exactamente como están en la base de datos
+                columnas = [
+                    "cliente_id", "numero_orden", "cliente_final", "rut_documento", "email",
+                    "telefono", "fecha_entrega", "fecha_cliente", "producto", "precio",
+                    "precio_cliente", "costo_despacho", "comuna", "direccion", "region",
+                    "sku", "estado", "documento", "razon_social", "rut", "giro",
+                    "direccion_factura", "courier", "unidades", "users_id", "fecha_compra"
+                ]
+                
+                # Obtener valores, usando valores por defecto para campos opcionales
+                valores = [
+                    venta_data.cliente_id,
+                    f"{venta_data.numero_orden}-{ventas_creadas + 1:03d}",
+                    "",  # cliente_final
+                    "",  # rut_documento
+                    "",  # email
+                    "",  # telefono
+                    producto_item.fecha_entrega,
+                    venta_data.fecha_compra,
+                    producto_item.producto,
+                    0,   # precio
+                    0,   # precio_cliente
+                    0,   # costo_despacho
+                    "",  # comuna
+                    "",  # direccion
+                    "",  # region
+                    "",  # sku
+                    "nueva",  # estado
+                    "boleta",  # documento
+                    "",  # razon_social
+                    "",  # rut
+                    "Particular",  # giro
+                    "",  # direccion_factura
+                    "Retiro en tienda",  # courier
+                    1,   # unidades
+                    1,   # users_id
+                    venta_data.fecha_compra
+                ]
+
+                placeholders = ", ".join(["%s"] * len(columnas))
+                columnas_str = ", ".join(columnas)
+
+                query = f"""
+                    INSERT INTO ventas_retail ({columnas_str})
+                    VALUES ({placeholders})
+                """
+                
+                cursor.execute(query, valores)
+                ventas_creadas += 1
+        
+        conn.commit()
+        
+        return VentaManualResponse(
+            mensaje=f"Se crearon {ventas_creadas} ventas exitosamente",
+            ventas_creadas=ventas_creadas
+        )
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail=f"Error al crear ventas: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()

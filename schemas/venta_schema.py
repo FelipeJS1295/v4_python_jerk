@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, Literal
 from datetime import date, datetime
 from enum import Enum
+from typing import List
 
 # Enums para liquidaciones
 class TipoLiquidacion(str, Enum):
@@ -106,3 +107,21 @@ class VentaDetalle(BaseModel):
     
     class Config:
         from_attributes = True
+
+class ProductoVentaManual(BaseModel):
+    """Schema para productos en carga manual"""
+    producto: str
+    cantidad: int
+    fecha_entrega: date
+
+class VentaManualRequest(BaseModel):
+    """Schema para request de venta manual"""
+    cliente_id: int
+    numero_orden: str
+    fecha_compra: date
+    productos: List[ProductoVentaManual]
+
+class VentaManualResponse(BaseModel):
+    """Schema para response de venta manual"""
+    mensaje: str
+    ventas_creadas: int
