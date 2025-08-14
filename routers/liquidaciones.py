@@ -500,6 +500,62 @@ async def obtener_detalle_orden(numero_orden: str):
         if conn:
             conn.close()
 
+@router.delete("/api/liquidaciones/{liquidacion_id}")
+async def eliminar_liquidacion(liquidacion_id: int):
+    """Eliminar una liquidación específica"""
+    conn = None
+    cursor = None
+    
+    try:
+        conn = obtener_conexion_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar que la liquidación existe
+        cursor.execute("SELECT id, numero_liquidacion, archivo_original FROM liquidaciones WHERE id = %s", (liquidacion_id,))
+        liquidacion = cursor.fetchone()
+        
+        if not liquidacion:
+            raise HTTPException(status_code=404, detail="Liquidación no encontrada")
+        
+        # Eliminar la liquidación
+        cursor.execute("DELETE FROM liquidaciones WHERE id = %s", (liquidacion_id,))
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="No se pudo eliminar la liquidación")
+        
+        conn.commit()
+        
+        print(f"✅ Liquidación {liquidacion_id} eliminada exitosamente")
+        
+        return {
+            "success": True,
+            "message": f"Liquidación {liquidacion['numero_liquidacion']} eliminada exitosamente",
+            "liquidacion_eliminada": {
+                "id": liquidacion_id,
+                "numero_liquidacion": liquidacion['numero_liquidacion'],
+                "archivo_original": liquidacion['archivo_original']
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except mysql.connector.Error as db_error:
+        if conn:
+            conn.rollback()
+        print(f"❌ Error de base de datos al eliminar liquidación: {str(db_error)}")
+        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(db_error)}")
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"❌ Error al eliminar liquidación: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 @router.get("/api/estadisticas")
 async def obtener_estadisticas_liquidaciones():
     """Obtener estadísticas generales de liquidaciones"""
