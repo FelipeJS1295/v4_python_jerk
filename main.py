@@ -30,7 +30,7 @@ from routers import (
     image_router,
     usuarios_jinja,
     trabajadores_jinja,
-    liquidaciones,  # NUEVO: Router de liquidaciones
+    liquidaciones,  # Router de liquidaciones
 )
 
 from routers import camaras
@@ -80,6 +80,10 @@ def es_ruta_publica(path: str) -> bool:
         path.startswith("/imagenes")
     )
 
+def es_ruta_api(path: str) -> bool:
+    """Verificar si una ruta es de API y necesita usuario en el state"""
+    return "/api/" in path
+
 # ===== MIDDLEWARE DE AUTENTICACIÓN =====
 @app.middleware("http")
 async def verificar_autenticacion(request: Request, call_next):
@@ -94,6 +98,14 @@ async def verificar_autenticacion(request: Request, call_next):
     
     # Para rutas protegidas, verificar autenticación
     usuario = obtener_usuario_actual(request)
+    
+    # Si es una ruta de API y no hay usuario, retornar error JSON
+    if es_ruta_api(ruta_actual) and not usuario:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=401,
+            content={"success": False, "error": "No autenticado", "redirect": "/auth/login"}
+        )
     
     if not usuario:
         # No autenticado, redirigir según la ruta
@@ -163,7 +175,7 @@ app.include_router(usuarios_jinja.router)
 app.include_router(trabajadores_jinja.router)
 app.include_router(camaras.router)
 
-# NUEVO: Router de Liquidaciones
+# Router de Liquidaciones
 app.include_router(liquidaciones.router)
 
 # Routers de configuración

@@ -13,9 +13,6 @@ import traceback
 # USAR LA MISMA FUNCIÓN DE CONEXIÓN QUE EL RESTO DEL PROYECTO
 from db import conectar_mysql
 
-# USAR LA MISMA FUNCIÓN DE CONEXIÓN QUE EL RESTO DEL PROYECTO
-from db import conectar_mysql
-
 # Configuración del router
 router = APIRouter(prefix="/liquidaciones", tags=["liquidaciones"])
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +30,7 @@ RETAIL_CONFIG = {
 def obtener_conexion_db():
     """Obtener conexión a la base de datos usando la configuración del proyecto"""
     try:
-        conn = conectar_mysql()  # Usar tu función existente que lee el .env
+        conn = conectar_mysql()
         return conn
     except Exception as e:
         print(f"Error conectando a la base de datos: {str(e)}")
@@ -85,97 +82,189 @@ async def obtener_liquidaciones(
     fecha_hasta: Optional[str] = None
 ):
     """Obtener lista de liquidaciones con filtros"""
+    conn = None
+    cursor = None
+    
     try:
-        # Verificar si existe la tabla liquidaciones
-        try:
-            conn = obtener_conexion_db()
-            cursor = conn.cursor(dictionary=True)
+        print(f"📊 Consultando liquidaciones - Página: {page}, Límite: {limit}")
+        
+        conn = obtener_conexion_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar si la tabla existe
+        cursor.execute("SHOW TABLES LIKE 'liquidaciones'")
+        tabla_existe = cursor.fetchone()
+        
+        if not tabla_existe:
+            print("⚠️ Tabla liquidaciones no existe, creándola...")
+            crear_tabla_liquidaciones(cursor)
+            conn.commit()
             
-            # Verificar si la tabla existe
-            cursor.execute("SHOW TABLES LIKE 'liquidaciones'")
-            tabla_existe = cursor.fetchone()
-            
-            if not tabla_existe:
-                # Crear tabla si no existe
-                crear_tabla_liquidaciones(cursor)
-                conn.commit()
-            
-            # Construir query base
-            query = """
-            SELECT 
-                l.id,
-                COALESCE(c.nombre, 'Desconocido') as retail,
-                l.numero_liquidacion,
-                l.fecha_liquidacion,
-                l.monto_total,
-                l.cantidad_ordenes,
-                l.estado,
-                l.archivo_original,
-                l.fecha_creacion
-            FROM liquidaciones l
-            LEFT JOIN clientes c ON l.cliente_id = c.id
-            WHERE 1=1
-            """
-            
-            params = []
-            
-            # Aplicar filtros
-            if retail:
-                query += " AND c.nombre = %s"
-                params.append(retail.title())
-            
-            if fecha_desde:
-                query += " AND l.fecha_liquidacion >= %s"
-                params.append(fecha_desde)
-            
-            if fecha_hasta:
-                query += " AND l.fecha_liquidacion <= %s"
-                params.append(fecha_hasta)
-            
-            # Ordenar por fecha descendente
-            query += " ORDER BY l.fecha_liquidacion DESC, l.fecha_creacion DESC"
-            
-            # Contar total de registros
-            count_query = query.replace(
-                "SELECT l.id, COALESCE(c.nombre, 'Desconocido') as retail, l.numero_liquidacion, l.fecha_liquidacion, l.monto_total, l.cantidad_ordenes, l.estado, l.archivo_original, l.fecha_creacion",
-                "SELECT COUNT(*)"
-            )
-            
-            cursor.execute(count_query, params)
-            total = cursor.fetchone()['COUNT(*)']
-            
-            # Aplicar paginación
-            offset = (page - 1) * limit
-            query += " LIMIT %s OFFSET %s"
-            params.extend([limit, offset])
-            
-            cursor.execute(query, params)
-            liquidaciones = cursor.fetchall()
-            
-            cursor.close()
-            conn.close()
-            
-            return {
-                "liquidaciones": liquidaciones,
-                "total": total,
-                "page": page,
-                "limit": limit
-            }
-            
-        except mysql.connector.Error as db_error:
-            print(f"Error de base de datos: {str(db_error)}")
+            # Retornar datos vacíos para nueva tabla
             return {
                 "liquidaciones": [],
                 "total": 0,
                 "page": page,
                 "limit": limit,
-                "error": "Error de base de datos"
+                "mensaje": "Tabla liquidaciones creada. No hay datos aún."
             }
         
+        # Construir query con mapeo directo de cliente_id a nombre
+        query = """
+        SELECT 
+            l.id,
+            CASE 
+                WHEN l.cliente_id = 1 THEN 'Falabella'
+                WHEN l.cliente_id = 2 THEN 'Cencosud' 
+                WHEN l.cliente_id = 3 THEN 'Walmart'
+                WHEN l.cliente_id = 4 THEN 'Ripley'
+                WHEN l.cliente_id = 5 THEN 'Hites'
+                ELSE 'Desconocido'
+            END as retail,
+            l.numero_liquidacion,
+            l.fecha_liquidacion,
+            l.monto_total,
+            l.cantidad_ordenes,
+            CASE 
+                WHEN l.estado = 'procesada' THEN 'Procesada'
+                WHEN l.estado = 'pendiente' THEN 'Pendiente'
+                WHEN l.estado = 'error' THEN 'Error'
+                ELSE 'Desconocido'
+            END as estado,
+            l.archivo_original,
+            l.fecha_creacion,
+            l.ordenes_procesadas,
+            l.ordenes_actualizadas,
+            l.ordenes_no_encontradas
+        FROM liquidaciones l
+        WHERE 1=1
+        """
+        
+        params = []
+        
+        # Aplicar filtros
+        if retail:
+            # Mapear nombre del retail a cliente_id
+            retail_info = None
+            for key, value in RETAIL_CONFIG.items():
+                if value["nombre"].lower() == retail.lower():
+                    retail_info = value
+                    break
+            
+            if retail_info:
+                query += " AND l.cliente_id = %s"
+                params.append(retail_info["cliente_id"])
+        
+        if fecha_desde:
+            query += " AND l.fecha_liquidacion >= %s"
+            params.append(fecha_desde)
+        
+        if fecha_hasta:
+            query += " AND l.fecha_liquidacion <= %s"
+            params.append(fecha_hasta)
+        
+        # Ordenar por fecha descendente
+        query += " ORDER BY l.fecha_liquidacion DESC, l.fecha_creacion DESC"
+        
+        print(f"🔍 Query: {query}")
+        print(f"📝 Parámetros: {params}")
+        
+        # Contar total de registros
+        count_query = """
+        SELECT COUNT(*) as total
+        FROM liquidaciones l
+        WHERE 1=1
+        """
+        
+        # Aplicar los mismos filtros para el conteo
+        count_params = []
+        if retail:
+            retail_info = None
+            for key, value in RETAIL_CONFIG.items():
+                if value["nombre"].lower() == retail.lower():
+                    retail_info = value
+                    break
+            if retail_info:
+                count_query += " AND l.cliente_id = %s"
+                count_params.append(retail_info["cliente_id"])
+        
+        if fecha_desde:
+            count_query += " AND l.fecha_liquidacion >= %s"
+            count_params.append(fecha_desde)
+        
+        if fecha_hasta:
+            count_query += " AND l.fecha_liquidacion <= %s"
+            count_params.append(fecha_hasta)
+        
+        cursor.execute(count_query, count_params)
+        total_result = cursor.fetchone()
+        total = total_result['total'] if total_result else 0
+        
+        print(f"📊 Total de registros encontrados: {total}")
+        
+        # Aplicar paginación
+        offset = (page - 1) * limit
+        query += " LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        cursor.execute(query, params)
+        liquidaciones = cursor.fetchall()
+        
+        print(f"✅ Liquidaciones obtenidas: {len(liquidaciones)}")
+        
+        # Formatear datos para el frontend
+        liquidaciones_formateadas = []
+        for liq in liquidaciones:
+            liquidacion_formateada = {
+                "id": liq["id"],
+                "retail": liq["retail"],
+                "numero_liquidacion": liq["numero_liquidacion"] or "N/A",
+                "fecha_liquidacion": liq["fecha_liquidacion"].isoformat() if liq["fecha_liquidacion"] else None,
+                "monto_total": float(liq["monto_total"]) if liq["monto_total"] else 0,
+                "cantidad_ordenes": liq["cantidad_ordenes"] or 0,
+                "estado": liq["estado"],
+                "archivo_original": liq["archivo_original"] or "",
+                "fecha_creacion": liq["fecha_creacion"].isoformat() if liq["fecha_creacion"] else None,
+                "ordenes_procesadas": liq["ordenes_procesadas"] or 0,
+                "ordenes_actualizadas": liq["ordenes_actualizadas"] or 0,
+                "ordenes_no_encontradas": liq["ordenes_no_encontradas"] or 0
+            }
+            liquidaciones_formateadas.append(liquidacion_formateada)
+        
+        return {
+            "liquidaciones": liquidaciones_formateadas,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "success": True
+        }
+        
+    except mysql.connector.Error as db_error:
+        print(f"❌ Error de base de datos: {str(db_error)}")
+        return {
+            "liquidaciones": [],
+            "total": 0,
+            "page": page,
+            "limit": limit,
+            "error": f"Error de base de datos: {str(db_error)}",
+            "success": False
+        }
     except Exception as e:
-        print(f"Error en obtener_liquidaciones: {str(e)}")
+        print(f"❌ Error general: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Error al obtener liquidaciones: {str(e)}")
+        return {
+            "liquidaciones": [],
+            "total": 0,
+            "page": page,
+            "limit": limit,
+            "error": f"Error interno: {str(e)}",
+            "success": False
+        }
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 @router.post("/api/cargar")
 async def cargar_archivo_liquidacion(
@@ -220,109 +309,128 @@ async def obtener_estado_ordenes(
     limit: int = 50
 ):
     """Obtener estado de órdenes"""
+    conn = None
+    cursor = None
+    
     try:
-        try:
-            conn = obtener_conexion_db()
-            cursor = conn.cursor(dictionary=True)
-            
-            # Verificar si la tabla ventas_retail existe
-            cursor.execute("SHOW TABLES LIKE 'ventas_retail'")
-            tabla_existe = cursor.fetchone()
-            
-            if not tabla_existe:
-                return {
-                    "ordenes": [],
-                    "total": 0,
-                    "page": page,
-                    "limit": limit,
-                    "error": "Tabla ventas_retail no existe"
-                }
-            
-            query = """
-            SELECT 
-                v.numero_orden,
-                COALESCE(c.nombre, 'Desconocido') as retail,
-                v.fecha_venta as fecha_orden,
-                v.total as monto,
-                CASE 
-                    WHEN v.estado_liquidacion = 'cerrada' THEN 'Pagado'
-                    WHEN v.estado_liquidacion = 'pendiente' THEN 'Pendiente'
-                    ELSE 'Sin procesar'
-                END as estado_pago,
-                v.fecha_liquidacion as fecha_pago,
-                v.numero_liquidacion
-            FROM ventas_retail v
-            LEFT JOIN clientes c ON v.cliente_id = c.id
-            WHERE 1=1
-            """
-            
-            params = []
-            
-            # Aplicar filtros
-            if retail:
-                query += " AND c.nombre = %s"
-                params.append(retail.title())
-            
-            if numero_orden:
-                query += " AND v.numero_orden = %s"
-                params.append(numero_orden)
-            
-            if estado:
-                if estado.lower() == 'pagado':
-                    query += " AND v.estado_liquidacion = 'cerrada'"
-                elif estado.lower() == 'pendiente':
-                    query += " AND v.estado_liquidacion = 'pendiente'"
-                else:
-                    query += " AND (v.estado_liquidacion IS NULL OR v.estado_liquidacion = '')"
-            
-            # Ordenar
-            query += " ORDER BY v.fecha_venta DESC"
-            
-            # Contar total
-            count_query = query.replace(
-                "SELECT v.numero_orden, COALESCE(c.nombre, 'Desconocido') as retail, v.fecha_venta as fecha_orden, v.total as monto, CASE WHEN v.estado_liquidacion = 'cerrada' THEN 'Pagado' WHEN v.estado_liquidacion = 'pendiente' THEN 'Pendiente' ELSE 'Sin procesar' END as estado_pago, v.fecha_liquidacion as fecha_pago, v.numero_liquidacion",
-                "SELECT COUNT(*)"
-            )
-            
-            cursor.execute(count_query, params)
-            total = cursor.fetchone()['COUNT(*)']
-            
-            # Aplicar paginación
-            offset = (page - 1) * limit
-            query += " LIMIT %s OFFSET %s"
-            params.extend([limit, offset])
-            
-            cursor.execute(query, params)
-            ordenes = cursor.fetchall()
-            
-            cursor.close()
-            conn.close()
-            
-            return {
-                "ordenes": ordenes,
-                "total": total,
-                "page": page,
-                "limit": limit
-            }
-            
-        except mysql.connector.Error as db_error:
-            print(f"Error de base de datos en ordenes: {str(db_error)}")
+        conn = obtener_conexion_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar si la tabla ventas_retail existe
+        cursor.execute("SHOW TABLES LIKE 'ventas_retail'")
+        tabla_existe = cursor.fetchone()
+        
+        if not tabla_existe:
             return {
                 "ordenes": [],
                 "total": 0,
                 "page": page,
                 "limit": limit,
-                "error": "Error de base de datos"
+                "error": "Tabla ventas_retail no existe"
             }
         
+        query = """
+        SELECT 
+            v.numero_orden,
+            CASE 
+                WHEN v.cliente_id = 1 THEN 'Falabella'
+                WHEN v.cliente_id = 2 THEN 'Cencosud' 
+                WHEN v.cliente_id = 3 THEN 'Walmart'
+                WHEN v.cliente_id = 4 THEN 'Ripley'
+                WHEN v.cliente_id = 5 THEN 'Hites'
+                ELSE 'Desconocido'
+            END as retail,
+            v.fecha_venta as fecha_orden,
+            v.total as monto,
+            CASE 
+                WHEN v.estado_liquidacion = 'cerrada' THEN 'Pagado'
+                WHEN v.estado_liquidacion = 'pendiente' THEN 'Pendiente'
+                ELSE 'Sin procesar'
+            END as estado_pago,
+            v.fecha_liquidacion as fecha_pago,
+            v.numero_liquidacion
+        FROM ventas_retail v
+        WHERE 1=1
+        """
+        
+        params = []
+        
+        # Aplicar filtros
+        if retail:
+            retail_info = None
+            for key, value in RETAIL_CONFIG.items():
+                if value["nombre"].lower() == retail.lower():
+                    retail_info = value
+                    break
+            if retail_info:
+                query += " AND v.cliente_id = %s"
+                params.append(retail_info["cliente_id"])
+        
+        if numero_orden:
+            query += " AND v.numero_orden = %s"
+            params.append(numero_orden)
+        
+        if estado:
+            if estado.lower() == 'pagado':
+                query += " AND v.estado_liquidacion = 'cerrada'"
+            elif estado.lower() == 'pendiente':
+                query += " AND v.estado_liquidacion = 'pendiente'"
+            else:
+                query += " AND (v.estado_liquidacion IS NULL OR v.estado_liquidacion = '')"
+        
+        # Ordenar
+        query += " ORDER BY v.fecha_venta DESC"
+        
+        # Contar total
+        count_query = query.replace(
+            "SELECT v.numero_orden, CASE WHEN v.cliente_id = 1 THEN 'Falabella' WHEN v.cliente_id = 2 THEN 'Cencosud' WHEN v.cliente_id = 3 THEN 'Walmart' WHEN v.cliente_id = 4 THEN 'Ripley' WHEN v.cliente_id = 5 THEN 'Hites' ELSE 'Desconocido' END as retail, v.fecha_venta as fecha_orden, v.total as monto, CASE WHEN v.estado_liquidacion = 'cerrada' THEN 'Pagado' WHEN v.estado_liquidacion = 'pendiente' THEN 'Pendiente' ELSE 'Sin procesar' END as estado_pago, v.fecha_liquidacion as fecha_pago, v.numero_liquidacion",
+            "SELECT COUNT(*) as total"
+        )
+        
+        cursor.execute(count_query, params)
+        total_result = cursor.fetchone()
+        total = total_result['total'] if total_result else 0
+        
+        # Aplicar paginación
+        offset = (page - 1) * limit
+        query += " LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        cursor.execute(query, params)
+        ordenes = cursor.fetchall()
+        
+        return {
+            "ordenes": ordenes,
+            "total": total,
+            "page": page,
+            "limit": limit
+        }
+        
+    except mysql.connector.Error as db_error:
+        print(f"Error de base de datos en ordenes: {str(db_error)}")
+        return {
+            "ordenes": [],
+            "total": 0,
+            "page": page,
+            "limit": limit,
+            "error": "Error de base de datos"
+        }
     except Exception as e:
         print(f"Error en obtener_estado_ordenes: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error al obtener estado de órdenes: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 @router.get("/api/ordenes/{numero_orden}")
 async def obtener_detalle_orden(numero_orden: str):
     """Obtener detalle específico de una orden"""
+    conn = None
+    cursor = None
+    
     try:
         conn = obtener_conexion_db()
         cursor = conn.cursor(dictionary=True)
@@ -331,7 +439,14 @@ async def obtener_detalle_orden(numero_orden: str):
         query_orden = """
         SELECT 
             v.numero_orden,
-            COALESCE(c.nombre, 'Desconocido') as retail,
+            CASE 
+                WHEN v.cliente_id = 1 THEN 'Falabella'
+                WHEN v.cliente_id = 2 THEN 'Cencosud' 
+                WHEN v.cliente_id = 3 THEN 'Walmart'
+                WHEN v.cliente_id = 4 THEN 'Ripley'
+                WHEN v.cliente_id = 5 THEN 'Hites'
+                ELSE 'Desconocido'
+            END as retail,
             v.fecha_venta as fecha_orden,
             v.total as monto,
             CASE 
@@ -344,7 +459,6 @@ async def obtener_detalle_orden(numero_orden: str):
             v.tipo_liquidacion,
             v.monto_pago_liquidacion
         FROM ventas_retail v
-        LEFT JOIN clientes c ON v.cliente_id = c.id
         WHERE v.numero_orden = %s
         """
         
@@ -372,9 +486,6 @@ async def obtener_detalle_orden(numero_orden: str):
         except:
             orden['productos'] = []
         
-        cursor.close()
-        conn.close()
-        
         return orden
         
     except HTTPException:
@@ -383,18 +494,24 @@ async def obtener_detalle_orden(numero_orden: str):
         print(f"Error en obtener_detalle_orden: {str(e)}")
         print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error al obtener detalle de orden: {str(e)}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 @router.get("/api/estadisticas")
 async def obtener_estadisticas_liquidaciones():
     """Obtener estadísticas generales de liquidaciones"""
+    conn = None
+    cursor = None
+    
     try:
         conn = obtener_conexion_db()
         cursor = conn.cursor(dictionary=True)
         
         # Estadísticas básicas si las tablas existen
         stats_liquidaciones = {"total_liquidaciones": 0, "monto_total_liquidado": 0, "total_ordenes_liquidadas": 0}
-        stats_por_retail = []
-        ordenes_pendientes = []
         
         try:
             # Estadísticas de liquidaciones
@@ -413,13 +530,10 @@ async def obtener_estadisticas_liquidaciones():
         except mysql.connector.Error:
             pass  # Tabla no existe, usar valores por defecto
         
-        cursor.close()
-        conn.close()
-        
         return {
             "liquidaciones": stats_liquidaciones,
-            "por_retail": stats_por_retail,
-            "ordenes_pendientes": ordenes_pendientes
+            "por_retail": [],
+            "ordenes_pendientes": []
         }
         
     except Exception as e:
@@ -429,6 +543,11 @@ async def obtener_estadisticas_liquidaciones():
             "por_retail": [],
             "ordenes_pendientes": []
         }
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # ===== FUNCIONES AUXILIARES =====
 
@@ -456,6 +575,7 @@ def crear_tabla_liquidaciones(cursor):
             INDEX idx_fecha_liquidacion (fecha_liquidacion)
         )
         """)
+        print("✅ Tabla liquidaciones creada/verificada")
     except Exception as e:
         print(f"Error creando tabla liquidaciones: {str(e)}")
 
