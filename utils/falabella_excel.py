@@ -26,12 +26,39 @@ def procesar_excel_falabella(ruta_archivo):
             if pd.isna(valor):
                 return None
             valor_str = str(valor)
+            
+            # Si ya es un Timestamp de pandas
+            if isinstance(valor, pd.Timestamp):
+                return valor.strftime("%Y-%m-%d")
+            
+            # Mapeo de meses en español
+            meses_espanol = {
+                'ene': 'Jan', 'ene.': 'Jan',
+                'feb': 'Feb', 'feb.': 'Feb', 
+                'mar': 'Mar', 'mar.': 'Mar',
+                'abr': 'Apr', 'abr.': 'Apr',
+                'may': 'May', 'may.': 'May',
+                'jun': 'Jun', 'jun.': 'Jun',
+                'jul': 'Jul', 'jul.': 'Jul',
+                'ago': 'Aug', 'ago.': 'Aug',
+                'sep': 'Sep', 'sep.': 'Sep', 'sept': 'Sep', 'sept.': 'Sep',
+                'oct': 'Oct', 'oct.': 'Oct',
+                'nov': 'Nov', 'nov.': 'Nov',
+                'dic': 'Dec', 'dic.': 'Dec'
+            }
+            
+            # Convertir meses en español a inglés si es necesario
+            for esp, ing in meses_espanol.items():
+                if esp in valor_str.lower():
+                    valor_str = valor_str.lower().replace(esp, ing)
+                    break
+            
             try:
-                if isinstance(valor, pd.Timestamp):
-                    return valor.strftime("%Y-%m-%d")
+                # Formato: "ago. 18, 2025 16:00" -> "Aug 18, 2025 16:00"
                 return datetime.strptime(valor_str, "%b %d, %Y %H:%M").strftime("%Y-%m-%d")
             except:
                 try:
+                    # Formato: "ago. 18, 2025" -> "Aug 18, 2025"
                     return datetime.strptime(valor_str, "%b %d, %Y").strftime("%Y-%m-%d")
                 except:
                     return None
