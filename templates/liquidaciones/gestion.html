@@ -362,6 +362,2116 @@
 </div>
 
 <!-- Modal para cargar Excel de Cencosud -->
+<div id="modal-cencosud" class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+  <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-2xl rounded-xl bg-white">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3">
+          <div class="bg-blue-100 rounded-lg p-2">
+            <i class="fas fa-building text-blue-600 text-lg"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">Liquidación Cencosud</h3>
+        </div>
+        <button onclick="cerrarModalCencosud()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3">
+          <i class="fas fa-file-excel text-green-600 mr-2"></i>
+          Seleccionar archivo Excel
+        </label>
+        <div class="relative">
+          <input 
+            type="file" 
+            id="archivo-cencosud" 
+            accept=".xlsx,.xls" 
+            class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          />
+        </div>
+        <p class="mt-2 text-xs text-gray-500">
+          Formatos soportados: Excel (.xlsx, .xls) - Máximo 10MB
+        </p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          onclick="cerrarModalCencosud()" 
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors"
+        >
+          Cancelar
+        </button>
+        <button 
+          onclick="procesarCencosud()" 
+          id="btn-procesar-cencosud" 
+          class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+        >
+          <i class="fas fa-upload"></i>
+          <span>Procesar</span>
+        </button>
+      </div>
+      
+      <!-- Área de progreso -->
+      <div id="progreso-cencosud" class="mt-6 hidden">
+        <div class="bg-gray-200 rounded-full h-2 mb-2">
+          <div id="barra-progreso-cencosud" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="texto-progreso-cencosud" class="text-sm text-gray-600 text-center">Procesando...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para cargar CSV de Walmart -->
+<div id="modal-walmart" class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+  <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-2xl rounded-xl bg-white">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3">
+          <div class="bg-green-100 rounded-lg p-2">
+            <i class="fas fa-store text-green-600 text-lg"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">Liquidación Walmart</h3>
+        </div>
+        <button onclick="cerrarModalWalmart()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3">
+          <i class="fas fa-file-csv text-orange-600 mr-2"></i>
+          Seleccionar archivo CSV
+        </label>
+        <div class="relative">
+          <input 
+            type="file" 
+            id="archivo-walmart" 
+            accept=".csv" 
+            class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+          />
+        </div>
+        <p class="mt-2 text-xs text-gray-500">
+          Formato: CSV (.csv) con delimitador punto y coma (;) - Máximo 10MB
+        </p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          onclick="cerrarModalWalmart()" 
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors"
+        >
+          Cancelar
+        </button>
+        <button 
+          onclick="procesarWalmart()" 
+          id="btn-procesar-walmart" 
+          class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+        >
+          <i class="fas fa-upload"></i>
+          <span>Procesar</span>
+        </button>
+      </div>
+      
+      <!-- Área de progreso -->
+      <div id="progreso-walmart" class="mt-6 hidden">
+        <div class="bg-gray-200 rounded-full h-2 mb-2">
+          <div id="barra-progreso-walmart" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="texto-progreso-walmart" class="text-sm text-gray-600 text-center">Procesando...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Variables globales
+var paginaActual = 1;
+var registrosPorPagina = 20;
+var totalPaginas = 1;
+var totalRegistros = 0;
+var ordenActual = '';
+var direccionOrden = 'asc';
+
+// Función principal para cargar datos
+function cargarDatos(pagina, aplicarFiltros) {
+  if (typeof pagina === 'undefined') pagina = 1;
+  if (typeof aplicarFiltros === 'undefined') aplicarFiltros = true;
+  
+  mostrarCargando();
+  
+  var params = new URLSearchParams();
+  params.append('limite', registrosPorPagina);
+  params.append('offset', (pagina - 1) * registrosPorPagina);
+  
+  // Aplicar filtros si está habilitado
+  if (aplicarFiltros) {
+    var form = document.getElementById('filtros-form');
+    var formData = new FormData(form);
+    for (var pair of formData.entries()) {
+      if (pair[1].trim()) {
+        params.append(pair[0], pair[1].trim());
+      }
+    }
+  }
+  
+  // Aplicar ordenamiento
+  if (ordenActual) {
+    params.append('ordenar_por', ordenActual);
+    params.append('direccion', direccionOrden);
+  }
+  
+  fetch('/liquidaciones/api/ventas-retail/liquidacion?' + params.toString())
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error('Error al cargar datos');
+      }
+      return response.json();
+    })
+    .then(function(data) {
+      // Actualizar variables globales
+      totalRegistros = data.estadisticas.total;
+      totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
+      paginaActual = pagina;
+      
+      // Renderizar datos
+      renderizarTabla(data.ordenes);
+      actualizarEstadisticas(data.estadisticas);
+      actualizarPaginacion();
+      actualizarContadorRegistros();
+    })
+    .catch(function(error) {
+      console.error('Error:', error);
+      mostrarError('Error al cargar los datos. Verifique la conexión.');
+    });
+}
+
+// Función para mostrar loading
+function mostrarCargando() {
+  document.getElementById('tabla-body').innerHTML = 
+    '<tr><td colspan="8" class="px-6 py-12 text-center text-slate-500">' +
+    '<div class="flex flex-col items-center space-y-3">' +
+    '<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>' +
+    '<p class="text-sm">Cargando datos...</p></div></td></tr>';
+}
+
+// Función para mostrar error
+function mostrarError(mensaje) {
+  document.getElementById('tabla-body').innerHTML = 
+    '<tr><td colspan="8" class="px-6 py-12 text-center text-red-500">' +
+    '<div class="flex flex-col items-center space-y-3">' +
+    '<i class="fas fa-exclamation-triangle text-3xl"></i>' +
+    '<p class="text-sm">' + mensaje + '</p></div></td></tr>';
+}
+
+// Función para renderizar tabla
+function renderizarTabla(ordenes) {
+  var tbody = document.getElementById('tabla-body');
+  
+  if (!ordenes || ordenes.length === 0) {
+    tbody.innerHTML = 
+      '<tr><td colspan="8" class="px-6 py-12 text-center text-slate-500">' +
+      '<div class="flex flex-col items-center space-y-3">' +
+      '<i class="fas fa-inbox text-3xl"></i>' +
+      '<p class="text-sm">No se encontraron registros con los filtros aplicados</p></div></td></tr>';
+    return;
+  }
+  
+  var html = '';
+  for (var i = 0; i < ordenes.length; i++) {
+    var orden = ordenes[i];
+    html += '<tr class="hover:bg-slate-50 transition-colors">';
+    html += '<td class="px-6 py-4 whitespace-nowrap">';
+    html += '<div>';
+    html += '<div class="text-sm font-medium text-slate-900">' + (orden.cliente_nombre || 'Cliente no encontrado') + '</div>';
+    if (orden.cliente_id) {
+      html += '<div class="text-xs text-slate-500">ID: ' + orden.cliente_id + '</div>';
+    }
+    html += '</div></td>';
+    
+    html += '<td class="px-6 py-4 whitespace-nowrap">';
+    html += '<span class="text-sm font-semibold text-slate-900">' + orden.numero_orden + '</span>';
+    html += '</td>';
+    
+    html += '<td class="px-6 py-4">';
+    html += '<div class="text-sm text-slate-900 truncate max-w-xs" title="' + orden.producto + '">' + orden.producto + '</div>';
+    html += '</td>';
+    
+    html += '<td class="px-6 py-4 whitespace-nowrap">';
+    html += getEstadoBadge(orden.estado_pago);
+    html += '</td>';
+    
+    html += '<td class="px-6 py-4 whitespace-nowrap">';
+    html += '<span class="text-sm text-slate-900">' + (orden.numero_liquidacion || '-') + '</span>';
+    html += '</td>';
+    
+    html += '<td class="px-6 py-4 whitespace-nowrap">';
+    html += '<span class="text-sm font-medium text-green-600">';
+    if (orden.monto_liquido) {
+      html += '{% extends "base.html" %}
+
+{% block title %}Gestión de Liquidaciones{% endblock %}
+{% block header %}Gestión de Liquidaciones{% endblock %}
+{% block breadcrumb %}Liquidaciones > Gestión de Órdenes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Panel de Estadísticas -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-blue-100 text-sm font-medium">Total Órdenes</p>
+          <p class="text-3xl font-bold" id="total-ordenes">-</p>
+        </div>
+        <div class="bg-blue-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-list-alt text-2xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-green-100 text-sm font-medium">Pagadas</p>
+          <p class="text-3xl font-bold" id="ordenes-pagadas">-</p>
+        </div>
+        <div class="bg-green-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-check-circle text-2xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-yellow-100 text-sm font-medium">Pendientes</p>
+          <p class="text-3xl font-bold" id="ordenes-pendientes">-</p>
+        </div>
+        <div class="bg-yellow-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-clock text-2xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-red-100 text-sm font-medium">Fallidas</p>
+          <p class="text-3xl font-bold" id="ordenes-fallidas">-</p>
+        </div>
+        <div class="bg-red-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-exclamation-triangle text-2xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de Filtros Avanzados -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-800">Filtros de Búsqueda</h3>
+        <button id="toggle-filtros" class="text-slate-600 hover:text-slate-800 transition-colors">
+          <i class="fas fa-chevron-down transform transition-transform" id="icono-filtros"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div id="panel-filtros" class="p-6">
+      <form id="filtros-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Filtro por Número de Orden -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-hashtag text-slate-400 mr-1"></i>
+              Número de Orden
+            </label>
+            <input 
+              name="numero_orden" 
+              type="text" 
+              placeholder="Buscar por orden..." 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Cliente -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-user text-slate-400 mr-1"></i>
+              Cliente
+            </label>
+            <input 
+              name="cliente" 
+              type="text" 
+              placeholder="Buscar por cliente..." 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Número de Liquidación -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-receipt text-slate-400 mr-1"></i>
+              Número de Liquidación
+            </label>
+            <input 
+              name="numero_liquidacion" 
+              type="text" 
+              placeholder="Buscar por liquidación..." 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Estado -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-flag text-slate-400 mr-1"></i>
+              Estado
+            </label>
+            <select 
+              name="estado" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="pagado">Pagado</option>
+              <option value="fallido">Fallido</option>
+            </select>
+          </div>
+          
+          <!-- Filtro por Fecha Desde -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-calendar-alt text-slate-400 mr-1"></i>
+              Fecha Desde
+            </label>
+            <input 
+              name="fecha_desde" 
+              type="date" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Fecha Hasta -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-calendar-alt text-slate-400 mr-1"></i>
+              Fecha Hasta
+            </label>
+            <input 
+              name="fecha_hasta" 
+              type="date" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Registros por página -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-list text-slate-400 mr-1"></i>
+              Registros por página
+            </label>
+            <select 
+              id="registros-por-pagina" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="20">20 registros</option>
+              <option value="50">50 registros</option>
+              <option value="100">100 registros</option>
+              <option value="500">500 registros</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Botones de acción -->
+        <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+          <button 
+            type="button" 
+            id="btn-limpiar" 
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <i class="fas fa-eraser text-sm"></i>
+            <span>Limpiar</span>
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <i class="fas fa-search text-sm"></i>
+            <span>Buscar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel de Acciones y Tabla -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <!-- Header con acciones -->
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <h3 class="text-lg font-semibold text-slate-800">Lista de Órdenes</h3>
+          <span id="contador-registros" class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
+            0 registros
+          </span>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- Dropdown Cargar Liquidación -->
+          <div class="relative inline-block text-left">
+            <button 
+              type="button" 
+              class="inline-flex justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200 transform hover:scale-105" 
+              id="liquidacion-menu-button"
+            >
+              <i class="fas fa-upload mr-2"></i>
+              Cargar Liquidación
+              <i class="fas fa-chevron-down ml-2"></i>
+            </button>
+            <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10" id="liquidacion-submenu">
+              <div class="py-1">
+                <button onclick="abrirModalCencosud()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 transition-colors">
+                  <i class="fas fa-building mr-2 text-blue-600"></i>Cencosud
+                </button>
+                <button onclick="abrirModalWalmart()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-green-50 transition-colors">
+                  <i class="fas fa-store mr-2 text-green-600"></i>Walmart
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botón Exportar -->
+          <button 
+            id="btn-exportar" 
+            class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-sm rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
+          >
+            <i class="fas fa-download"></i>
+            <span>Exportar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tabla -->
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="cliente">
+              <div class="flex items-center space-x-1">
+                <span>Cliente</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_orden">
+              <div class="flex items-center space-x-1">
+                <span>Número Orden</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="producto">
+              <div class="flex items-center space-x-1">
+                <span>Producto</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="estado_pago">
+              <div class="flex items-center space-x-1">
+                <span>Estado</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_liquidacion">
+              <div class="flex items-center space-x-1">
+                <span>Nº Liquidación</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="monto_liquido">
+              <div class="flex items-center space-x-1">
+                <span>Monto Líquido</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="fecha_pago_liquidacion">
+              <div class="flex items-center space-x-1">
+                <span>Fecha Pago</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+              Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body" class="bg-white divide-y divide-slate-200">
+          <tr>
+            <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+              <div class="flex flex-col items-center space-y-3">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="text-sm">Cargando datos...</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Paginación -->
+    <div class="border-t border-slate-200 bg-slate-50 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="text-sm text-slate-600" id="info-paginacion">
+            Mostrando 0-0 de 0 registros
+          </span>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button 
+            id="btn-primera" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            <i class="fas fa-angle-double-left"></i>
+          </button>
+          <button 
+            id="btn-anterior" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            <i class="fas fa-chevron-left mr-1"></i>
+            Anterior
+          </button>
+          
+          <div id="numeros-pagina" class="flex items-center space-x-1">
+            <!-- Números de página se generan dinámicamente -->
+          </div>
+          
+          <button 
+            id="btn-siguiente" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            Siguiente
+            <i class="fas fa-chevron-right ml-1"></i>
+          </button>
+          <button 
+            id="btn-ultima" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para cargar Excel de Cencosud -->
+<div id="modal-cencosud" class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 backdrop-blur-sm">
+  <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-2xl rounded-xl bg-white">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3">
+          <div class="bg-blue-100 rounded-lg p-2">
+            <i class="fas fa-building text-blue-600 text-lg"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">Liquidación Cencosud</h3>
+        </div>
+        <button onclick="cerrarModalCencosud()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3">
+          <i class="fas fa-file-excel text-green-600 mr-2"></i>
+          Seleccionar archivo Excel
+        </label>
+        <div class="relative">
+          <input 
+            type="file" 
+            id="archivo-cencosud" 
+            accept=".xlsx,.xls" 
+            class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          >
+        </div>
+        <p class="mt-2 text-xs text-gray-500">
+          Formatos soportados: Excel (.xlsx, .xls) - Máximo 10MB
+        </p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          onclick="cerrarModalCencosud()" 
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors"
+        >
+          Cancelar
+        </button>
+        <button 
+          onclick="procesarCencosud()" 
+          id="btn-procesar-cencosud" 
+          class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+        >
+          <i class="fas fa-upload"></i>
+          <span>Procesar</span>
+        </button>
+      </div>
+      
+      <!-- Área de progreso -->
+      <div id="progreso-cencosud" class="mt-6 hidden">
+        <div class="bg-gray-200 rounded-full h-2 mb-2">
+          <div id="barra-progreso-cencosud" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="texto-progreso-cencosud" class="text-sm text-gray-600 text-center">Procesando...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para cargar CSV de Walmart -->
+<div id="modal-walmart" class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 backdrop-blur-sm">
+  <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-2xl rounded-xl bg-white">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3">
+          <div class="bg-green-100 rounded-lg p-2">
+            <i class="fas fa-store text-green-600 text-lg"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900">Liquidación Walmart</h3>
+        </div>
+        <button onclick="cerrarModalWalmart()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-3">
+          <i class="fas fa-file-csv text-orange-600 mr-2"></i>
+          Seleccionar archivo CSV
+        </label>
+        <div class="relative">
+          <input 
+            type="file" 
+            id="archivo-walmart" 
+            accept=".csv" 
+            class="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+          >
+        </div>
+        <p class="mt-2 text-xs text-gray-500">
+          Formato: CSV (.csv) con delimitador punto y coma (;) - Máximo 10MB
+        </p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          onclick="cerrarModalWalmart()" 
+          class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition-colors"
+        >
+          Cancelar
+        </button>
+        <button 
+          onclick="procesarWalmart()" 
+          id="btn-procesar-walmart" 
+          class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+        >
+          <i class="fas fa-upload"></i>
+          <span>Procesar</span>
+        </button>
+      </div>
+      
+      <!-- Área de progreso -->
+      <div id="progreso-walmart" class="mt-6 hidden">
+        <div class="bg-gray-200 rounded-full h-2 mb-2">
+          <div id="barra-progreso-walmart" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <p id="texto-progreso-walmart" class="text-sm text-gray-600 text-center">Procesando...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Variables globales
+let paginaActual = 1;
+let registrosPorPagina = 20;
+let totalPaginas = 1;
+let totalRegistros = 0;
+let ordenActual = '';
+let direccionOrden = 'asc';
+
+// Función principal para cargar datos
+async function cargarDatos(pagina = 1, aplicarFiltros = true) {
+  try {
+    mostrarCargando();
+    
+    const params = new URLSearchParams();
+    params.append('limite', registrosPorPagina);
+    params.append('offset', (pagina - 1) * registrosPorPagina);
+    
+    // Aplicar filtros si está habilitado
+    if (aplicarFiltros) {
+      const formData = new FormData(document.getElementById('filtros-form'));
+      for (const [key, value] of formData.entries()) {
+        if (value.trim()) {
+          params.append(key, value.trim());
+        }
+      }
+    }
+    
+    // Aplicar ordenamiento
+    if (ordenActual) {
+      params.append('ordenar_por', ordenActual);
+      params.append('direccion', direccionOrden);
+    }
+    
+    const response = await fetch(`/liquidaciones/api/ventas-retail/liquidacion?${params.toString()}`);
+    
+    if (!response.ok) {
+      throw new Error('Error al cargar datos');
+    }
+    
+    const data = await response.json();
+    
+    // Actualizar variables globales
+    totalRegistros = data.estadisticas.total;
+    totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
+    paginaActual = pagina;
+    
+    // Renderizar datos
+    renderizarTabla(data.ordenes);
+    actualizarEstadisticas(data.estadisticas);
+    actualizarPaginacion();
+    actualizarContadorRegistros();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarError('Error al cargar los datos. Verifique la conexión.');
+  }
+}
+
+// Función para mostrar loading
+function mostrarCargando() {
+  document.getElementById('tabla-body').innerHTML = `
+    <tr>
+      <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+        <div class="flex flex-col items-center space-y-3">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p class="text-sm">Cargando datos...</p>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+// Función para mostrar error
+function mostrarError(mensaje) {
+  document.getElementById('tabla-body').innerHTML = `
+    <tr>
+      <td colspan="8" class="px-6 py-12 text-center text-red-500">
+        <div class="flex flex-col items-center space-y-3">
+          <i class="fas fa-exclamation-triangle text-3xl"></i>
+          <p class="text-sm">${mensaje}</p>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+// Función para renderizar tabla
+function renderizarTabla(ordenes) {
+  const tbody = document.getElementById('tabla-body');
+  
+  if (!ordenes || ordenes.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+          <div class="flex flex-col items-center space-y-3">
+            <i class="fas fa-inbox text-3xl"></i>
+            <p class="text-sm">No se encontraron registros con los filtros aplicados</p>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = ordenes.map(orden => `
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div>
+          <div class="text-sm font-medium text-slate-900">${orden.cliente_nombre || 'Cliente no encontrado'}</div>
+          ${orden.cliente_id ? `<div class="text-xs text-slate-500">ID: ${orden.cliente_id}</div>` : ''}
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm font-semibold text-slate-900">${orden.numero_orden}</span>
+      </td>
+      <td class="px-6 py-4">
+        <div class="text-sm text-slate-900 truncate max-w-xs" title="${orden.producto}">${orden.producto}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        ${getEstadoBadge(orden.estado_pago)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm text-slate-900">${orden.numero_liquidacion || '-'}</span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm font-medium text-green-600">
+          ${orden.monto_liquido ? ' + Number(orden.monto_liquido).toLocaleString('es-CL') : '-'}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm text-slate-600">
+          ${orden.fecha_pago_liquidacion ? formatearFecha(orden.fecha_pago_liquidacion) : '-'}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div class="flex items-center space-x-2">
+          <button 
+            onclick="verDetalle(${orden.id})" 
+            class="text-blue-600 hover:text-blue-900 transition-colors" 
+            title="Ver detalle"
+          >
+            <i class="fas fa-eye"></i>
+          </button>
+          <button 
+            onclick="editarLiquidacion(${orden.id})" 
+            class="text-amber-600 hover:text-amber-900 transition-colors" 
+            title="Editar"
+          >
+            <i class="fas fa-edit"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Función para obtener badge de estado
+function getEstadoBadge(estado) {
+  const badges = {
+    'pendiente': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200"><i class="fas fa-clock mr-1"></i>Pendiente</span>',
+    'pagado': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200"><i class="fas fa-check-circle mr-1"></i>Pagado</span>',
+    'fallido': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><i class="fas fa-times-circle mr-1"></i>Fallido</span>'
+  };
+  return badges[estado] || '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">Desconocido</span>';
+}
+
+// Función para formatear fecha
+function formatearFecha(fecha) {
+  if (!fecha) return '-';
+  try {
+    return new Date(fecha).toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch {
+    return fecha;
+  }
+}
+
+// Función para actualizar estadísticas
+function actualizarEstadisticas(stats) {
+  if (!stats) return;
+  
+  document.getElementById('total-ordenes').textContent = stats.total || 0;
+  document.getElementById('ordenes-pagadas').textContent = stats.pagados || 0;
+  document.getElementById('ordenes-pendientes').textContent = stats.pendientes || 0;
+  document.getElementById('ordenes-fallidas').textContent = stats.fallidos || 0;
+}
+
+// Función para actualizar contador de registros
+function actualizarContadorRegistros() {
+  const inicio = ((paginaActual - 1) * registrosPorPagina) + 1;
+  const fin = Math.min(paginaActual * registrosPorPagina, totalRegistros);
+  
+  document.getElementById('contador-registros').textContent = `${totalRegistros} registros`;
+  document.getElementById('info-paginacion').textContent = 
+    `Mostrando ${inicio}-${fin} de ${totalRegistros} registros`;
+}
+
+// Función para actualizar paginación
+function actualizarPaginacion() {
+  const btnPrimera = document.getElementById('btn-primera');
+  const btnAnterior = document.getElementById('btn-anterior');
+  const btnSiguiente = document.getElementById('btn-siguiente');
+  const btnUltima = document.getElementById('btn-ultima');
+  
+  // Actualizar estado de botones
+  btnPrimera.disabled = paginaActual <= 1;
+  btnAnterior.disabled = paginaActual <= 1;
+  btnSiguiente.disabled = paginaActual >= totalPaginas;
+  btnUltima.disabled = paginaActual >= totalPaginas;
+  
+  // Generar números de página
+  generarNumerosPagina();
+}
+
+// Función para generar números de página
+function generarNumerosPagina() {
+  const container = document.getElementById('numeros-pagina');
+  const maxVisible = 5;
+  let inicio = Math.max(1, paginaActual - Math.floor(maxVisible / 2));
+  let fin = Math.min(totalPaginas, inicio + maxVisible - 1);
+  
+  if (fin - inicio < maxVisible - 1) {
+    inicio = Math.max(1, fin - maxVisible + 1);
+  }
+  
+  let html = '';
+  
+  for (let i = inicio; i <= fin; i++) {
+    const isActive = i === paginaActual;
+    html += `
+      <button 
+        onclick="irAPagina(${i})"
+        class="px-3 py-2 text-sm rounded-lg transition-colors ${
+          isActive 
+            ? 'bg-blue-600 text-white' 
+            : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50'
+        }"
+      >
+        ${i}
+      </button>
+    `;
+  }
+  
+  container.innerHTML = html;
+}
+
+// Funciones de navegación
+function irAPagina(pagina) {
+  if (pagina >= 1 && pagina <= totalPaginas && pagina !== paginaActual) {
+    cargarDatos(pagina);
+  }
+}
+
+function irAPrimera() {
+  irAPagina(1);
+}
+
+function irAAnterior() {
+  irAPagina(paginaActual - 1);
+}
+
+function irASiguiente() {
+  irAPagina(paginaActual + 1);
+}
+
+function irAUltima() {
+  irAPagina(totalPaginas);
+}
+
+// Función para manejar ordenamiento
+function manejarOrdenamiento(campo) {
+  if (ordenActual === campo) {
+    direccionOrden = direccionOrden === 'asc' ? 'desc' : 'asc';
+  } else {
+    ordenActual = campo;
+    direccionOrden = 'asc';
+  }
+  
+  // Actualizar iconos de ordenamiento
+  document.querySelectorAll('[data-sort] i').forEach(icon => {
+    icon.className = 'fas fa-sort text-slate-400';
+  });
+  
+  const currentHeader = document.querySelector(`[data-sort="${campo}"] i`);
+  if (currentHeader) {
+    currentHeader.className = `fas fa-sort-${direccionOrden === 'asc' ? 'up' : 'down'} text-blue-600`;
+  }
+  
+  cargarDatos(1);
+}
+
+// Función para limpiar filtros
+function limpiarFiltros() {
+  document.getElementById('filtros-form').reset();
+  document.getElementById('registros-por-pagina').value = '20';
+  registrosPorPagina = 20;
+  ordenActual = '';
+  direccionOrden = 'asc';
+  
+  // Resetear iconos de ordenamiento
+  document.querySelectorAll('[data-sort] i').forEach(icon => {
+    icon.className = 'fas fa-sort text-slate-400';
+  });
+  
+  cargarDatos(1);
+}
+
+// Función para cambiar registros por página
+function cambiarRegistrosPorPagina() {
+  const select = document.getElementById('registros-por-pagina');
+  registrosPorPagina = parseInt(select.value);
+  cargarDatos(1);
+}
+
+// Función para exportar datos
+async function exportarDatos() {
+  try {
+    const formData = new FormData(document.getElementById('filtros-form'));
+    const params = new URLSearchParams();
+    
+    for (const [key, value] of formData.entries()) {
+      if (value.trim()) {
+        params.append(key, value.trim());
+      }
+    }
+    
+    const url = `/liquidaciones/api/exportar-excel?${params.toString()}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `liquidaciones_${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al exportar datos');
+  }
+}
+
+// Función para ver detalle
+function verDetalle(id) {
+  // Implementar modal de detalle
+  alert(`Ver detalle de orden ID: ${id}`);
+}
+
+// Función para editar liquidación
+function editarLiquidacion(id) {
+  // Implementar modal de edición
+  alert(`Editar liquidación de orden ID: ${id}`);
+}
+
+// Toggle filtros
+function toggleFiltros() {
+  const panel = document.getElementById('panel-filtros');
+  const icono = document.getElementById('icono-filtros');
+  
+  panel.classList.toggle('hidden');
+  icono.classList.toggle('rotate-180');
+}
+
+// Funciones para dropdown de liquidación
+function toggleLiquidacionMenu() {
+  const submenu = document.getElementById('liquidacion-submenu');
+  submenu.classList.toggle('hidden');
+}
+
+// Funciones para modales de Cencosud
+function abrirModalCencosud() {
+  document.getElementById('modal-cencosud').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+}
+
+function cerrarModalCencosud() {
+  document.getElementById('modal-cencosud').classList.add('hidden');
+  document.getElementById('archivo-cencosud').value = '';
+  document.getElementById('progreso-cencosud').classList.add('hidden');
+}
+
+async function procesarCencosud() {
+  const archivoInput = document.getElementById('archivo-cencosud');
+  const archivo = archivoInput.files[0];
+  
+  if (!archivo) {
+    alert('Por favor seleccione un archivo Excel');
+    return;
+  }
+  
+  if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
+    alert('Por favor seleccione un archivo Excel válido (.xlsx o .xls)');
+    return;
+  }
+  
+  const progreso = document.getElementById('progreso-cencosud');
+  const barraProgreso = document.getElementById('barra-progreso-cencosud');
+  const textoProgreso = document.getElementById('texto-progreso-cencosud');
+  const btnProcesar = document.getElementById('btn-procesar-cencosud');
+  
+  progreso.classList.remove('hidden');
+  btnProcesar.disabled = true;
+  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+  
+  try {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    
+    barraProgreso.style.width = '20%';
+    textoProgreso.textContent = 'Subiendo archivo...';
+    
+    const response = await fetch('/liquidaciones/cencosud/procesar', {
+      method: 'POST',
+      body: formData
+    });
+    
+    barraProgreso.style.width = '60%';
+    textoProgreso.textContent = 'Procesando liquidación...';
+    
+    if (!response.ok) throw new Error('Error al procesar la liquidación');
+    
+    const resultado = await response.json();
+    
+    barraProgreso.style.width = '100%';
+    textoProgreso.textContent = 'Completado';
+    
+    alert(`Liquidación Cencosud procesada exitosamente:
+    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
+    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
+    - Total procesado: ${resultado.total_procesado}`);
+    
+    cargarDatos(paginaActual);
+    cerrarModalCencosud();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al procesar la liquidación: ' + error.message);
+    barraProgreso.style.width = '0%';
+    textoProgreso.textContent = 'Error en el procesamiento';
+  } finally {
+    btnProcesar.disabled = false;
+    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
+  }
+}
+
+// Funciones para modales de Walmart
+function abrirModalWalmart() {
+  document.getElementById('modal-walmart').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+}
+
+function cerrarModalWalmart() {
+  document.getElementById('modal-walmart').classList.add('hidden');
+  document.getElementById('archivo-walmart').value = '';
+  document.getElementById('progreso-walmart').classList.add('hidden');
+}
+
+async function procesarWalmart() {
+  const archivoInput = document.getElementById('archivo-walmart');
+  const archivo = archivoInput.files[0];
+  
+  if (!archivo) {
+    alert('Por favor seleccione un archivo CSV');
+    return;
+  }
+  
+  if (!archivo.name.match(/\.csv$/i)) {
+    alert('Por favor seleccione un archivo CSV válido (.csv)');
+    return;
+  }
+  
+  const progreso = document.getElementById('progreso-walmart');
+  const barraProgreso = document.getElementById('barra-progreso-walmart');
+  const textoProgreso = document.getElementById('texto-progreso-walmart');
+  const btnProcesar = document.getElementById('btn-procesar-walmart');
+  
+  progreso.classList.remove('hidden');
+  btnProcesar.disabled = true;
+  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+  
+  try {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    
+    barraProgreso.style.width = '20%';
+    textoProgreso.textContent = 'Subiendo archivo CSV...';
+    
+    const response = await fetch('/liquidaciones/walmart/procesar', {
+      method: 'POST',
+      body: formData
+    });
+    
+    barraProgreso.style.width = '60%';
+    textoProgreso.textContent = 'Procesando órdenes agrupadas...';
+    
+    if (!response.ok) throw new Error('Error al procesar la liquidación');
+    
+    const resultado = await response.json();
+    
+    barraProgreso.style.width = '100%';
+    textoProgreso.textContent = 'Completado';
+    
+    alert(`Liquidación Walmart procesada exitosamente:
+    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
+    - Órdenes fallidas: ${resultado.ordenes_fallidas}
+    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
+    - Total órdenes únicas: ${resultado.total_ordenes_procesadas}
+    - Total filas CSV: ${resultado.total_filas_csv}`);
+    
+    cargarDatos(paginaActual);
+    cerrarModalWalmart();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al procesar la liquidación: ' + error.message);
+    barraProgreso.style.width = '0%';
+    textoProgreso.textContent = 'Error en el procesamiento';
+  } finally {
+    btnProcesar.disabled = false;
+    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
+  }
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Cargar datos iniciales
+  cargarDatos(1);
+  
+  // Event listeners para filtros
+  document.getElementById('filtros-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    cargarDatos(1);
+  });
+  
+  document.getElementById('btn-limpiar').addEventListener('click', limpiarFiltros);
+  document.getElementById('toggle-filtros').addEventListener('click', toggleFiltros);
+  
+  // Event listeners para paginación
+  document.getElementById('btn-primera').addEventListener('click', irAPrimera);
+  document.getElementById('btn-anterior').addEventListener('click', irAAnterior);
+  document.getElementById('btn-siguiente').addEventListener('click', irASiguiente);
+  document.getElementById('btn-ultima').addEventListener('click', irAUltima);
+  
+  // Event listener para cambio de registros por página
+  document.getElementById('registros-por-pagina').addEventListener('change', cambiarRegistrosPorPagina);
+  
+  // Event listeners para ordenamiento
+  document.querySelectorAll('[data-sort]').forEach(header => {
+    header.addEventListener('click', function() {
+      const campo = this.getAttribute('data-sort');
+      manejarOrdenamiento(campo);
+    });
+  });
+  
+  // Event listener para dropdown de liquidación
+  document.getElementById('liquidacion-menu-button').addEventListener('click', toggleLiquidacionMenu);
+  
+  // Event listener para exportar
+  document.getElementById('btn-exportar').addEventListener('click', exportarDatos);
+  
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', function(e) {
+    const button = document.getElementById('liquidacion-menu-button');
+    const submenu = document.getElementById('liquidacion-submenu');
+    
+    if (button && submenu && !button.contains(e.target) && !submenu.contains(e.target)) {
+      submenu.classList.add('hidden');
+    }
+  });
+});
+</script>
+
+{% endblock %} + Number(orden.monto_liquido).toLocaleString('es-CL');
+    } else {
+      html += '-';
+    }
+    html += '</span></td>';
+    
+    html += '<td class="px-6 py-4 whitespace-nowrap">';
+    html += '<span class="text-sm text-slate-600">';
+    html += orden.fecha_pago_liquidacion ? formatearFecha(orden.fecha_pago_liquidacion) : '-';
+    html += '</span></td>';
+    
+    html += '<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">';
+    html += '<div class="flex items-center space-x-2">';
+    html += '<button onclick="verDetalle(' + orden.id + ')" class="text-blue-600 hover:text-blue-900 transition-colors" title="Ver detalle">';
+    html += '<i class="fas fa-eye"></i></button>';
+    html += '<button onclick="editarLiquidacion(' + orden.id + ')" class="text-amber-600 hover:text-amber-900 transition-colors" title="Editar">';
+    html += '<i class="fas fa-edit"></i></button>';
+    html += '</div></td>';
+    html += '</tr>';
+  }
+  
+  tbody.innerHTML = html;
+}
+
+// Función para obtener badge de estado
+function getEstadoBadge(estado) {
+  var badges = {
+    'pendiente': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200"><i class="fas fa-clock mr-1"></i>Pendiente</span>',
+    'pagado': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200"><i class="fas fa-check-circle mr-1"></i>Pagado</span>',
+    'fallido': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><i class="fas fa-times-circle mr-1"></i>Fallido</span>'
+  };
+  return badges[estado] || '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">Desconocido</span>';
+}
+
+// Función para formatear fecha
+function formatearFecha(fecha) {
+  if (!fecha) return '-';
+  try {
+    return new Date(fecha).toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch (e) {
+    return fecha;
+  }
+}
+
+// Función para actualizar estadísticas
+function actualizarEstadisticas(stats) {
+  if (!stats) return;
+  
+  document.getElementById('total-ordenes').textContent = stats.total || 0;
+  document.getElementById('ordenes-pagadas').textContent = stats.pagados || 0;
+  document.getElementById('ordenes-pendientes').textContent = stats.pendientes || 0;
+  document.getElementById('ordenes-fallidas').textContent = stats.fallidos || 0;
+}
+
+// Función para actualizar contador de registros
+function actualizarContadorRegistros() {
+  var inicio = ((paginaActual - 1) * registrosPorPagina) + 1;
+  var fin = Math.min(paginaActual * registrosPorPagina, totalRegistros);
+  
+  document.getElementById('contador-registros').textContent = totalRegistros + ' registros';
+  document.getElementById('info-paginacion').textContent = 
+    'Mostrando ' + inicio + '-' + fin + ' de ' + totalRegistros + ' registros';
+}
+
+// Función para actualizar paginación
+function actualizarPaginacion() {
+  var btnPrimera = document.getElementById('btn-primera');
+  var btnAnterior = document.getElementById('btn-anterior');
+  var btnSiguiente = document.getElementById('btn-siguiente');
+  var btnUltima = document.getElementById('btn-ultima');
+  
+  // Actualizar estado de botones
+  btnPrimera.disabled = paginaActual <= 1;
+  btnAnterior.disabled = paginaActual <= 1;
+  btnSiguiente.disabled = paginaActual >= totalPaginas;
+  btnUltima.disabled = paginaActual >= totalPaginas;
+  
+  // Generar números de página
+  generarNumerosPagina();
+}
+
+// Función para generar números de página
+function generarNumerosPagina() {
+  var container = document.getElementById('numeros-pagina');
+  var maxVisible = 5;
+  var inicio = Math.max(1, paginaActual - Math.floor(maxVisible / 2));
+  var fin = Math.min(totalPaginas, inicio + maxVisible - 1);
+  
+  if (fin - inicio < maxVisible - 1) {
+    inicio = Math.max(1, fin - maxVisible + 1);
+  }
+  
+  var html = '';
+  
+  for (var i = inicio; i <= fin; i++) {
+    var isActive = i === paginaActual;
+    var className = isActive 
+      ? 'bg-blue-600 text-white' 
+      : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50';
+    
+    html += '<button onclick="irAPagina(' + i + ')" class="px-3 py-2 text-sm rounded-lg transition-colors ' + className + '">';
+    html += i + '</button>';
+  }
+  
+  container.innerHTML = html;
+}
+
+// Funciones de navegación
+function irAPagina(pagina) {
+  if (pagina >= 1 && pagina <= totalPaginas && pagina !== paginaActual) {
+    cargarDatos(pagina);
+  }
+}
+
+function irAPrimera() {
+  irAPagina(1);
+}
+
+function irAAnterior() {
+  irAPagina(paginaActual - 1);
+}
+
+function irASiguiente() {
+  irAPagina(paginaActual + 1);
+}
+
+function irAUltima() {
+  irAPagina(totalPaginas);
+}
+
+// Función para manejar ordenamiento
+function manejarOrdenamiento(campo) {
+  if (ordenActual === campo) {
+    direccionOrden = direccionOrden === 'asc' ? 'desc' : 'asc';
+  } else {
+    ordenActual = campo;
+    direccionOrden = 'asc';
+  }
+  
+  // Actualizar iconos de ordenamiento
+  var icons = document.querySelectorAll('[data-sort] i');
+  for (var i = 0; i < icons.length; i++) {
+    icons[i].className = 'fas fa-sort text-slate-400';
+  }
+  
+  var currentHeader = document.querySelector('[data-sort="' + campo + '"] i');
+  if (currentHeader) {
+    var sortClass = direccionOrden === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+    currentHeader.className = 'fas ' + sortClass + ' text-blue-600';
+  }
+  
+  cargarDatos(1);
+}
+
+// Función para limpiar filtros
+function limpiarFiltros() {
+  document.getElementById('filtros-form').reset();
+  document.getElementById('registros-por-pagina').value = '20';
+  registrosPorPagina = 20;
+  ordenActual = '';
+  direccionOrden = 'asc';
+  
+  // Resetear iconos de ordenamiento
+  var icons = document.querySelectorAll('[data-sort] i');
+  for (var i = 0; i < icons.length; i++) {
+    icons[i].className = 'fas fa-sort text-slate-400';
+  }
+  
+  cargarDatos(1);
+}
+
+// Función para cambiar registros por página
+function cambiarRegistrosPorPagina() {
+  var select = document.getElementById('registros-por-pagina');
+  registrosPorPagina = parseInt(select.value);
+  cargarDatos(1);
+}
+
+// Función para exportar datos
+function exportarDatos() {
+  try {
+    var form = document.getElementById('filtros-form');
+    var formData = new FormData(form);
+    var params = new URLSearchParams();
+    
+    for (var pair of formData.entries()) {
+      if (pair[1].trim()) {
+        params.append(pair[0], pair[1].trim());
+      }
+    }
+    
+    var url = '/liquidaciones/api/exportar-excel?' + params.toString();
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'liquidaciones_' + new Date().toISOString().split('T')[0] + '.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al exportar datos');
+  }
+}
+
+// Función para ver detalle
+function verDetalle(id) {
+  alert('Ver detalle de orden ID: ' + id);
+}
+
+// Función para editar liquidación
+function editarLiquidacion(id) {
+  alert('Editar liquidación de orden ID: ' + id);
+}
+
+// Toggle filtros
+function toggleFiltros() {
+  var panel = document.getElementById('panel-filtros');
+  var icono = document.getElementById('icono-filtros');
+  
+  panel.classList.toggle('hidden');
+  icono.classList.toggle('rotate-180');
+}
+
+// Funciones para dropdown de liquidación
+function toggleLiquidacionMenu() {
+  var submenu = document.getElementById('liquidacion-submenu');
+  submenu.classList.toggle('hidden');
+}
+
+// Funciones para modales de Cencosud
+function abrirModalCencosud() {
+  document.getElementById('modal-cencosud').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+}
+
+function cerrarModalCencosud() {
+  document.getElementById('modal-cencosud').classList.add('hidden');
+  document.getElementById('archivo-cencosud').value = '';
+  document.getElementById('progreso-cencosud').classList.add('hidden');
+}
+
+function procesarCencosud() {
+  var archivoInput = document.getElementById('archivo-cencosud');
+  var archivo = archivoInput.files[0];
+  
+  if (!archivo) {
+    alert('Por favor seleccione un archivo Excel');
+    return;
+  }
+  
+  if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
+    alert('Por favor seleccione un archivo Excel válido (.xlsx o .xls)');
+    return;
+  }
+  
+  var progreso = document.getElementById('progreso-cencosud');
+  var barraProgreso = document.getElementById('barra-progreso-cencosud');
+  var textoProgreso = document.getElementById('texto-progreso-cencosud');
+  var btnProcesar = document.getElementById('btn-procesar-cencosud');
+  
+  progreso.classList.remove('hidden');
+  btnProcesar.disabled = true;
+  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+  
+  var formData = new FormData();
+  formData.append('archivo', archivo);
+  
+  barraProgreso.style.width = '20%';
+  textoProgreso.textContent = 'Subiendo archivo...';
+  
+  fetch('/liquidaciones/cencosud/procesar', {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(response) {
+    barraProgreso.style.width = '60%';
+    textoProgreso.textContent = 'Procesando liquidación...';
+    
+    if (!response.ok) throw new Error('Error al procesar la liquidación');
+    return response.json();
+  })
+  .then(function(resultado) {
+    barraProgreso.style.width = '100%';
+    textoProgreso.textContent = 'Completado';
+    
+    alert('Liquidación Cencosud procesada exitosamente:\n' +
+      '- Órdenes actualizadas: ' + resultado.ordenes_actualizadas + '\n' +
+      '- Órdenes no encontradas: ' + resultado.ordenes_no_encontradas + '\n' +
+      '- Total procesado: ' + resultado.total_procesado);
+    
+    cargarDatos(paginaActual);
+    cerrarModalCencosud();
+  })
+  .catch(function(error) {
+    console.error('Error:', error);
+    alert('Error al procesar la liquidación: ' + error.message);
+    barraProgreso.style.width = '0%';
+    textoProgreso.textContent = 'Error en el procesamiento';
+  })
+  .finally(function() {
+    btnProcesar.disabled = false;
+    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
+  });
+}
+
+// Funciones para modales de Walmart
+function abrirModalWalmart() {
+  document.getElementById('modal-walmart').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+}
+
+function cerrarModalWalmart() {
+  document.getElementById('modal-walmart').classList.add('hidden');
+  document.getElementById('archivo-walmart').value = '';
+  document.getElementById('progreso-walmart').classList.add('hidden');
+}
+
+function procesarWalmart() {
+  var archivoInput = document.getElementById('archivo-walmart');
+  var archivo = archivoInput.files[0];
+  
+  if (!archivo) {
+    alert('Por favor seleccione un archivo CSV');
+    return;
+  }
+  
+  if (!archivo.name.match(/\.csv$/i)) {
+    alert('Por favor seleccione un archivo CSV válido (.csv)');
+    return;
+  }
+  
+  var progreso = document.getElementById('progreso-walmart');
+  var barraProgreso = document.getElementById('barra-progreso-walmart');
+  var textoProgreso = document.getElementById('texto-progreso-walmart');
+  var btnProcesar = document.getElementById('btn-procesar-walmart');
+  
+  progreso.classList.remove('hidden');
+  btnProcesar.disabled = true;
+  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+  
+  var formData = new FormData();
+  formData.append('archivo', archivo);
+  
+  barraProgreso.style.width = '20%';
+  textoProgreso.textContent = 'Subiendo archivo CSV...';
+  
+  fetch('/liquidaciones/walmart/procesar', {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(response) {
+    barraProgreso.style.width = '60%';
+    textoProgreso.textContent = 'Procesando órdenes agrupadas...';
+    
+    if (!response.ok) throw new Error('Error al procesar la liquidación');
+    return response.json();
+  })
+  .then(function(resultado) {
+    barraProgreso.style.width = '100%';
+    textoProgreso.textContent = 'Completado';
+    
+    alert('Liquidación Walmart procesada exitosamente:\n' +
+      '- Órdenes actualizadas: ' + resultado.ordenes_actualizadas + '\n' +
+      '- Órdenes fallidas: ' + resultado.ordenes_fallidas + '\n' +
+      '- Órdenes no encontradas: ' + resultado.ordenes_no_encontradas + '\n' +
+      '- Total órdenes únicas: ' + resultado.total_ordenes_procesadas + '\n' +
+      '- Total filas CSV: ' + resultado.total_filas_csv);
+    
+    cargarDatos(paginaActual);
+    cerrarModalWalmart();
+  })
+  .catch(function(error) {
+    console.error('Error:', error);
+    alert('Error al procesar la liquidación: ' + error.message);
+    barraProgreso.style.width = '0%';
+    textoProgreso.textContent = 'Error en el procesamiento';
+  })
+  .finally(function() {
+    btnProcesar.disabled = false;
+    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
+  });
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Cargar datos iniciales
+  cargarDatos(1);
+  
+  // Event listeners para filtros
+  document.getElementById('filtros-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    cargarDatos(1);
+  });
+  
+  document.getElementById('btn-limpiar').addEventListener('click', limpiarFiltros);
+  document.getElementById('toggle-filtros').addEventListener('click', toggleFiltros);
+  
+  // Event listeners para paginación
+  document.getElementById('btn-primera').addEventListener('click', irAPrimera);
+  document.getElementById('btn-anterior').addEventListener('click', irAAnterior);
+  document.getElementById('btn-siguiente').addEventListener('click', irASiguiente);
+  document.getElementById('btn-ultima').addEventListener('click', irAUltima);
+  
+  // Event listener para cambio de registros por página
+  document.getElementById('registros-por-pagina').addEventListener('change', cambiarRegistrosPorPagina);
+  
+  // Event listeners para ordenamiento
+  var sortHeaders = document.querySelectorAll('[data-sort]');
+  for (var i = 0; i < sortHeaders.length; i++) {
+    sortHeaders[i].addEventListener('click', function() {
+      var campo = this.getAttribute('data-sort');
+      manejarOrdenamiento(campo);
+    });
+  }
+  
+  // Event listener para dropdown de liquidación
+  document.getElementById('liquidacion-menu-button').addEventListener('click', toggleLiquidacionMenu);
+  
+  // Event listener para exportar
+  document.getElementById('btn-exportar').addEventListener('click', exportarDatos);
+  
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', function(e) {
+    var button = document.getElementById('liquidacion-menu-button');
+    var submenu = document.getElementById('liquidacion-submenu');
+    
+    if (button && submenu && !button.contains(e.target) && !submenu.contains(e.target)) {
+      submenu.classList.add('hidden');
+    }
+  });
+});
+</script>
+
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Gestión de Liquidaciones{% endblock %}
+{% block header %}Gestión de Liquidaciones{% endblock %}
+{% block breadcrumb %}Liquidaciones > Gestión de Órdenes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  
+  <!-- Panel de Estadísticas -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-blue-100 text-sm font-medium">Total Órdenes</p>
+          <p class="text-3xl font-bold" id="total-ordenes">-</p>
+        </div>
+        <div class="bg-blue-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-list-alt text-2xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-green-100 text-sm font-medium">Pagadas</p>
+          <p class="text-3xl font-bold" id="ordenes-pagadas">-</p>
+        </div>
+        <div class="bg-green-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-check-circle text-2xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-yellow-100 text-sm font-medium">Pendientes</p>
+          <p class="text-3xl font-bold" id="ordenes-pendientes">-</p>
+        </div>
+        <div class="bg-yellow-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-clock text-2xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-red-100 text-sm font-medium">Fallidas</p>
+          <p class="text-3xl font-bold" id="ordenes-fallidas">-</p>
+        </div>
+        <div class="bg-red-400 bg-opacity-30 rounded-lg p-3">
+          <i class="fas fa-exclamation-triangle text-2xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de Filtros Avanzados -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-800">Filtros de Búsqueda</h3>
+        <button id="toggle-filtros" class="text-slate-600 hover:text-slate-800 transition-colors">
+          <i class="fas fa-chevron-down transform transition-transform" id="icono-filtros"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div id="panel-filtros" class="p-6">
+      <form id="filtros-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Filtro por Número de Orden -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-hashtag text-slate-400 mr-1"></i>
+              Número de Orden
+            </label>
+            <input 
+              name="numero_orden" 
+              type="text" 
+              placeholder="Buscar por orden..." 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Cliente -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-user text-slate-400 mr-1"></i>
+              Cliente
+            </label>
+            <input 
+              name="cliente" 
+              type="text" 
+              placeholder="Buscar por cliente..." 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Número de Liquidación -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-receipt text-slate-400 mr-1"></i>
+              Número de Liquidación
+            </label>
+            <input 
+              name="numero_liquidacion" 
+              type="text" 
+              placeholder="Buscar por liquidación..." 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Estado -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-flag text-slate-400 mr-1"></i>
+              Estado
+            </label>
+            <select 
+              name="estado" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="pagado">Pagado</option>
+              <option value="fallido">Fallido</option>
+            </select>
+          </div>
+          
+          <!-- Filtro por Fecha Desde -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-calendar-alt text-slate-400 mr-1"></i>
+              Fecha Desde
+            </label>
+            <input 
+              name="fecha_desde" 
+              type="date" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Filtro por Fecha Hasta -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-calendar-alt text-slate-400 mr-1"></i>
+              Fecha Hasta
+            </label>
+            <input 
+              name="fecha_hasta" 
+              type="date" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          
+          <!-- Registros por página -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">
+              <i class="fas fa-list text-slate-400 mr-1"></i>
+              Registros por página
+            </label>
+            <select 
+              id="registros-por-pagina" 
+              class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="20">20 registros</option>
+              <option value="50">50 registros</option>
+              <option value="100">100 registros</option>
+              <option value="500">500 registros</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Botones de acción -->
+        <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+          <button 
+            type="button" 
+            id="btn-limpiar" 
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <i class="fas fa-eraser text-sm"></i>
+            <span>Limpiar</span>
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <i class="fas fa-search text-sm"></i>
+            <span>Buscar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Panel de Acciones y Tabla -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <!-- Header con acciones -->
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <h3 class="text-lg font-semibold text-slate-800">Lista de Órdenes</h3>
+          <span id="contador-registros" class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
+            0 registros
+          </span>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- Dropdown Cargar Liquidación -->
+          <div class="relative inline-block text-left">
+            <button 
+              type="button" 
+              class="inline-flex justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200 transform hover:scale-105" 
+              id="liquidacion-menu-button"
+            >
+              <i class="fas fa-upload mr-2"></i>
+              Cargar Liquidación
+              <i class="fas fa-chevron-down ml-2"></i>
+            </button>
+            <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10" id="liquidacion-submenu">
+              <div class="py-1">
+                <button onclick="abrirModalCencosud()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 transition-colors">
+                  <i class="fas fa-building mr-2 text-blue-600"></i>Cencosud
+                </button>
+                <button onclick="abrirModalWalmart()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-green-50 transition-colors">
+                  <i class="fas fa-store mr-2 text-green-600"></i>Walmart
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botón Exportar -->
+          <button 
+            id="btn-exportar" 
+            class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-sm rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center space-x-2"
+          >
+            <i class="fas fa-download"></i>
+            <span>Exportar</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tabla -->
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="cliente">
+              <div class="flex items-center space-x-1">
+                <span>Cliente</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_orden">
+              <div class="flex items-center space-x-1">
+                <span>Número Orden</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="producto">
+              <div class="flex items-center space-x-1">
+                <span>Producto</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="estado_pago">
+              <div class="flex items-center space-x-1">
+                <span>Estado</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_liquidacion">
+              <div class="flex items-center space-x-1">
+                <span>Nº Liquidación</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="monto_liquido">
+              <div class="flex items-center space-x-1">
+                <span>Monto Líquido</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="fecha_pago_liquidacion">
+              <div class="flex items-center space-x-1">
+                <span>Fecha Pago</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+              Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body" class="bg-white divide-y divide-slate-200">
+          <tr>
+            <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+              <div class="flex flex-col items-center space-y-3">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="text-sm">Cargando datos...</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Paginación -->
+    <div class="border-t border-slate-200 bg-slate-50 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <span class="text-sm text-slate-600" id="info-paginacion">
+            Mostrando 0-0 de 0 registros
+          </span>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <button 
+            id="btn-primera" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            <i class="fas fa-angle-double-left"></i>
+          </button>
+          <button 
+            id="btn-anterior" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            <i class="fas fa-chevron-left mr-1"></i>
+            Anterior
+          </button>
+          
+          <div id="numeros-pagina" class="flex items-center space-x-1">
+            <!-- Números de página se generan dinámicamente -->
+          </div>
+          
+          <button 
+            id="btn-siguiente" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            Siguiente
+            <i class="fas fa-chevron-right ml-1"></i>
+          </button>
+          <button 
+            id="btn-ultima" 
+            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled
+          >
+            <i class="fas fa-angle-double-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para cargar Excel de Cencosud -->
 <div id="modal-cencosud" class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 backdrop-blur-sm">
   <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-2xl rounded-xl bg-white">
     <div class="p-6">
