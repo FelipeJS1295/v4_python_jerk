@@ -31,6 +31,7 @@ from routers import (
     usuarios_jinja,
     trabajadores_jinja,
     liquidaciones,
+    cencosud,
 )
 
 from routers import camaras
@@ -196,3 +197,4 @@ app.include_router(ecomerce.router)
 app.include_router(image_router.router)
 
 app.include_router(liquidaciones.router)
+app.include_router(cencosud.router)

@@ -56,7 +56,24 @@
       <div class="p-6 border-b border-slate-200">
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold text-slate-800">Lista de Órdenes</h3>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-3">
+            <!-- Dropdown Cargar Liquidación -->
+            <div class="relative inline-block text-left">
+              <button type="button" class="inline-flex justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium border border-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors" id="liquidacion-menu-button">
+                <i class="fas fa-upload mr-2"></i>
+                Cargar Liquidación
+                <i class="fas fa-chevron-down ml-2"></i>
+              </button>
+              <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10" id="liquidacion-submenu">
+                <div class="py-1">
+                  <button onclick="abrirModalCencosud()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 transition-colors">
+                    <i class="fas fa-building mr-2 text-blue-600"></i>Cencosud
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Paginación -->
             <button id="btn-anterior" class="px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
               <i class="fas fa-chevron-left mr-1"></i>
               Anterior
@@ -91,6 +108,48 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para cargar Excel de Cencosud -->
+<div id="modal-cencosud" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Cargar Liquidación Cencosud</h3>
+        <button onclick="cerrarModalCencosud()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Seleccionar archivo Excel
+        </label>
+        <input type="file" id="archivo-cencosud" accept=".xlsx,.xls" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <p class="mt-1 text-sm text-gray-500">
+          Formato: Excel (.xlsx, .xls)
+        </p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button onclick="cerrarModalCencosud()" class="px-4 py-2 bg-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-400 transition-colors">
+          Cancelar
+        </button>
+        <button onclick="procesarCencosud()" id="btn-procesar-cencosud" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors">
+          <i class="fas fa-upload mr-1"></i>
+          Procesar Liquidación
+        </button>
+      </div>
+      
+      <!-- Área de progreso -->
+      <div id="progreso-cencosud" class="mt-4 hidden">
+        <div class="bg-gray-200 rounded-full h-2">
+          <div id="barra-progreso" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+        </div>
+        <p id="texto-progreso" class="text-sm text-gray-600 mt-2">Procesando...</p>
       </div>
     </div>
   </div>
@@ -151,7 +210,8 @@ function renderizarTabla(ordenes) {
     <tr class="hover:bg-slate-50 transition-colors">
       <td class="px-6 py-4 whitespace-nowrap">
         <div>
-          <div class="text-sm font-medium text-slate-900">${orden.cliente_nombre || 'Cliente no encontrado'}</div>}
+          <div class="text-sm font-medium text-slate-900">${orden.cliente_nombre || 'Cliente no encontrado'}</div>
+          ${orden.cliente_id ? `<div class="text-sm text-slate-500">ID: ${orden.cliente_id}</div>` : ''}
         </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
@@ -236,6 +296,116 @@ document.getElementById('btn-siguiente').addEventListener('click', function() {
     cargarDatos(paginaActual + 1);
   }
 });
+
+// Funciones para el dropdown de liquidación
+function toggleLiquidacionMenu() {
+  const submenu = document.getElementById('liquidacion-submenu');
+  submenu.classList.toggle('hidden');
+}
+
+// Cerrar dropdown al hacer clic fuera
+document.addEventListener('click', function(e) {
+  const button = document.getElementById('liquidacion-menu-button');
+  const submenu = document.getElementById('liquidacion-submenu');
+  
+  if (button && submenu && !button.contains(e.target) && !submenu.contains(e.target)) {
+    submenu.classList.add('hidden');
+  }
+});
+
+// Funciones para el modal de Cencosud
+function abrirModalCencosud() {
+  document.getElementById('modal-cencosud').classList.remove('hidden');
+  // Cerrar dropdown
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+}
+
+function cerrarModalCencosud() {
+  document.getElementById('modal-cencosud').classList.add('hidden');
+  // Limpiar archivo seleccionado
+  document.getElementById('archivo-cencosud').value = '';
+  // Ocultar progreso
+  document.getElementById('progreso-cencosud').classList.add('hidden');
+}
+
+// Función para procesar liquidación de Cencosud
+async function procesarCencosud() {
+  const archivoInput = document.getElementById('archivo-cencosud');
+  const archivo = archivoInput.files[0];
+  
+  if (!archivo) {
+    alert('Por favor seleccione un archivo Excel');
+    return;
+  }
+  
+  if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
+    alert('Por favor seleccione un archivo Excel válido (.xlsx o .xls)');
+    return;
+  }
+  
+  // Mostrar progreso
+  const progreso = document.getElementById('progreso-cencosud');
+  const barraProgreso = document.getElementById('barra-progreso');
+  const textoProgreso = document.getElementById('texto-progreso');
+  const btnProcesar = document.getElementById('btn-procesar-cencosud');
+  
+  progreso.classList.remove('hidden');
+  btnProcesar.disabled = true;
+  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Procesando...';
+  
+  try {
+    // Crear FormData para enviar el archivo
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    
+    // Actualizar progreso
+    barraProgreso.style.width = '20%';
+    textoProgreso.textContent = 'Subiendo archivo...';
+    
+    // Enviar archivo al servidor
+    const response = await fetch('/liquidaciones/cencosud/procesar', {
+      method: 'POST',
+      body: formData
+    });
+    
+    barraProgreso.style.width = '60%';
+    textoProgreso.textContent = 'Procesando liquidación...';
+    
+    if (!response.ok) {
+      throw new Error('Error al procesar la liquidación');
+    }
+    
+    const resultado = await response.json();
+    
+    barraProgreso.style.width = '100%';
+    textoProgreso.textContent = 'Completado';
+    
+    // Mostrar resultado
+    alert(`Liquidación procesada exitosamente:
+    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
+    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
+    - Total procesado: ${resultado.total_procesado}`);
+    
+    // Recargar datos de la tabla
+    cargarDatos(paginaActual);
+    
+    // Cerrar modal
+    cerrarModalCencosud();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al procesar la liquidación: ' + error.message);
+    
+    barraProgreso.style.width = '0%';
+    textoProgreso.textContent = 'Error en el procesamiento';
+  } finally {
+    btnProcesar.disabled = false;
+    btnProcesar.innerHTML = '<i class="fas fa-upload mr-1"></i> Procesar Liquidación';
+  }
+}
+
+// Event listener para el botón del dropdown
+document.getElementById('liquidacion-menu-button').addEventListener('click', toggleLiquidacionMenu);
 
 // Inicializar al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
