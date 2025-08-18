@@ -1338,6 +1338,7 @@ async def procesar_liquidacion_retail(retail: str, contenido: bytes, nombre_arch
             "errores": [f"El procesamiento para {retail} está en desarrollo"]
         }
 
+
 async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, numero_liquidacion: Optional[str] = None):
     """
     Procesar liquidación de Cencosud de forma estructurada y limpia
@@ -1392,7 +1393,7 @@ async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, n
             # 8. CREAR RESPUESTA FINAL
             return crear_respuesta_exitosa(
                 liquidacion_info, resultado_actualizacion, resultado_pendientes, 
-                nombre_archivo, filas_procesadas
+                nombre_archivo, filas_procesadas, ordenes_no_encontradas
             )
             
         except Exception as e:
@@ -1810,6 +1811,9 @@ def verificar_tabla_ventas_retail(cursor):
             'accessible': False,
             'error': f"Error verificando ventas_retail: {str(e)}"
         }
+
+
+def actualizar_orden_individual(cursor, orden, liquidacion_id):
     """Actualizar una orden individual usando su ID"""
     try:
         # Mapear tipo
@@ -1925,7 +1929,7 @@ def guardar_ordenes_pendientes(cursor, ordenes_no_encontradas, liquidacion_id):
     return {'guardadas': ordenes_guardadas, 'errores': errores}
 
 
-def crear_respuesta_exitosa(liquidacion_info, resultado_actualizacion, resultado_pendientes, nombre_archivo, filas_procesadas):
+def crear_respuesta_exitosa(liquidacion_info, resultado_actualizacion, resultado_pendientes, nombre_archivo, filas_procesadas, ordenes_no_encontradas):
     """Crear respuesta de éxito"""
     
     # Verificación final
@@ -1972,8 +1976,14 @@ def crear_respuesta_exitosa(liquidacion_info, resultado_actualizacion, resultado
     
     # Agregar detalles de órdenes pendientes si las hay
     if resultado_pendientes['guardadas'] > 0:
-        # Esta información vendría de ordenes_no_encontradas, necesitaríamos pasarla como parámetro
-        pass
+        respuesta["detalle_ordenes_faltantes"] = [
+            {
+                "numero_orden": fila['numero_suborden'],
+                "fila_excel": fila['fila_excel'],
+                "monto": fila['monto_pago']
+            }
+            for fila in ordenes_no_encontradas[:20]  # Máximo 20 para el response
+        ]
     
     print(f"\n🎯 RESUMEN FINAL:")
     if not success_status:
