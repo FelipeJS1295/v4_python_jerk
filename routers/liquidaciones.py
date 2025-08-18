@@ -1339,578 +1339,702 @@ async def procesar_liquidacion_retail(retail: str, contenido: bytes, nombre_arch
         }
 
 async def procesar_liquidacion_cencosud(contenido: bytes, nombre_archivo: str, numero_liquidacion: Optional[str] = None):
-    """Procesar liquidación específica de Cencosud - CON DEBUG COMPLETO PARA liquidacion_id"""
-    conn = None
-    cursor = None
+    """
+    Procesar liquidación de Cencosud de forma estructurada y limpia
+    """
+    print(f"🚀 Iniciando procesamiento de liquidación Cencosud: {nombre_archivo}")
     
     try:
-        print(f"🔄 Iniciando procesamiento de archivo Cencosud: {nombre_archivo}")
+        # 1. PROCESAR ARCHIVO EXCEL
+        datos_excel = procesar_archivo_excel(contenido)
+        if not datos_excel['success']:
+            return crear_respuesta_error(datos_excel['error'], nombre_archivo)
         
-        # Leer archivo Excel con manejo robusto
+        filas_procesadas = datos_excel['filas']
+        print(f"📊 {len(filas_procesadas)} filas procesadas del Excel")
+        
+        # 2. ESTABLECER CONEXIÓN A BD
+        conn, cursor = conectar_base_datos()
+        if not conn:
+            return crear_respuesta_error("Error conectando a base de datos", nombre_archivo)
+        
         try:
-            # Leer todas las hojas disponibles primero
-            excel_file = pd.ExcelFile(BytesIO(contenido))
-            hojas_disponibles = excel_file.sheet_names
-            print(f"📊 Hojas disponibles en Excel: {hojas_disponibles}")
+            # 3. SEPARAR ÓRDENES VÁLIDAS Y NO ENCONTRADAS
+            clasificacion = clasificar_ordenes(cursor, filas_procesadas)
+            ordenes_validas = clasificacion['validas']
+            ordenes_no_encontradas = clasificacion['no_encontradas']
             
-            # Buscar la hoja 'transacciones' (con diferentes variaciones)
-            hoja_transacciones = None
-            for hoja in hojas_disponibles:
-                if 'transacciones' in hoja.lower() or 'transaccion' in hoja.lower():
-                    hoja_transacciones = hoja
-                    break
+            print(f"✅ {len(ordenes_validas)} órdenes encontradas")
+            print(f"⚠️ {len(ordenes_no_encontradas)} órdenes no encontradas")
             
-            if not hoja_transacciones:
-                # Si no encuentra 'transacciones', usar la primera hoja
-                hoja_transacciones = hojas_disponibles[0]
-                print(f"⚠️ No se encontró hoja 'transacciones', usando: {hoja_transacciones}")
-            
-            # Leer la hoja con configuración robusta
-            df = pd.read_excel(
-                BytesIO(contenido), 
-                sheet_name=hoja_transacciones,
-                na_values=['', 'nan', 'NaN', 'null', None],  # Valores que se consideran NaN
-                keep_default_na=True,
-                dtype=str  # Leer todo como string inicialmente
+            # 4. CREAR REGISTRO DE LIQUIDACIÓN
+            liquidacion_info = crear_liquidacion_master(
+                cursor, filas_procesadas, ordenes_validas, ordenes_no_encontradas, 
+                numero_liquidacion, nombre_archivo
             )
             
-            print(f"📋 Archivo leído exitosamente. Filas: {len(df)}, Columnas: {len(df.columns)}")
-            print(f"📝 Columnas encontradas: {list(df.columns)}")
+            if not liquidacion_info['success']:
+                return crear_respuesta_error(liquidacion_info['error'], nombre_archivo)
+            
+            liquidacion_id = liquidacion_info['id']
+            print(f"💾 Liquidación creada con ID: {liquidacion_id}")
+            
+            # 5. ACTUALIZAR ÓRDENES VÁLIDAS
+            resultado_actualizacion = actualizar_ordenes_retail(cursor, ordenes_validas, liquidacion_id)
+            
+            # 6. GUARDAR ÓRDENES PENDIENTES
+            resultado_pendientes = guardar_ordenes_pendientes(cursor, ordenes_no_encontradas, liquidacion_id)
+            
+            # 7. CONFIRMAR TRANSACCIÓN
+            conn.commit()
+            print("✅ Transacción confirmada")
+            
+            # 8. CREAR RESPUESTA FINAL
+            return crear_respuesta_exitosa(
+                liquidacion_info, resultado_actualizacion, resultado_pendientes, 
+                nombre_archivo, filas_procesadas
+            )
             
         except Exception as e:
-            print(f"❌ Error leyendo archivo Excel: {str(e)}")
-            raise Exception(f"Error leyendo archivo Excel: {str(e)}")
+            conn.rollback()
+            print(f"🔄 Transacción revertida: {str(e)}")
+            raise e
+            
+        finally:
+            cerrar_conexion_bd(cursor, conn)
+            
+    except Exception as e:
+        print(f"❌ Error general: {str(e)}")
+        return crear_respuesta_error(str(e), nombre_archivo)
+
+
+def procesar_archivo_excel(contenido: bytes):
+    """
+    Procesar y validar archivo Excel de Cencosud
+    """
+    try:
+        print("📖 Leyendo archivo Excel...")
         
-        # Limpiar nombres de columnas
-        df.columns = df.columns.str.strip().str.lower()
+        # Leer Excel
+        excel_file = pd.ExcelFile(BytesIO(contenido))
+        hoja = obtener_hoja_transacciones(excel_file)
         
-        # Validar columnas requeridas para Cencosud (en minúsculas)
-        columnas_requeridas_map = {
-            'nro suborden': ['nro suborden', 'número orden', 'numero orden', 'nro orden', 'orden', 'suborden'],
-            'tipo': ['tipo', 'tipo liquidacion', 'tipo_liquidacion'],
-            'monto a pagar': ['monto a pagar', 'monto pagar', 'monto', 'valor'],
-            'fecha liq.factura': ['fecha liq.factura', 'fecha liquidacion', 'fecha liq', 'fecha'],
-            'número liq.factura': ['número liq.factura', 'numero liq.factura', 'nro liquidacion'],
-            'nro solicitud liq.factura': ['nro solicitud liq.factura', 'solicitud', 'nro solicitud'],
-            'estado de liq.factura': ['estado de liq.factura', 'estado liquidacion', 'estado']
+        df = pd.read_excel(
+            BytesIO(contenido), 
+            sheet_name=hoja,
+            na_values=['', 'nan', 'NaN', 'null', None],
+            keep_default_na=True,
+            dtype=str
+        )
+        
+        print(f"📋 Leídas {len(df)} filas, {len(df.columns)} columnas")
+        
+        # Validar y mapear columnas
+        columnas_mapeadas = mapear_columnas_cencosud(df)
+        if not columnas_mapeadas['success']:
+            return {"success": False, "error": columnas_mapeadas['error']}
+        
+        # Procesar filas
+        filas_procesadas = procesar_filas_excel(df, columnas_mapeadas['mapeo'])
+        
+        return {
+            "success": True,
+            "filas": filas_procesadas,
+            "total_filas": len(filas_procesadas)
         }
         
-        # Mapear columnas encontradas a nombres estándar
-        columnas_mapeadas = {}
-        for columna_std, variaciones in columnas_requeridas_map.items():
-            columna_encontrada = None
-            for variacion in variaciones:
-                if variacion in df.columns:
-                    columna_encontrada = variacion
-                    break
-            
-            if columna_encontrada:
-                columnas_mapeadas[columna_std] = columna_encontrada
-                print(f"✅ Columna '{columna_std}' mapeada a '{columna_encontrada}'")
-            else:
-                print(f"❌ Columna '{columna_std}' no encontrada en: {list(df.columns)}")
+    except Exception as e:
+        return {"success": False, "error": f"Error procesando Excel: {str(e)}"}
+
+
+def obtener_hoja_transacciones(excel_file):
+    """Buscar la hoja de transacciones en el Excel"""
+    hojas = excel_file.sheet_names
+    
+    for hoja in hojas:
+        if 'transacciones' in hoja.lower() or 'transaccion' in hoja.lower():
+            print(f"📊 Usando hoja: {hoja}")
+            return hoja
+    
+    print(f"⚠️ Hoja 'transacciones' no encontrada, usando: {hojas[0]}")
+    return hojas[0]
+
+
+def mapear_columnas_cencosud(df):
+    """Mapear columnas del Excel a nombres estándar"""
+    df.columns = df.columns.str.strip().str.lower()
+    
+    columnas_requeridas = {
+        'nro_suborden': ['nro suborden', 'número orden', 'numero orden', 'nro orden', 'orden', 'suborden'],
+        'tipo': ['tipo', 'tipo liquidacion', 'tipo_liquidacion'],
+        'monto': ['monto a pagar', 'monto pagar', 'monto', 'valor'],
+        'fecha': ['fecha liq.factura', 'fecha liquidacion', 'fecha liq', 'fecha'],
+        'numero_liq': ['número liq.factura', 'numero liq.factura', 'nro liquidacion'],
+        'solicitud': ['nro solicitud liq.factura', 'solicitud', 'nro solicitud'],
+        'estado': ['estado de liq.factura', 'estado liquidacion', 'estado']
+    }
+    
+    mapeo = {}
+    for col_std, variaciones in columnas_requeridas.items():
+        encontrada = None
+        for var in variaciones:
+            if var in df.columns:
+                encontrada = var
+                break
         
-        # Verificar que se encontraron las columnas esenciales
-        columnas_faltantes = [col for col in columnas_requeridas_map.keys() if col not in columnas_mapeadas]
-        
-        if columnas_faltantes:
-            raise Exception(f"Columnas faltantes en el Excel: {', '.join(columnas_faltantes)}. Columnas disponibles: {', '.join(df.columns)}")
-        
-        # Renombrar columnas para estandarizar
-        df_renamed = df.rename(columns={v: k for k, v in columnas_mapeadas.items()})
-        
-        # Limpiar datos y manejar valores NaN de forma segura
-        print(f"🧹 Limpiando datos...")
-        
-        # Limpiar y validar datos fila por fila
-        filas_validas = []
-        errores_fila = []
-        
-        for index, row in df_renamed.iterrows():
-            try:
-                # Extraer y limpiar cada campo de forma segura
-                numero_suborden = str(row.get('nro suborden', '')).strip()
-                if numero_suborden in ['nan', 'NaN', '', 'None']:
-                    numero_suborden = ''
-                
-                tipo = str(row.get('tipo', '')).strip()
-                if tipo in ['nan', 'NaN', '', 'None']:
-                    tipo = 'venta'  # Valor por defecto
-                
-                # Manejar monto de forma segura
-                monto_raw = row.get('monto a pagar', 0)
-                try:
-                    if pd.isna(monto_raw) or str(monto_raw).strip() in ['nan', 'NaN', '', 'None']:
-                        monto_pago = 0.0
-                    else:
-                        monto_pago = float(str(monto_raw).replace(',', '.'))
-                except (ValueError, TypeError):
-                    monto_pago = 0.0
-                
-                # Manejar fecha de forma segura
-                fecha_raw = row.get('fecha liq.factura')
-                fecha_liquidacion = None
-                if pd.notna(fecha_raw) and str(fecha_raw).strip() not in ['nan', 'NaN', '', 'None']:
-                    try:
-                        if isinstance(fecha_raw, str):
-                            fecha_liquidacion = pd.to_datetime(fecha_raw).date()
-                        else:
-                            fecha_liquidacion = fecha_raw.date() if hasattr(fecha_raw, 'date') else None
-                    except:
-                        fecha_liquidacion = None
-                
-                # Otros campos
-                numero_liquidacion_fila = str(row.get('número liq.factura', '')).strip()
-                if numero_liquidacion_fila in ['nan', 'NaN', '', 'None']:
-                    numero_liquidacion_fila = ''
-                
-                nro_solicitud = str(row.get('nro solicitud liq.factura', '')).strip()
-                if nro_solicitud in ['nan', 'NaN', '', 'None']:
-                    nro_solicitud = ''
-                
-                estado_liquidacion_excel = str(row.get('estado de liq.factura', '')).strip()
-                if estado_liquidacion_excel in ['nan', 'NaN', '', 'None']:
-                    estado_liquidacion_excel = 'pendiente'
-                
-                # Validar que al menos tengamos número de suborden
-                if not numero_suborden:
-                    errores_fila.append(f"Fila {index + 2}: Número de suborden vacío")
-                    continue
-                
-                fila_procesada = {
-                    'numero_suborden': numero_suborden,
-                    'tipo': tipo,
-                    'monto_pago': monto_pago,
-                    'fecha_liquidacion': fecha_liquidacion,
-                    'numero_liquidacion_fila': numero_liquidacion_fila,
-                    'nro_solicitud': nro_solicitud,
-                    'estado_liquidacion_excel': estado_liquidacion_excel,
-                    'fila_excel': index + 2  # +2 porque Excel empieza en 1 y hay header
-                }
-                
+        if encontrada:
+            mapeo[col_std] = encontrada
+            print(f"✅ {col_std} → {encontrada}")
+        else:
+            return {
+                "success": False, 
+                "error": f"Columna '{col_std}' no encontrada. Disponibles: {list(df.columns)}"
+            }
+    
+    return {"success": True, "mapeo": mapeo}
+
+
+def procesar_filas_excel(df, mapeo_columnas):
+    """Procesar cada fila del Excel y limpiar datos"""
+    filas_validas = []
+    
+    # Renombrar columnas
+    df_renamed = df.rename(columns={v: k for k, v in mapeo_columnas.items()})
+    
+    for index, row in df_renamed.iterrows():
+        try:
+            fila_procesada = procesar_fila_individual(row, index)
+            if fila_procesada:
                 filas_validas.append(fila_procesada)
-                print(f"✅ Fila {index + 2}: Suborden {numero_suborden} procesada")
                 
-            except Exception as e:
-                error_msg = f"Fila {index + 2}: Error procesando datos - {str(e)}"
-                errores_fila.append(error_msg)
-                print(f"⚠️ {error_msg}")
-                continue
-        
-        if not filas_validas:
-            raise Exception(f"No se pudieron procesar filas válidas. Errores: {'; '.join(errores_fila[:5])}")
-        
-        print(f"📊 Filas válidas procesadas: {len(filas_validas)}")
-        
-        # Obtener información de la liquidación del primer registro válido
-        primera_fila = filas_validas[0]
-        numero_liquidacion_excel = primera_fila['numero_liquidacion_fila']
-        fecha_liquidacion = primera_fila['fecha_liquidacion']
-        
-        # Usar el número proporcionado o el del Excel
-        numero_liquidacion_final = numero_liquidacion or numero_liquidacion_excel
-        if not numero_liquidacion_final:
-            numero_liquidacion_final = f"LIQ-CEN-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-        
-        print(f"📄 Número de liquidación final: {numero_liquidacion_final}")
-        
-        # Conectar a la base de datos
+        except Exception as e:
+            print(f"⚠️ Error fila {index + 2}: {str(e)}")
+            continue
+    
+    return filas_validas
+
+
+def procesar_fila_individual(row, index):
+    """Procesar una fila individual del Excel"""
+    
+    # Extraer número de suborden
+    numero_suborden = limpiar_campo(row.get('nro_suborden', ''))
+    if not numero_suborden:
+        return None
+    
+    # Procesar monto
+    monto = procesar_monto(row.get('monto', 0))
+    
+    # Procesar fecha
+    fecha = procesar_fecha(row.get('fecha'))
+    
+    # Otros campos
+    fila_data = {
+        'numero_suborden': numero_suborden,
+        'tipo': limpiar_campo(row.get('tipo', 'venta')),
+        'monto_pago': monto,
+        'fecha_liquidacion': fecha,
+        'numero_liquidacion_fila': limpiar_campo(row.get('numero_liq', '')),
+        'nro_solicitud': limpiar_campo(row.get('solicitud', '')),
+        'estado_liquidacion_excel': limpiar_campo(row.get('estado', 'pendiente')),
+        'fila_excel': index + 2
+    }
+    
+    print(f"✅ Fila {index + 2}: Suborden {numero_suborden}")
+    return fila_data
+
+
+def limpiar_campo(valor):
+    """Limpiar campos de texto"""
+    if pd.isna(valor) or str(valor).strip() in ['nan', 'NaN', '', 'None']:
+        return ''
+    return str(valor).strip()
+
+
+def procesar_monto(valor_monto):
+    """Procesar y validar montos"""
+    try:
+        if pd.isna(valor_monto) or str(valor_monto).strip() in ['nan', 'NaN', '', 'None']:
+            return 0.0
+        return float(str(valor_monto).replace(',', '.'))
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def procesar_fecha(valor_fecha):
+    """Procesar fechas de forma segura"""
+    if pd.isna(valor_fecha) or str(valor_fecha).strip() in ['nan', 'NaN', '', 'None']:
+        return None
+    
+    try:
+        if isinstance(valor_fecha, str):
+            return pd.to_datetime(valor_fecha).date()
+        else:
+            return valor_fecha.date() if hasattr(valor_fecha, 'date') else None
+    except:
+        return None
+
+
+def conectar_base_datos():
+    """Establecer conexión a la base de datos"""
+    try:
         conn = obtener_conexion_db()
         cursor = conn.cursor(dictionary=True)
         conn.autocommit = False
         
-        # ID del cliente Cencosud
-        CLIENTE_CENCOSUD_ID = RETAIL_CONFIG["cencosud"]["cliente_id"]
-        print(f"🏪 Cliente Cencosud ID: {CLIENTE_CENCOSUD_ID}")
+        # Crear tablas si no existen
+        crear_tabla_liquidaciones(cursor)
+        crear_tabla_ordenes_pendientes(cursor)
         
-        try:
-            # Crear tablas si no existen
-            crear_tabla_liquidaciones(cursor)
-            crear_tabla_ordenes_pendientes(cursor)
-            
-            print(f"🔍 Procesando {len(filas_validas)} órdenes del Excel")
-            
-            # PASO 1: SEPARAR órdenes encontradas y no encontradas
-            ordenes_no_encontradas = []
-            ordenes_validas = []
-            
-            for fila_data in filas_validas:
-                numero_suborden = fila_data['numero_suborden']
-                
-                # PARA CENCOSUD: Usar el número de suborden DIRECTAMENTE (SIN agregar 0)
-                numero_orden_bd = numero_suborden
-                
-                print(f"🔍 Fila {fila_data['fila_excel']}: Suborden={numero_suborden} -> BD={numero_orden_bd}")
-                
-                # Buscar la orden en ventas_retail usando el número de suborden directamente
-                query_buscar = """
-                SELECT id, numero_orden FROM ventas_retail 
-                WHERE numero_orden = %s AND cliente_id = %s
-                """
-                
-                cursor.execute(query_buscar, (numero_orden_bd, CLIENTE_CENCOSUD_ID))
-                venta_encontrada = cursor.fetchone()
-                
-                if venta_encontrada:
-                    fila_data['numero_orden_bd'] = numero_orden_bd
-                    fila_data['venta_id'] = venta_encontrada['id']
-                    ordenes_validas.append(fila_data)
-                    print(f"✅ Suborden {numero_suborden} encontrada en BD (ID: {venta_encontrada['id']})")
-                else:
-                    fila_data['numero_orden_bd'] = numero_orden_bd
-                    ordenes_no_encontradas.append(fila_data)
-                    print(f"⚠️ Suborden {numero_suborden} NO encontrada - se guardará como pendiente")
-            
-            print(f"📊 Resumen: {len(ordenes_validas)} encontradas, {len(ordenes_no_encontradas)} no encontradas")
-            
-            # PASO 2: GUARDAR LIQUIDACIÓN (siempre se guarda)
-            monto_total = sum(fila['monto_pago'] for fila in filas_validas)
-            
-            # Determinar estado de la liquidación
-            if len(ordenes_no_encontradas) == 0:
-                estado_liquidacion = 'procesada'  # Todas las órdenes fueron encontradas
-            elif len(ordenes_validas) == 0:
-                estado_liquidacion = 'error'      # Ninguna orden fue encontrada
-            else:
-                estado_liquidacion = 'procesada'  # Parcialmente procesada (pero exitosa)
-            
-            # Insertar registro de liquidación
-            query_liquidacion = """
-            INSERT INTO liquidaciones (
-                cliente_id, numero_liquidacion, fecha_liquidacion, 
-                monto_total, cantidad_ordenes, estado, archivo_original,
-                ordenes_procesadas, ordenes_actualizadas, ordenes_no_encontradas,
-                fecha_creacion
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-            """
-            
-            valores_liquidacion = (
-                CLIENTE_CENCOSUD_ID,
-                numero_liquidacion_final,
-                fecha_liquidacion,
-                monto_total,
-                len(filas_validas),  # Total de órdenes en el Excel
-                estado_liquidacion,
-                nombre_archivo,
-                len(filas_validas),  # Órdenes procesadas
-                len(ordenes_validas),  # Órdenes actualizadas exitosamente
-                len(ordenes_no_encontradas)  # Órdenes no encontradas
-            )
-            
-            cursor.execute(query_liquidacion, valores_liquidacion)
-            liquidacion_id = cursor.lastrowid
-            
-            print(f"✅ Liquidación {liquidacion_id} guardada con estado: {estado_liquidacion}")
-            print(f"📄 Número de liquidación: {numero_liquidacion_final}")
-            print(f"💰 Monto total: ${monto_total:,.2f}")
-            
-            # PASO 3: ACTUALIZAR órdenes encontradas en ventas_retail - CON DEBUG COMPLETO
-            ordenes_actualizadas = 0
-            errores_actualizacion = []
-            
-            print(f"🔧 INICIANDO ACTUALIZACIÓN DE {len(ordenes_validas)} ÓRDENES EN ventas_retail")
-            print(f"🆔 liquidacion_id que se asignará: {liquidacion_id}")
-            
-            for fila_data in ordenes_validas:
-                try:
-                    numero_suborden = fila_data['numero_suborden']
-                    numero_orden_bd = fila_data['numero_orden_bd']
-                    venta_id = fila_data['venta_id']
-                    
-                    tipo = fila_data['tipo']
-                    monto_pago = fila_data['monto_pago']
-                    fecha_liquidacion_fila = fila_data['fecha_liquidacion']
-                    numero_liquidacion_fila = fila_data['numero_liquidacion_fila']
-                    nro_solicitud = fila_data['nro_solicitud']
-                    estado_liquidacion_excel = fila_data['estado_liquidacion_excel']
-                    
-                    print(f"\n🔍 ===== DEBUG ORDEN {numero_suborden} =====")
-                    print(f"   📋 numero_orden_bd: {numero_orden_bd}")
-                    print(f"   🆔 venta_id en BD: {venta_id}")
-                    print(f"   🏪 cliente_id: {CLIENTE_CENCOSUD_ID}")
-                    print(f"   💰 monto_pago: {monto_pago}")
-                    print(f"   🆔 liquidacion_id a asignar: {liquidacion_id}")
-                    
-                    # VERIFICAR QUE LA ORDEN EXISTE ANTES DEL UPDATE
-                    query_verificar = """
-                    SELECT id, numero_orden, liquidacion_id, numero_liquidacion, estado_liquidacion, estado_pago 
-                    FROM ventas_retail 
-                    WHERE numero_orden = %s AND cliente_id = %s
-                    """
-                    cursor.execute(query_verificar, (numero_orden_bd, CLIENTE_CENCOSUD_ID))
-                    orden_antes = cursor.fetchone()
-                    
-                    if orden_antes:
-                        print(f"   ✅ Orden encontrada ANTES del update:")
-                        print(f"      - ID: {orden_antes['id']}")
-                        print(f"      - numero_orden: {orden_antes['numero_orden']}")
-                        print(f"      - liquidacion_id actual: {orden_antes.get('liquidacion_id', 'NULL')}")
-                        print(f"      - numero_liquidacion actual: {orden_antes.get('numero_liquidacion', 'NULL')}")
-                        print(f"      - estado_liquidacion actual: {orden_antes.get('estado_liquidacion', 'NULL')}")
-                        print(f"      - estado_pago actual: {orden_antes.get('estado_pago', 'NULL')}")
-                    else:
-                        print(f"   ❌ PROBLEMA: Orden {numero_orden_bd} NO encontrada para cliente {CLIENTE_CENCOSUD_ID}")
-                        errores_actualizacion.append(f"Orden {numero_suborden} no encontrada en BD para UPDATE")
-                        continue
-                    
-                    # Mapear tipo a enum
-                    if tipo.lower() in ['venta', 'ventas']:
-                        tipo_liquidacion = 'venta'
-                    elif tipo.lower() in ['devolución', 'devolucion', 'devoluciones']:
-                        tipo_liquidacion = 'devolucion'
-                    else:
-                        tipo_liquidacion = 'cancelacion'
-                    
-                    # Mapear estado de liquidación
-                    if estado_liquidacion_excel.lower() in ['pagada', 'pagado', 'cerrada', 'finalizada']:
-                        estado_liquidacion = 'procesada'
-                        estado_pago = 'pagado'
-                    elif estado_liquidacion_excel.lower() in ['pendiente', 'proceso']:
-                        estado_liquidacion = 'pendiente'
-                        estado_pago = 'pendiente'
-                    else:
-                        estado_liquidacion = 'procesada'  # Por defecto para liquidaciones exitosas
-                        estado_pago = 'pagado'
-                    
-                    print(f"   🔧 Valores a actualizar:")
-                    print(f"      - monto_pago_liquidacion: {monto_pago}")
-                    print(f"      - tipo_liquidacion: {tipo_liquidacion}")
-                    print(f"      - fecha_liquidacion: {fecha_liquidacion_fila}")
-                    print(f"      - numero_liquidacion: {numero_liquidacion_fila}")
-                    print(f"      - fecha_procesamiento_liquidacion: {nro_solicitud}")
-                    print(f"      - estado_liquidacion: {estado_liquidacion}")
-                    print(f"      - estado_pago: {estado_pago}")
-                    print(f"      - liquidacion_id: {liquidacion_id} ← CAMPO CLAVE")
-                    
-                    # EJECUTAR UPDATE CON LOGGING DETALLADO
-                    query_update = """
-                    UPDATE ventas_retail SET 
-                        monto_pago_liquidacion = %s,
-                        tipo_liquidacion = %s,
-                        fecha_liquidacion = %s,
-                        numero_liquidacion = %s,
-                        fecha_procesamiento_liquidacion = %s,
-                        estado_liquidacion = %s,
-                        estado_pago = %s,
-                        liquidacion_id = %s
-                    WHERE numero_orden = %s AND cliente_id = %s
-                    """
-                    
-                    valores = (
-                        monto_pago,                    # monto_pago_liquidacion
-                        tipo_liquidacion,              # tipo_liquidacion  
-                        fecha_liquidacion_fila,        # fecha_liquidacion
-                        numero_liquidacion_fila,       # numero_liquidacion
-                        nro_solicitud,                 # fecha_procesamiento_liquidacion
-                        estado_liquidacion,            # estado_liquidacion
-                        estado_pago,                   # estado_pago
-                        liquidacion_id,                # liquidacion_id ← CAMPO CRÍTICO
-                        numero_orden_bd,               # WHERE numero_orden
-                        CLIENTE_CENCOSUD_ID             # WHERE cliente_id
-                    )
-                    
-                    print(f"   🔄 Ejecutando UPDATE...")
-                    print(f"   📝 Query: {query_update}")
-                    print(f"   📝 Valores: {valores}")
-                    
-                    try:
-                        cursor.execute(query_update, valores)
-                        filas_afectadas = cursor.rowcount
-                        print(f"   📊 Filas afectadas por UPDATE: {filas_afectadas}")
-                        
-                        if filas_afectadas > 0:
-                            ordenes_actualizadas += 1
-                            print(f"   ✅ UPDATE exitoso para orden {numero_suborden}")
-                            
-                            # VERIFICAR QUE SE GUARDÓ CORRECTAMENTE
-                            cursor.execute("""
-                            SELECT liquidacion_id, numero_liquidacion, estado_liquidacion, estado_pago, monto_pago_liquidacion 
-                            FROM ventas_retail 
-                            WHERE numero_orden = %s AND cliente_id = %s
-                            """, (numero_orden_bd, CLIENTE_CENCOSUD_ID))
-                            orden_despues = cursor.fetchone()
-                            
-                            if orden_despues:
-                                print(f"   🔍 Orden DESPUÉS del update:")
-                                print(f"      - liquidacion_id: {orden_despues.get('liquidacion_id', 'NULL')}")
-                                print(f"      - numero_liquidacion: {orden_despues.get('numero_liquidacion', 'NULL')}")
-                                print(f"      - estado_liquidacion: {orden_despues.get('estado_liquidacion', 'NULL')}")
-                                print(f"      - estado_pago: {orden_despues.get('estado_pago', 'NULL')}")
-                                print(f"      - monto_pago_liquidacion: {orden_despues.get('monto_pago_liquidacion', 'NULL')}")
-                                
-                                if orden_despues.get('liquidacion_id') == liquidacion_id:
-                                    print(f"   ✅ ✅ CONFIRMADO: liquidacion_id {liquidacion_id} guardado correctamente")
-                                else:
-                                    print(f"   ❌ ❌ ERROR CRÍTICO: liquidacion_id NO se guardó correctamente")
-                                    print(f"      Esperado: {liquidacion_id}, Obtenido: {orden_despues.get('liquidacion_id', 'NULL')}")
-                                    errores_actualizacion.append(f"liquidacion_id no se guardó para orden {numero_suborden}")
-                            else:
-                                print(f"   ❌ ERROR: No se pudo verificar la orden después del update")
-                                errores_actualizacion.append(f"No se pudo verificar orden {numero_suborden} después del update")
-                        else:
-                            print(f"   ⚠️ UPDATE no afectó ninguna fila para orden {numero_orden_bd}")
-                            print(f"   🔍 Posible problema: WHERE no coincide con ningún registro")
-                            errores_actualizacion.append(f"UPDATE no afectó orden {numero_suborden}")
-                            
-                    except Exception as update_error:
-                        print(f"   ❌ ERROR EJECUTANDO UPDATE: {str(update_error)}")
-                        errores_actualizacion.append(f"Error UPDATE orden {numero_suborden}: {str(update_error)}")
-                        continue
-                    
-                    print(f"   ===== FIN DEBUG ORDEN {numero_suborden} =====\n")
-                        
-                except Exception as e:
-                    error_msg = f"Error general procesando orden {numero_suborden}: {str(e)}"
-                    errores_actualizacion.append(error_msg)
-                    print(f"❌ {error_msg}")
-                    continue
-            
-            print(f"🔧 FINALIZADO: Actualización de órdenes en ventas_retail")
-            print(f"✅ Órdenes actualizadas exitosamente: {ordenes_actualizadas}")
-            print(f"❌ Errores de actualización: {len(errores_actualizacion)}")
-            if errores_actualizacion:
-                print(f"🚨 Errores detallados:")
-                for error in errores_actualizacion[:5]:  # Mostrar primeros 5 errores
-                    print(f"   - {error}")
-            
-            # PASO 4: GUARDAR órdenes no encontradas como pendientes
-            ordenes_pendientes_guardadas = 0
-            
-            if ordenes_no_encontradas:
-                print(f"📝 Guardando {len(ordenes_no_encontradas)} órdenes como pendientes...")
-                
-                for fila_data in ordenes_no_encontradas:
-                    try:
-                        query_pendiente = """
-                        INSERT INTO ordenes_liquidacion_pendientes (
-                            liquidacion_id, numero_orden, monto_pago, tipo_liquidacion,
-                            fecha_liquidacion, numero_liquidacion, fecha_procesamiento_liquidacion,
-                            estado_liquidacion_excel, cliente_id, fila_excel, data_completa,
-                            estado, fecha_creacion
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', NOW())
-                        """
-                        
-                        # Mapear tipo para pendientes
-                        tipo = fila_data['tipo']
-                        if tipo.lower() in ['venta', 'ventas']:
-                            tipo_liquidacion = 'venta'
-                        elif tipo.lower() in ['devolución', 'devolucion', 'devoluciones']:
-                            tipo_liquidacion = 'devolucion'
-                        else:
-                            tipo_liquidacion = 'cancelacion'
-                        
-                        valores_pendiente = (
-                            liquidacion_id,
-                            fila_data['numero_suborden'],  # Usar numero_suborden
-                            fila_data['monto_pago'],
-                            tipo_liquidacion,
-                            fila_data['fecha_liquidacion'],
-                            fila_data['numero_liquidacion_fila'],
-                            fila_data['nro_solicitud'],
-                            fila_data['estado_liquidacion_excel'],
-                            CLIENTE_CENCOSUD_ID,
-                            fila_data['fila_excel'],
-                            json.dumps(fila_data)  # Guardar todos los datos como JSON
-                        )
-                        
-                        cursor.execute(query_pendiente, valores_pendiente)
-                        ordenes_pendientes_guardadas += 1
-                        
-                    except Exception as e:
-                        print(f"❌ Error guardando suborden pendiente {fila_data['numero_suborden']}: {str(e)}")
-                        continue
-            
-            # VERIFICACIÓN FINAL: Contar órdenes con liquidacion_id en BD
-            print(f"\n🔍 VERIFICACIÓN FINAL:")
-            cursor.execute("SELECT COUNT(*) as total FROM ventas_retail WHERE liquidacion_id = %s", (liquidacion_id,))
-            ordenes_con_liquidacion_id = cursor.fetchone()['total']
-            print(f"✅ Órdenes en BD con liquidacion_id = {liquidacion_id}: {ordenes_con_liquidacion_id}")
-            
-            # Commit de la transacción
-            conn.commit()
-            print("✅ Transacción confirmada exitosamente")
-            
-            print(f"\n📊 RESUMEN FINAL:")
-            print(f"   - Liquidación ID: {liquidacion_id}")
-            print(f"   - Número de liquidación: {numero_liquidacion_final}")
-            print(f"   - Órdenes procesadas: {len(filas_validas)}")
-            print(f"   - Órdenes actualizadas en BD: {ordenes_actualizadas}")
-            print(f"   - Órdenes pendientes: {ordenes_pendientes_guardadas}")
-            print(f"   - Órdenes con liquidacion_id en BD: {ordenes_con_liquidacion_id}")
-            print(f"   - Monto total: ${monto_total:,.2f}")
-            print(f"   - Estado: {estado_liquidacion}")
-            
-            # Preparar respuesta
-            resultado = {
-                "success": True,
-                "message": "Liquidación de Cencosud procesada exitosamente",
-                "retail": "Cencosud",
-                "archivo": nombre_archivo,
-                "liquidacion_id": liquidacion_id,
-                "numero_liquidacion": numero_liquidacion_final,
-                "ordenes_procesadas": len(filas_validas),
-                "ordenes_actualizadas": ordenes_actualizadas,
-                "ordenes_no_encontradas": len(ordenes_no_encontradas),
-                "ordenes_pendientes_guardadas": ordenes_pendientes_guardadas,
-                "ordenes_con_liquidacion_id_verificadas": ordenes_con_liquidacion_id,
-                "monto_total": monto_total,
-                "fecha_liquidacion": fecha_liquidacion.isoformat() if fecha_liquidacion else None,
-                "fecha_procesamiento": datetime.now().isoformat(),
-                "errores": errores_actualizacion[:10] if errores_actualizacion else []
-            }
-            
-            # Si hay órdenes pendientes, agregar información adicional
-            if ordenes_no_encontradas:
-                resultado["detalle_ordenes_faltantes"] = [
-                    {
-                        "numero_orden": fila['numero_suborden'],  # Usar numero_suborden
-                        "fila_excel": fila['fila_excel'],
-                        "monto": fila['monto_pago']
-                    }
-                    for fila in ordenes_no_encontradas[:20]  # Máximo 20 para el response
-                ]
-                
-                if ordenes_actualizadas > 0:
-                    resultado["message"] = f"Liquidación procesada: {ordenes_actualizadas} órdenes actualizadas, {len(ordenes_no_encontradas)} órdenes guardadas como pendientes"
-                else:
-                    resultado["message"] = f"Liquidación creada pero ninguna orden se pudo actualizar. {len(ordenes_no_encontradas)} órdenes guardadas como pendientes"
-            
-            return resultado
-            
-        except Exception as e:
-            try:
-                conn.rollback()
-                print(f"🔄 Transacción revertida debido a error")
-            except:
-                pass
-            print(f"❌ Error en transacción: {str(e)}")
-            raise e
-            
-        finally:
-            try:
-                if cursor:
-                    cursor.close()
-                if conn:
-                    conn.close()
-                print("🔌 Conexión a BD cerrada")
-            except:
-                pass
+        return conn, cursor
         
     except Exception as e:
-        print(f"❌ Error general procesando Cencosud: {str(e)}")
-        print(f"Traceback: {traceback.format_exc()}")
+        print(f"❌ Error conectando BD: {str(e)}")
+        return None, None
+
+
+def clasificar_ordenes(cursor, filas_procesadas):
+    """Clasificar órdenes en válidas y no encontradas"""
+    CLIENTE_CENCOSUD_ID = RETAIL_CONFIG["cencosud"]["cliente_id"]
+    
+    ordenes_validas = []
+    ordenes_no_encontradas = []
+    
+    for fila_data in filas_procesadas:
+        numero_suborden = fila_data['numero_suborden']
+        
+        # Buscar en BD
+        cursor.execute("""
+            SELECT id, numero_orden 
+            FROM ventas_retail 
+            WHERE numero_orden = %s AND cliente_id = %s
+        """, (numero_suborden, CLIENTE_CENCOSUD_ID))
+        
+        venta_encontrada = cursor.fetchone()
+        
+        if venta_encontrada:
+            fila_data['venta_id'] = venta_encontrada['id']
+            ordenes_validas.append(fila_data)
+            print(f"✅ Orden {numero_suborden} encontrada (ID: {venta_encontrada['id']})")
+        else:
+            ordenes_no_encontradas.append(fila_data)
+            print(f"⚠️ Orden {numero_suborden} no encontrada")
+    
+    return {
+        'validas': ordenes_validas,
+        'no_encontradas': ordenes_no_encontradas
+    }
+
+
+def crear_liquidacion_master(cursor, filas_procesadas, ordenes_validas, ordenes_no_encontradas, numero_liquidacion, nombre_archivo):
+    """Crear el registro maestro de liquidación"""
+    try:
+        CLIENTE_CENCOSUD_ID = RETAIL_CONFIG["cencosud"]["cliente_id"]
+        
+        # Calcular totales
+        monto_total = sum(fila['monto_pago'] for fila in filas_procesadas)
+        fecha_liquidacion = next((f['fecha_liquidacion'] for f in filas_procesadas if f['fecha_liquidacion']), None)
+        
+        # Determinar número de liquidación
+        numero_liquidacion_final = (
+            numero_liquidacion or 
+            next((f['numero_liquidacion_fila'] for f in filas_procesadas if f['numero_liquidacion_fila']), None) or
+            f"LIQ-CEN-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        )
+        
+        # Determinar estado
+        if len(ordenes_no_encontradas) == 0:
+            estado = 'procesada'
+        elif len(ordenes_validas) == 0:
+            estado = 'error'
+        else:
+            estado = 'procesada'
+        
+        # Insertar liquidación
+        query = """
+        INSERT INTO liquidaciones (
+            cliente_id, numero_liquidacion, fecha_liquidacion, 
+            monto_total, cantidad_ordenes, estado, archivo_original,
+            ordenes_procesadas, ordenes_actualizadas, ordenes_no_encontradas,
+            fecha_creacion
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """
+        
+        valores = (
+            CLIENTE_CENCOSUD_ID,
+            numero_liquidacion_final,
+            fecha_liquidacion,
+            monto_total,
+            len(filas_procesadas),
+            estado,
+            nombre_archivo,
+            len(filas_procesadas),
+            len(ordenes_validas),
+            len(ordenes_no_encontradas)
+        )
+        
+        cursor.execute(query, valores)
+        liquidacion_id = cursor.lastrowid
+        
+        print(f"💾 Liquidación {liquidacion_id} creada: {numero_liquidacion_final}")
+        
         return {
-            "success": False,
-            "message": f"Error procesando archivo de Cencosud: {str(e)}",
-            "retail": "Cencosud",
-            "archivo": nombre_archivo,
-            "liquidacion_id": None,
-            "numero_liquidacion": None,
-            "ordenes_procesadas": 0,
-            "ordenes_actualizadas": 0,
-            "ordenes_no_encontradas": 0,
-            "ordenes_pendientes_guardadas": 0,
-            "ordenes_con_liquidacion_id_verificadas": 0,
-            "monto_total": 0,
-            "errores": [str(e)]
+            'success': True,
+            'id': liquidacion_id,
+            'numero': numero_liquidacion_final,
+            'monto_total': monto_total,
+            'fecha': fecha_liquidacion,
+            'estado': estado
         }
+        
+    except Exception as e:
+        return {'success': False, 'error': f"Error creando liquidación: {str(e)}"}
+
+
+def actualizar_ordenes_retail(cursor, ordenes_validas, liquidacion_id):
+    """Actualizar órdenes en ventas_retail usando UPDATE por ID"""
+    ordenes_actualizadas = 0
+    errores_detallados = []
+    
+    print(f"🔧 Actualizando {len(ordenes_validas)} órdenes en ventas_retail")
+    
+    # Verificar primero que la tabla ventas_retail esté accesible
+    verificacion_tabla = verificar_tabla_ventas_retail(cursor)
+    if not verificacion_tabla['accessible']:
+        error_critico = f"❌ PROBLEMA CRÍTICO: {verificacion_tabla['error']}"
+        print(error_critico)
+        return {
+            'actualizadas': 0,
+            'errores': [error_critico],
+            'total': len(ordenes_validas),
+            'problema_tabla': True,
+            'detalle_problema': verificacion_tabla['error']
+        }
+    
+    for orden in ordenes_validas:
+        try:
+            resultado = actualizar_orden_individual(cursor, orden, liquidacion_id)
+            if resultado['success']:
+                ordenes_actualizadas += 1
+                print(f"✅ Orden {orden['numero_suborden']} actualizada")
+            else:
+                error_detallado = f"❌ PROBLEMA AL ACTUALIZAR ventas_retail - Orden {orden['numero_suborden']}: {resultado['error']}"
+                errores_detallados.append(error_detallado)
+                print(error_detallado)
+                
+        except Exception as e:
+            error_detallado = f"❌ PROBLEMA AL ACTUALIZAR ventas_retail - Orden {orden['numero_suborden']}: {str(e)}"
+            errores_detallados.append(error_detallado)
+            print(error_detallado)
+    
+    # Si no se actualizó ninguna orden, generar mensaje específico
+    if ordenes_actualizadas == 0 and len(ordenes_validas) > 0:
+        problema_general = "❌ PROBLEMA CRÍTICO: No se pudo actualizar NINGUNA orden en ventas_retail"
+        print(problema_general)
+        errores_detallados.insert(0, problema_general)
+        
+        return {
+            'actualizadas': 0,
+            'errores': errores_detallados,
+            'total': len(ordenes_validas),
+            'problema_tabla': True,
+            'detalle_problema': "Todas las actualizaciones de ventas_retail fallaron"
+        }
+    
+    return {
+        'actualizadas': ordenes_actualizadas,
+        'errores': errores_detallados,
+        'total': len(ordenes_validas),
+        'problema_tabla': False
+    }
+
+
+def verificar_tabla_ventas_retail(cursor):
+    """Verificar que la tabla ventas_retail esté accesible y tenga las columnas necesarias"""
+    try:
+        # 1. Verificar que la tabla existe
+        cursor.execute("SHOW TABLES LIKE 'ventas_retail'")
+        tabla_existe = cursor.fetchone()
+        
+        if not tabla_existe:
+            return {
+                'accessible': False,
+                'error': "La tabla ventas_retail no existe en la base de datos"
+            }
+        
+        # 2. Verificar columnas necesarias
+        cursor.execute("DESCRIBE ventas_retail")
+        columnas_existentes = [col['Field'] for col in cursor.fetchall()]
+        
+        columnas_requeridas = [
+            'id', 'liquidacion_id', 'monto_pago_liquidacion', 'tipo_liquidacion',
+            'fecha_liquidacion', 'numero_liquidacion', 'estado_liquidacion', 'estado_pago'
+        ]
+        
+        columnas_faltantes = [col for col in columnas_requeridas if col not in columnas_existentes]
+        
+        if columnas_faltantes:
+            return {
+                'accessible': False,
+                'error': f"Columnas faltantes en ventas_retail: {', '.join(columnas_faltantes)}"
+            }
+        
+        # 3. Verificar permisos de escritura (hacer un UPDATE de prueba)
+        cursor.execute("SELECT id FROM ventas_retail LIMIT 1")
+        test_record = cursor.fetchone()
+        
+        if test_record:
+            # Hacer UPDATE de prueba sin cambiar nada
+            cursor.execute("UPDATE ventas_retail SET id = id WHERE id = %s", (test_record['id'],))
+            if cursor.rowcount >= 0:  # >= 0 porque puede ser 0 si no hay cambios
+                print("✅ Tabla ventas_retail accesible y con permisos de escritura")
+                return {'accessible': True, 'error': None}
+            else:
+                return {
+                    'accessible': False,
+                    'error': "Sin permisos de escritura en ventas_retail"
+                }
+        else:
+            return {
+                'accessible': False,
+                'error': "Tabla ventas_retail existe pero está vacía"
+            }
+            
+    except mysql.connector.Error as db_error:
+        return {
+            'accessible': False,
+            'error': f"Error de base de datos al acceder ventas_retail: {str(db_error)}"
+        }
+    except Exception as e:
+        return {
+            'accessible': False,
+            'error': f"Error verificando ventas_retail: {str(e)}"
+        }
+    """Actualizar una orden individual usando su ID"""
+    try:
+        # Mapear tipo
+        tipo_map = {
+            'venta': 'venta', 'ventas': 'venta',
+            'devolución': 'devolucion', 'devolucion': 'devolucion', 'devoluciones': 'devolucion'
+        }
+        tipo_liquidacion = tipo_map.get(orden['tipo'].lower(), 'cancelacion')
+        
+        # Mapear estado (usar valores correctos del enum)
+        estado_excel = orden['estado_liquidacion_excel'].lower()
+        if estado_excel in ['pagada', 'pagado', 'cerrada', 'finalizada']:
+            estado_liquidacion = 'procesada'
+            estado_pago = 'pagada'  # Usar 'pagada' que existe en el enum
+        else:
+            estado_liquidacion = 'procesada'
+            estado_pago = 'pagada'
+        
+        # UPDATE por ID (más confiable que por numero_orden)
+        query = """
+        UPDATE ventas_retail SET 
+            monto_pago_liquidacion = %s,
+            tipo_liquidacion = %s,
+            fecha_liquidacion = %s,
+            numero_liquidacion = %s,
+            fecha_procesamiento_liquidacion = %s,
+            estado_liquidacion = %s,
+            estado_pago = %s,
+            liquidacion_id = %s
+        WHERE id = %s
+        """
+        
+        valores = (
+            orden['monto_pago'],
+            tipo_liquidacion,
+            orden['fecha_liquidacion'],
+            orden['numero_liquidacion_fila'],
+            orden['nro_solicitud'],
+            estado_liquidacion,
+            estado_pago,
+            liquidacion_id,
+            orden['venta_id']  # Usar ID en lugar de numero_orden
+        )
+        
+        cursor.execute(query, valores)
+        filas_afectadas = cursor.rowcount
+        
+        if filas_afectadas > 0:
+            # Verificar que se guardó correctamente
+            cursor.execute("SELECT liquidacion_id FROM ventas_retail WHERE id = %s", (orden['venta_id'],))
+            verificacion = cursor.fetchone()
+            
+            if verificacion and verificacion['liquidacion_id'] == liquidacion_id:
+                return {'success': True}
+            else:
+                return {'success': False, 'error': 'liquidacion_id no se guardó correctamente'}
+        else:
+            return {'success': False, 'error': 'UPDATE no afectó ninguna fila'}
+            
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+
+def guardar_ordenes_pendientes(cursor, ordenes_no_encontradas, liquidacion_id):
+    """Guardar órdenes no encontradas como pendientes"""
+    if not ordenes_no_encontradas:
+        return {'guardadas': 0, 'errores': []}
+    
+    CLIENTE_CENCOSUD_ID = RETAIL_CONFIG["cencosud"]["cliente_id"]
+    ordenes_guardadas = 0
+    errores = []
+    
+    print(f"📝 Guardando {len(ordenes_no_encontradas)} órdenes como pendientes")
+    
+    for orden in ordenes_no_encontradas:
+        try:
+            # Mapear tipo
+            tipo_map = {
+                'venta': 'venta', 'ventas': 'venta',
+                'devolución': 'devolucion', 'devolucion': 'devolucion'
+            }
+            tipo_liquidacion = tipo_map.get(orden['tipo'].lower(), 'cancelacion')
+            
+            query = """
+            INSERT INTO ordenes_liquidacion_pendientes (
+                liquidacion_id, numero_orden, monto_pago, tipo_liquidacion,
+                fecha_liquidacion, numero_liquidacion, fecha_procesamiento_liquidacion,
+                estado_liquidacion_excel, cliente_id, fila_excel, data_completa,
+                estado, fecha_creacion
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pendiente', NOW())
+            """
+            
+            valores = (
+                liquidacion_id,
+                orden['numero_suborden'],
+                orden['monto_pago'],
+                tipo_liquidacion,
+                orden['fecha_liquidacion'],
+                orden['numero_liquidacion_fila'],
+                orden['nro_solicitud'],
+                orden['estado_liquidacion_excel'],
+                CLIENTE_CENCOSUD_ID,
+                orden['fila_excel'],
+                json.dumps(orden)
+            )
+            
+            cursor.execute(query, valores)
+            ordenes_guardadas += 1
+            
+        except Exception as e:
+            errores.append(f"Orden {orden['numero_suborden']}: {str(e)}")
+    
+    return {'guardadas': ordenes_guardadas, 'errores': errores}
+
+
+def crear_respuesta_exitosa(liquidacion_info, resultado_actualizacion, resultado_pendientes, nombre_archivo, filas_procesadas):
+    """Crear respuesta de éxito"""
+    
+    # Verificación final
+    ordenes_con_liquidacion_id = verificar_ordenes_actualizadas(liquidacion_info['id'])
+    
+    # Determinar mensaje según si hubo problemas con ventas_retail
+    mensaje_base = "Liquidación de Cencosud procesada exitosamente"
+    
+    if resultado_actualizacion.get('problema_tabla', False):
+        mensaje_base = f"❌ PROBLEMAS AL ACTUALIZAR ventas_retail: {resultado_actualizacion.get('detalle_problema', 'Error desconocido')}"
+    elif resultado_actualizacion['actualizadas'] == 0 and len(filas_procesadas) > 0:
+        mensaje_base = "❌ PROBLEMAS AL ACTUALIZAR ventas_retail: No se pudo actualizar ninguna orden en la tabla"
+    elif resultado_pendientes['guardadas'] > 0:
+        mensaje_base = f"Liquidación procesada: {resultado_actualizacion['actualizadas']} órdenes actualizadas, {resultado_pendientes['guardadas']} órdenes guardadas como pendientes"
+    
+    # Determinar si el proceso fue exitoso o tuvo problemas críticos
+    success_status = True
+    if resultado_actualizacion.get('problema_tabla', False) or resultado_actualizacion['actualizadas'] == 0:
+        success_status = False
+    
+    respuesta = {
+        "success": success_status,
+        "message": mensaje_base,
+        "retail": "Cencosud",
+        "archivo": nombre_archivo,
+        "liquidacion_id": liquidacion_info['id'],
+        "numero_liquidacion": liquidacion_info['numero'],
+        "ordenes_procesadas": len(filas_procesadas),
+        "ordenes_actualizadas": resultado_actualizacion['actualizadas'],
+        "ordenes_no_encontradas": resultado_pendientes['guardadas'],
+        "ordenes_con_liquidacion_id_verificadas": ordenes_con_liquidacion_id,
+        "monto_total": liquidacion_info['monto_total'],
+        "fecha_liquidacion": liquidacion_info['fecha'].isoformat() if liquidacion_info['fecha'] else None,
+        "fecha_procesamiento": datetime.now().isoformat(),
+        "errores": resultado_actualizacion['errores'][:10]
+    }
+    
+    # Agregar información específica sobre problemas con ventas_retail
+    if resultado_actualizacion.get('problema_tabla', False):
+        respuesta["problema_ventas_retail"] = True
+        respuesta["detalle_problema_ventas_retail"] = resultado_actualizacion.get('detalle_problema', 'Error desconocido')
+    else:
+        respuesta["problema_ventas_retail"] = False
+    
+    # Agregar detalles de órdenes pendientes si las hay
+    if resultado_pendientes['guardadas'] > 0:
+        # Esta información vendría de ordenes_no_encontradas, necesitaríamos pasarla como parámetro
+        pass
+    
+    print(f"\n🎯 RESUMEN FINAL:")
+    if not success_status:
+        print(f"   ❌ PROBLEMAS CON ventas_retail: {resultado_actualizacion.get('detalle_problema', 'Error desconocido')}")
+    print(f"   ✅ Órdenes actualizadas: {resultado_actualizacion['actualizadas']}")
+    print(f"   ⚠️ Órdenes pendientes: {resultado_pendientes['guardadas']}")
+    print(f"   🔍 Verificadas con liquidacion_id: {ordenes_con_liquidacion_id}")
+    print(f"   💰 Monto total: ${liquidacion_info['monto_total']:,.2f}")
+    
+    if resultado_actualizacion['errores']:
+        print(f"   🚨 Errores de actualización:")
+        for error in resultado_actualizacion['errores'][:5]:
+            print(f"      - {error}")
+    
+    return respuesta
+
+
+def verificar_ordenes_actualizadas(liquidacion_id):
+    """Verificar cuántas órdenes tienen el liquidacion_id asignado"""
+    try:
+        conn = obtener_conexion_db()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT COUNT(*) as total FROM ventas_retail WHERE liquidacion_id = %s", (liquidacion_id,))
+        resultado = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        return resultado['total'] if resultado else 0
+        
+    except Exception as e:
+        print(f"⚠️ Error verificando órdenes: {str(e)}")
+        return 0
+
+
+def crear_respuesta_error(mensaje_error, nombre_archivo):
+    """Crear respuesta de error estandarizada"""
+    return {
+        "success": False,
+        "message": f"Error procesando archivo de Cencosud: {mensaje_error}",
+        "retail": "Cencosud",
+        "archivo": nombre_archivo,
+        "liquidacion_id": None,
+        "numero_liquidacion": None,
+        "ordenes_procesadas": 0,
+        "ordenes_actualizadas": 0,
+        "ordenes_no_encontradas": 0,
+        "ordenes_con_liquidacion_id_verificadas": 0,
+        "monto_total": 0,
+        "errores": [mensaje_error]
+    }
+
+
+def cerrar_conexion_bd(cursor, conn):
+    """Cerrar conexiones de base de datos de forma segura"""
+    try:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        print("🔌 Conexión BD cerrada")
+    except Exception as e:
+        print(f"⚠️ Error cerrando BD: {str(e)}")
