@@ -88,6 +88,49 @@
         padding: 40px;
         color: var(--secondary-color);
     }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 20px;
+        background: white;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .pagination button {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        background: white;
+        color: var(--primary-color);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+
+    .pagination button:hover:not(:disabled) {
+        background: var(--surface-color);
+        border-color: var(--accent-color);
+    }
+
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination button.active {
+        background: var(--accent-color);
+        color: white;
+        border-color: var(--accent-color);
+    }
+
+    .pagination-info {
+        color: var(--secondary-color);
+        font-size: 14px;
+        margin: 0 15px;
+    }
 </style>
 
 <div class="table-container content-card">
@@ -99,7 +142,7 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Cliente ID</th>
+                <th>Cliente</th>
                 <th>Número Orden</th>
                 <th>Producto</th>
                 <th>Estado Pago</th>
@@ -113,18 +156,46 @@
             </tr>
         </tbody>
     </table>
+    
+    <!-- Paginación -->
+    <div class="pagination" id="pagination">
+        <button id="prevBtn" onclick="previousPage()">
+            <i class="fas fa-chevron-left"></i> Anterior
+        </button>
+        
+        <div class="pagination-info" id="paginationInfo">
+            Página 1 de 1
+        </div>
+        
+        <button id="nextBtn" onclick="nextPage()">
+            Siguiente <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
 </div>
 
 <script>
+    let currentPage = 1;
+    const itemsPerPage = 20;
+    let totalPages = 1;
+    let totalItems = 0;
+
     // Cargar datos desde la API
-    async function loadOrders() {
+    async function loadOrders(page = 1) {
         try {
-            const response = await fetch('/liquidaciones/api/ventas-retail/liquidacion');
+            const offset = (page - 1) * itemsPerPage;
+            const response = await fetch(`/liquidaciones/api/ventas-retail/liquidacion?limite=${itemsPerPage}&offset=${offset}`);
             if (!response.ok) throw new Error('Error al cargar datos');
             
             const data = await response.json();
+            
+            // Actualizar variables de paginación
+            totalItems = data.estadisticas.total;
+            totalPages = Math.ceil(totalItems / itemsPerPage);
+            currentPage = page;
+            
             renderTable(data.ordenes);
             updateStats(data.estadisticas);
+            updatePagination();
         } catch (error) {
             console.error('Error:', error);
             document.getElementById('tableBody').innerHTML = `
@@ -150,12 +221,19 @@
 
         tbody.innerHTML = orders.map(order => `
             <tr>
-                <td>${order.cliente_id || '-'}</td>
+                <td>
+                    <div>
+                        <strong>${order.cliente_final || 'Cliente no especificado'}</strong>
+                        ${order.cliente_id ? `<br><small class="text-gray-500">ID: ${order.cliente_id}</small>` : ''}
+                    </div>
+                </td>
                 <td><strong>${order.numero_orden}</strong></td>
                 <td>${order.producto}</td>
                 <td><span class="status-badge status-${order.estado_pago}">${order.estado_pago}</span></td>
                 <td>${order.numero_liquidacion || '-'}</td>
-                <td class="currency">${order.monto_liquido ? '$' + Number(order.monto_liquido).toLocaleString('es-CL') : '-'}</td>
+                <td class="currency">${order.monto_liquido ? '
+
+{% endblock content %} + Number(order.monto_liquido).toLocaleString('es-CL') : '-'}</td>
             </tr>
         `).join('');
     }
@@ -172,8 +250,38 @@
             `Total: ${total} | Pagados: ${pagados} | Pendientes: ${pendientes}`;
     }
 
+    // Actualizar controles de paginación
+    function updatePagination() {
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const paginationInfo = document.getElementById('paginationInfo');
+        
+        // Actualizar botones
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = currentPage >= totalPages;
+        
+        // Actualizar información
+        const startItem = ((currentPage - 1) * itemsPerPage) + 1;
+        const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+        
+        paginationInfo.textContent = `Mostrando ${startItem}-${endItem} de ${totalItems} registros (Página ${currentPage} de ${totalPages})`;
+    }
+
+    // Funciones de navegación
+    function previousPage() {
+        if (currentPage > 1) {
+            loadOrders(currentPage - 1);
+        }
+    }
+
+    function nextPage() {
+        if (currentPage < totalPages) {
+            loadOrders(currentPage + 1);
+        }
+    }
+
     // Cargar datos al iniciar
-    loadOrders();
+    loadOrders(1);
 </script>
 
 {% endblock content %}

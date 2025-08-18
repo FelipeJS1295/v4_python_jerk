@@ -77,6 +77,7 @@ async def obtener_ordenes_liquidacion(
                 cliente_id,
                 numero_orden,
                 producto,
+                cliente_final,
                 CASE 
                     WHEN numero_liquidacion IS NOT NULL AND fecha_pago_liquidacion IS NOT NULL THEN 'pagado'
                     WHEN numero_liquidacion IS NULL AND fecha_pago_liquidacion IS NULL THEN 'pendiente'
