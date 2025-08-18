@@ -30,6 +30,7 @@ from routers import (
     image_router,
     usuarios_jinja,
     trabajadores_jinja,
+    liquidaciones,
 )
 
 from routers import camaras
@@ -193,3 +194,5 @@ app.include_router(finanzas.router)
 # Routers de E-commerce
 app.include_router(ecomerce.router)
 app.include_router(image_router.router)
+
+app.include_router(liquidaciones.router)
