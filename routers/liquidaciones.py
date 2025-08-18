@@ -74,21 +74,22 @@ async def obtener_ordenes_liquidacion(
         # Query base para obtener las órdenes con estado de pago calculado
         base_query = """
             SELECT 
-                cliente_id,
-                numero_orden,
-                producto,
-                cliente_final,
+                vr.cliente_id,
+                vr.numero_orden,
+                vr.producto,
+                c.nombre as cliente_nombre,
                 CASE 
-                    WHEN numero_liquidacion IS NOT NULL AND fecha_pago_liquidacion IS NOT NULL THEN 'pagado'
-                    WHEN numero_liquidacion IS NULL AND fecha_pago_liquidacion IS NULL THEN 'pendiente'
+                    WHEN vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NOT NULL THEN 'pagado'
+                    WHEN vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NULL THEN 'pendiente'
                     ELSE 'fallido'
                 END AS estado_pago,
-                numero_liquidacion,
-                monto_liquido,
-                precio_cliente,
-                fecha_compra,
-                id
-            FROM ventas_retail
+                vr.numero_liquidacion,
+                vr.monto_liquido,
+                vr.precio_cliente,
+                vr.fecha_compra,
+                vr.id
+            FROM ventas_retail vr
+            LEFT JOIN clientes c ON vr.cliente_id = c.id
         """
         
         # Construir condiciones WHERE
@@ -98,28 +99,29 @@ async def obtener_ordenes_liquidacion(
         # Filtro de búsqueda
         if search and search.strip():
             condiciones.append("""
-                (numero_orden LIKE %s 
-                OR producto LIKE %s 
-                OR CAST(cliente_id AS CHAR) LIKE %s)
+                (vr.numero_orden LIKE %s 
+                OR vr.producto LIKE %s 
+                OR c.nombre LIKE %s
+                OR CAST(vr.cliente_id AS CHAR) LIKE %s)
             """)
             search_param = f"%{search.strip()}%"
-            parametros.extend([search_param, search_param, search_param])
+            parametros.extend([search_param, search_param, search_param, search_param])
         
         # Filtro por estado de pago
         if estado_pago and estado_pago in ['pendiente', 'pagado', 'fallido']:
             if estado_pago == 'pendiente':
-                condiciones.append("numero_liquidacion IS NULL AND fecha_pago_liquidacion IS NULL")
+                condiciones.append("vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NULL")
             elif estado_pago == 'pagado':
-                condiciones.append("numero_liquidacion IS NOT NULL AND fecha_pago_liquidacion IS NOT NULL")
+                condiciones.append("vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NOT NULL")
             elif estado_pago == 'fallido':
-                condiciones.append("(numero_liquidacion IS NOT NULL AND fecha_pago_liquidacion IS NULL) OR (numero_liquidacion IS NULL AND fecha_pago_liquidacion IS NOT NULL)")
+                condiciones.append("(vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NULL) OR (vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NOT NULL)")
         
         # Agregar condiciones WHERE si existen
         if condiciones:
             base_query += " WHERE " + " AND ".join(condiciones)
         
         # Agregar ordenamiento y paginación
-        base_query += " ORDER BY fecha_compra DESC, id DESC"
+        base_query += " ORDER BY vr.fecha_compra DESC, vr.id DESC"
         base_query += " LIMIT %s OFFSET %s"
         
         parametros.extend([limite, offset])
