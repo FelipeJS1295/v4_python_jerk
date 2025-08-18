@@ -1,287 +1,246 @@
 {% extends "base.html" %}
 
 {% block title %}Gestión de Liquidaciones{% endblock %}
-
 {% block header %}Gestión de Liquidaciones{% endblock %}
-
-{% block breadcrumb %}Liquidaciones / Gestión de Órdenes{% endblock %}
+{% block breadcrumb %}Liquidaciones > Gestión de Órdenes{% endblock %}
 
 {% block content %}
-<style>
-    .table-container {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
-        overflow: hidden;
-    }
-
-    .table-header {
-        background: var(--primary-color);
-        color: white;
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .table-title {
-        font-size: 18px;
-        font-weight: 600;
-    }
-
-    .table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .table th {
-        background: var(--surface-color);
-        padding: 16px 20px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--primary-color);
-        font-size: 14px;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .table td {
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--border-color);
-        font-size: 14px;
-        color: var(--primary-color);
-    }
-
-    .table tbody tr:hover {
-        background-color: var(--surface-color);
-    }
-
-    .status-badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 500;
-        text-transform: uppercase;
-    }
-
-    .status-pendiente {
-        background-color: rgba(245, 158, 11, 0.1);
-        color: var(--warning-color);
-    }
-
-    .status-pagado {
-        background-color: rgba(16, 185, 129, 0.1);
-        color: var(--success-color);
-    }
-
-    .status-fallido {
-        background-color: rgba(239, 68, 68, 0.1);
-        color: var(--error-color);
-    }
-
-    .currency {
-        font-weight: 600;
-        color: var(--success-color);
-    }
-
-    .loading, .no-data {
-        text-align: center;
-        padding: 40px;
-        color: var(--secondary-color);
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        padding: 20px;
-        background: white;
-        border-top: 1px solid var(--border-color);
-    }
-
-    .pagination button {
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        background: white;
-        color: var(--primary-color);
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 14px;
-    }
-
-    .pagination button:hover:not(:disabled) {
-        background: var(--surface-color);
-        border-color: var(--accent-color);
-    }
-
-    .pagination button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .pagination button.active {
-        background: var(--accent-color);
-        color: white;
-        border-color: var(--accent-color);
-    }
-
-    .pagination-info {
-        color: var(--secondary-color);
-        font-size: 14px;
-        margin: 0 15px;
-    }
-</style>
-
-<div class="table-container content-card">
-    <div class="table-header">
-        <div class="table-title">Órdenes de Liquidación</div>
-        <div class="table-stats" id="tableStats">Cargando...</div>
-    </div>
-    
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Cliente</th>
-                <th>Número Orden</th>
-                <th>Producto</th>
-                <th>Estado Pago</th>
-                <th>Nº Liquidación</th>
-                <th>Monto Líquido</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-            <tr>
-                <td colspan="6" class="loading">Cargando datos...</td>
-            </tr>
-        </tbody>
-    </table>
-    
-    <!-- Paginación -->
-    <div class="pagination" id="pagination">
-        <button id="prevBtn" onclick="previousPage()">
-            <i class="fas fa-chevron-left"></i> Anterior
-        </button>
-        
-        <div class="pagination-info" id="paginationInfo">
-            Página 1 de 1
+<div class="space-y-6">
+  
+  <!-- Panel de Información -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">Control de Liquidaciones</h3>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <div class="flex items-center">
+          <i class="fas fa-list-alt text-blue-600 text-xl mr-3"></i>
+          <div>
+            <p class="text-sm text-blue-600 font-medium">Total Órdenes</p>
+            <p class="text-2xl font-bold text-blue-800" id="total-ordenes">-</p>
+          </div>
         </div>
-        
-        <button id="nextBtn" onclick="nextPage()">
-            Siguiente <i class="fas fa-chevron-right"></i>
-        </button>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+        <div class="flex items-center">
+          <i class="fas fa-check-circle text-green-600 text-xl mr-3"></i>
+          <div>
+            <p class="text-sm text-green-600 font-medium">Pagadas</p>
+            <p class="text-2xl font-bold text-green-800" id="ordenes-pagadas">-</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <div class="flex items-center">
+          <i class="fas fa-clock text-yellow-600 text-xl mr-3"></i>
+          <div>
+            <p class="text-sm text-yellow-600 font-medium">Pendientes</p>
+            <p class="text-2xl font-bold text-yellow-800" id="ordenes-pendientes">-</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+        <div class="flex items-center">
+          <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-3"></i>
+          <div>
+            <p class="text-sm text-red-600 font-medium">Fallidas</p>
+            <p class="text-2xl font-bold text-red-800" id="ordenes-fallidas">-</p>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div id="contenido-tabla">
+      <div class="p-6 border-b border-slate-200">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-slate-800">Lista de Órdenes</h3>
+          <div class="flex items-center space-x-2">
+            <button id="btn-anterior" class="px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+              <i class="fas fa-chevron-left mr-1"></i>
+              Anterior
+            </button>
+            <span id="info-paginacion" class="text-sm text-slate-600 px-4">Página 1 de 1</span>
+            <button id="btn-siguiente" class="px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+              Siguiente
+              <i class="fas fa-chevron-right ml-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Cliente</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Número Orden</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Producto</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado Pago</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nº Liquidación</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Monto Líquido</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body" class="bg-white divide-y divide-slate-200">
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                <p>Cargando datos...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-    let currentPage = 1;
-    const itemsPerPage = 20;
-    let totalPages = 1;
-    let totalItems = 0;
+// Variables para paginación
+let paginaActual = 1;
+const registrosPorPagina = 20;
+let totalPaginas = 1;
+let totalRegistros = 0;
 
-    // Cargar datos desde la API
-    async function loadOrders(page = 1) {
-        try {
-            const offset = (page - 1) * itemsPerPage;
-            const response = await fetch(`/liquidaciones/api/ventas-retail/liquidacion?limite=${itemsPerPage}&offset=${offset}`);
-            if (!response.ok) throw new Error('Error al cargar datos');
-            
-            const data = await response.json();
-            
-            // Actualizar variables de paginación
-            totalItems = data.estadisticas.total;
-            totalPages = Math.ceil(totalItems / itemsPerPage);
-            currentPage = page;
-            
-            renderTable(data.ordenes);
-            updateStats(data.estadisticas);
-            updatePagination();
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('tableBody').innerHTML = `
-                <tr>
-                    <td colspan="6" class="no-data">Error al cargar los datos. Verifique la conexión con la API.</td>
-                </tr>
-            `;
-        }
+// Función para cargar datos
+async function cargarDatos(pagina = 1) {
+  try {
+    const offset = (pagina - 1) * registrosPorPagina;
+    const response = await fetch(`/liquidaciones/api/ventas-retail/liquidacion?limite=${registrosPorPagina}&offset=${offset}`);
+    
+    if (!response.ok) {
+      throw new Error('Error al cargar datos');
     }
+    
+    const data = await response.json();
+    
+    // Actualizar variables
+    totalRegistros = data.estadisticas.total;
+    totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
+    paginaActual = pagina;
+    
+    // Renderizar datos
+    renderizarTabla(data.ordenes);
+    actualizarEstadisticas(data.estadisticas);
+    actualizarPaginacion();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarError();
+  }
+}
 
-    // Renderizar tabla
-    function renderTable(orders) {
-        const tbody = document.getElementById('tableBody');
-        
-        if (!orders || orders.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="no-data">No se encontraron registros</td>
-                </tr>
-            `;
-            return;
-        }
+// Función para renderizar tabla
+function renderizarTabla(ordenes) {
+  const tbody = document.getElementById('tabla-body');
+  
+  if (!ordenes || ordenes.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+          <i class="fas fa-inbox text-2xl mb-2"></i>
+          <p>No se encontraron registros</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = ordenes.map(orden => `
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div>
+          <div class="text-sm font-medium text-slate-900">${orden.cliente_final || 'Cliente no especificado'}</div>
+          ${orden.cliente_id ? `<div class="text-sm text-slate-500">ID: ${orden.cliente_id}</div>` : ''}
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm font-semibold text-slate-900">${orden.numero_orden}</span>
+      </td>
+      <td class="px-6 py-4">
+        <div class="text-sm text-slate-900">${orden.producto}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        ${getEstadoBadge(orden.estado_pago)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm text-slate-900">${orden.numero_liquidacion || '-'}</span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm font-medium text-green-600">
+          ${orden.monto_liquido ? '$' + Number(orden.monto_liquido).toLocaleString('es-CL') : '-'}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+}
 
-        tbody.innerHTML = orders.map(order => `
-            <tr>
-                <td>
-                    <div>
-                        <strong>${order.cliente_final || 'Cliente no especificado'}</strong>
-                        ${order.cliente_id ? `<br><small class="text-gray-500">ID: ${order.cliente_id}</small>` : ''}
-                    </div>
-                </td>
-                <td><strong>${order.numero_orden}</strong></td>
-                <td>${order.producto}</td>
-                <td><span class="status-badge status-${order.estado_pago}">${order.estado_pago}</span></td>
-                <td>${order.numero_liquidacion || '-'}</td>
-                <td class="currency">${order.monto_liquido ? '
+// Función para obtener badge de estado
+function getEstadoBadge(estado) {
+  const badges = {
+    'pendiente': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pendiente</span>',
+    'pagado': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Pagado</span>',
+    'fallido': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Fallido</span>'
+  };
+  return badges[estado] || '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Desconocido</span>';
+}
 
-{% endblock content %} + Number(order.monto_liquido).toLocaleString('es-CL') : '-'}</td>
-            </tr>
-        `).join('');
-    }
+// Función para actualizar estadísticas
+function actualizarEstadisticas(stats) {
+  if (!stats) return;
+  
+  document.getElementById('total-ordenes').textContent = stats.total || 0;
+  document.getElementById('ordenes-pagadas').textContent = stats.pagados || 0;
+  document.getElementById('ordenes-pendientes').textContent = stats.pendientes || 0;
+  document.getElementById('ordenes-fallidas').textContent = stats.fallidos || 0;
+}
 
-    // Actualizar estadísticas
-    function updateStats(stats) {
-        if (!stats) return;
-        
-        const total = stats.total || 0;
-        const pagados = stats.pagados || 0;
-        const pendientes = stats.pendientes || 0;
-        
-        document.getElementById('tableStats').textContent = 
-            `Total: ${total} | Pagados: ${pagados} | Pendientes: ${pendientes}`;
-    }
+// Función para actualizar controles de paginación
+function actualizarPaginacion() {
+  const btnAnterior = document.getElementById('btn-anterior');
+  const btnSiguiente = document.getElementById('btn-siguiente');
+  const infoPaginacion = document.getElementById('info-paginacion');
+  
+  // Actualizar botones
+  btnAnterior.disabled = paginaActual <= 1;
+  btnSiguiente.disabled = paginaActual >= totalPaginas;
+  
+  // Actualizar información
+  const inicio = ((paginaActual - 1) * registrosPorPagina) + 1;
+  const fin = Math.min(paginaActual * registrosPorPagina, totalRegistros);
+  
+  infoPaginacion.textContent = `Mostrando ${inicio}-${fin} de ${totalRegistros} registros (Página ${paginaActual} de ${totalPaginas})`;
+}
 
-    // Actualizar controles de paginación
-    function updatePagination() {
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const paginationInfo = document.getElementById('paginationInfo');
-        
-        // Actualizar botones
-        prevBtn.disabled = currentPage <= 1;
-        nextBtn.disabled = currentPage >= totalPages;
-        
-        // Actualizar información
-        const startItem = ((currentPage - 1) * itemsPerPage) + 1;
-        const endItem = Math.min(currentPage * itemsPerPage, totalItems);
-        
-        paginationInfo.textContent = `Mostrando ${startItem}-${endItem} de ${totalItems} registros (Página ${currentPage} de ${totalPages})`;
-    }
+// Función para mostrar error
+function mostrarError() {
+  document.getElementById('tabla-body').innerHTML = `
+    <tr>
+      <td colspan="6" class="px-6 py-12 text-center text-red-500">
+        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+        <p>Error al cargar los datos. Verifique la conexión.</p>
+      </td>
+    </tr>
+  `;
+}
 
-    // Funciones de navegación
-    function previousPage() {
-        if (currentPage > 1) {
-            loadOrders(currentPage - 1);
-        }
-    }
+// Event listeners para paginación
+document.getElementById('btn-anterior').addEventListener('click', function() {
+  if (paginaActual > 1) {
+    cargarDatos(paginaActual - 1);
+  }
+});
 
-    function nextPage() {
-        if (currentPage < totalPages) {
-            loadOrders(currentPage + 1);
-        }
-    }
+document.getElementById('btn-siguiente').addEventListener('click', function() {
+  if (paginaActual < totalPaginas) {
+    cargarDatos(paginaActual + 1);
+  }
+});
 
-    // Cargar datos al iniciar
-    loadOrders(1);
+// Inicializar al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+  cargarDatos(1);
+});
 </script>
-
 {% endblock %}
