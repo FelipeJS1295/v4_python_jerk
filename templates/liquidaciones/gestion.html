@@ -8,342 +8,172 @@
 
 {% block content %}
 <style>
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
-            margin-bottom: 25px;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .header h1 {
-            font-size: 24px;
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        .header p {
-            color: var(--secondary-color);
-            margin-top: 8px;
-            font-size: 14px;
-        }
-
-        .controls {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
-            margin-bottom: 25px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .search-box {
-            flex: 1;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px 40px 12px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: var(--surface-color);
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            background: white;
-        }
-
-        .search-icon {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--secondary-color);
-        }
-
-        .filter-select {
-            padding: 12px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            background: white;
-            font-size: 14px;
-            color: var(--primary-color);
-            min-width: 160px;
-            transition: all 0.3s ease;
-        }
-
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-        }
-
-        .table-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
-            overflow: hidden;
-        }
-
-        .table-header {
-            background: var(--primary-color);
-            color: white;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .table-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .table-stats {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .table th {
-            background: var(--surface-color);
-            padding: 16px 20px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--primary-color);
-            font-size: 14px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .table td {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 14px;
-            color: var(--primary-color);
-        }
-
-        .table tbody tr:hover {
-            background-color: var(--surface-color);
-        }
-
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .status-pendiente {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--warning-color);
-        }
-
-        .status-pagado {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-        }
-
-        .status-fallido {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--error-color);
-        }
-
-        .currency {
-            font-weight: 600;
-            color: var(--success-color);
-        }
-
-        .loading, .no-data {
-            text-align: center;
-            padding: 40px;
-            color: var(--secondary-color);
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
-            .controls {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .search-box {
-                width: 100%;
-            }
-            
-            .table-container {
-                overflow-x: auto;
-            }
-            
-            .table {
-                min-width: 700px;
-            }
-        }
-    .container {
-        max-width: 100%;
-        margin: 0;
-        padding: 0;
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(30, 41, 59, 0.05);
+        overflow: hidden;
     }
-        <div class="header">
-            <h1>Gestión de Liquidaciones</h1>
-            <p>Control y seguimiento de pagos de órdenes retail</p>
-        </div>
 
-        <div class="controls">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Buscar por número de orden, cliente o producto...">
-                <span class="search-icon">🔍</span>
-            </div>
-            <select id="statusFilter" class="filter-select">
-                <option value="">Todos los estados</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="pagado">Pagado</option>
-                <option value="fallido">Fallido</option>
-            </select>
-        </div>
+    .table-header {
+        background: var(--primary-color);
+        color: white;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 
-        <div class="table-container">
-            <div class="table-header">
-                <div class="table-title">Órdenes de Liquidación</div>
-                <div class="table-stats" id="tableStats">Cargando...</div>
-            </div>
-            
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Cliente ID</th>
-                        <th>Número Orden</th>
-                        <th>Producto</th>
-                        <th>Estado Pago</th>
-                        <th>Nº Liquidación</th>
-                        <th>Monto Líquido</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr>
-                        <td colspan="6" class="loading">Cargando datos...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    .table-title {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th {
+        background: var(--surface-color);
+        padding: 16px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 14px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 14px;
+        color: var(--primary-color);
+    }
+
+    .table tbody tr:hover {
+        background-color: var(--surface-color);
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+
+    .status-pendiente {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+    }
+
+    .status-pagado {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+    }
+
+    .status-fallido {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--error-color);
+    }
+
+    .currency {
+        font-weight: 600;
+        color: var(--success-color);
+    }
+
+    .loading, .no-data {
+        text-align: center;
+        padding: 40px;
+        color: var(--secondary-color);
+    }
+</style>
+
+<div class="table-container content-card">
+    <div class="table-header">
+        <div class="table-title">Órdenes de Liquidación</div>
+        <div class="table-stats" id="tableStats">Cargando...</div>
     </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Cliente ID</th>
+                <th>Número Orden</th>
+                <th>Producto</th>
+                <th>Estado Pago</th>
+                <th>Nº Liquidación</th>
+                <th>Monto Líquido</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr>
+                <td colspan="6" class="loading">Cargando datos...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
 
-    <script>
-        let allOrders = [];
-        let filteredOrders = [];
-
-        // Cargar datos desde la API
-        async function loadOrders() {
-            try {
-                const response = await fetch('/api/ventas-retail/liquidacion');
-                if (!response.ok) throw new Error('Error al cargar datos');
-                
-                allOrders = await response.json();
-                filteredOrders = [...allOrders];
-                renderTable();
-                updateStats();
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('tableBody').innerHTML = `
-                    <tr>
-                        <td colspan="6" class="no-data">Error al cargar los datos. Verifique la conexión con la API.</td>
-                    </tr>
-                `;
-            }
-        }
-
-        // Renderizar tabla
-        function renderTable() {
-            const tbody = document.getElementById('tableBody');
+<script>
+    // Cargar datos desde la API
+    async function loadOrders() {
+        try {
+            const response = await fetch('/liquidaciones/api/ventas-retail/liquidacion');
+            if (!response.ok) throw new Error('Error al cargar datos');
             
-            if (filteredOrders.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="no-data">No se encontraron registros</td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = filteredOrders.map(order => `
+            const data = await response.json();
+            renderTable(data.ordenes);
+            updateStats(data.estadisticas);
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('tableBody').innerHTML = `
                 <tr>
-                    <td>${order.cliente_id || '-'}</td>
-                    <td><strong>${order.numero_orden}</strong></td>
-                    <td>${order.producto}</td>
-                    <td><span class="status-badge status-${order.estado_pago}">${order.estado_pago}</span></td>
-                    <td>${order.numero_liquidacion || '-'}</td>
-                    <td class="currency">${order.monto_liquido ? '$' + Number(order.monto_liquido).toLocaleString('es-CL') : '-'}</td>
+                    <td colspan="6" class="no-data">Error al cargar los datos. Verifique la conexión con la API.</td>
                 </tr>
-            `).join('');
+            `;
+        }
+    }
+
+    // Renderizar tabla
+    function renderTable(orders) {
+        const tbody = document.getElementById('tableBody');
+        
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="no-data">No se encontraron registros</td>
+                </tr>
+            `;
+            return;
         }
 
-        // Actualizar estadísticas
-        function updateStats() {
-            const total = filteredOrders.length;
-            const pagados = filteredOrders.filter(order => order.estado_pago === 'pagado').length;
-            const pendientes = filteredOrders.filter(order => order.estado_pago === 'pendiente').length;
-            
-            document.getElementById('tableStats').textContent = 
-                `Total: ${total} | Pagados: ${pagados} | Pendientes: ${pendientes}`;
-        }
+        tbody.innerHTML = orders.map(order => `
+            <tr>
+                <td>${order.cliente_id || '-'}</td>
+                <td><strong>${order.numero_orden}</strong></td>
+                <td>${order.producto}</td>
+                <td><span class="status-badge status-${order.estado_pago}">${order.estado_pago}</span></td>
+                <td>${order.numero_liquidacion || '-'}</td>
+                <td class="currency">${order.monto_liquido ? '$' + Number(order.monto_liquido).toLocaleString('es-CL') : '-'}</td>
+            </tr>
+        `).join('');
+    }
 
-        // Filtrar por búsqueda
-        function filterBySearch(searchTerm) {
-            const term = searchTerm.toLowerCase();
-            filteredOrders = allOrders.filter(order => 
-                order.numero_orden.toLowerCase().includes(term) ||
-                order.producto.toLowerCase().includes(term) ||
-                (order.cliente_id && order.cliente_id.toString().includes(term))
-            );
-            renderTable();
-            updateStats();
-        }
+    // Actualizar estadísticas
+    function updateStats(stats) {
+        if (!stats) return;
+        
+        const total = stats.total || 0;
+        const pagados = stats.pagados || 0;
+        const pendientes = stats.pendientes || 0;
+        
+        document.getElementById('tableStats').textContent = 
+            `Total: ${total} | Pagados: ${pagados} | Pendientes: ${pendientes}`;
+    }
 
-        // Filtrar por estado
-        function filterByStatus(status) {
-            if (!status) {
-                filteredOrders = [...allOrders];
-            } else {
-                filteredOrders = allOrders.filter(order => order.estado_pago === status);
-            }
-            renderTable();
-            updateStats();
-        }
+    // Cargar datos al iniciar
+    loadOrders();
+</script>
 
-        // Event listeners
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            filterBySearch(e.target.value);
-        });
-
-        document.getElementById('statusFilter').addEventListener('change', (e) => {
-            filterByStatus(e.target.value);
-        });
-
-        // Cargar datos al iniciar
-        loadOrders();
-    </script>
-</body>
-</html>
+{% endblock content %}
