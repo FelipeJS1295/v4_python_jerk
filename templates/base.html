@@ -281,35 +281,6 @@
         <span>Producción</span>
       </a>
 
-      <!-- Menú de Liquidaciones -->
-      <div class="nav-item">
-        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
-                onclick="toggleSubmenu('liquidaciones-submenu', 'liquidaciones-arrow')">
-          <div class="flex items-center space-x-4">
-            <i class="fas fa-file-invoice-dollar nav-icon"></i>
-            <span>Liquidaciones</span>
-          </div>
-          <svg class="w-4 h-4 transition-transform duration-300" id="liquidaciones-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-          </svg>
-        </button>
-
-        <div id="liquidaciones-submenu" class="hidden mt-2 space-y-1">
-          <a href="/liquidaciones" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
-            <i class="fas fa-list w-4 h-4"></i>
-            <span>Lista de Liquidaciones</span>
-          </a>
-          <a href="/liquidaciones/cargar" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
-            <i class="fas fa-upload w-4 h-4"></i>
-            <span>Cargar Liquidación</span>
-          </a>
-          <a href="/liquidaciones/ordenes" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
-            <i class="fas fa-check-circle w-4 h-4"></i>
-            <span>Estado de Órdenes</span>
-          </a>
-        </div>
-      </div>
-
       <!-- Menú de Logística -->
       <div class="nav-item">
         <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
