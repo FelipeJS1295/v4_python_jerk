@@ -317,7 +317,7 @@
 </div>
 
 <script>
-// Variables globales
+    // Variables globales
 let paginaActual = 1;
 let registrosPorPagina = 20;
 let totalPaginas = 1;
@@ -473,7 +473,9 @@ function actualizarEstadisticas(stats) {
   
   document.getElementById('total-liquidaciones').textContent = stats.total_liquidaciones || 0;
   document.getElementById('total-ordenes').textContent = stats.total_ordenes_liquidadas || 0;
-  document.getElementById('monto-total').textContent = '
+  document.getElementById('monto-total').textContent = '$' + Number(stats.monto_total_liquidado || 0).toLocaleString('es-CL');
+  document.getElementById('total-clientes').textContent = stats.clientes_diferentes || 0;
+}
 
 // Función para actualizar contador de registros
 function actualizarContadorRegistros() {
@@ -612,7 +614,30 @@ async function verDetalleLiquidacion(numeroLiquidacion) {
     // Actualizar información del modal
     document.getElementById('detalle-numero-liquidacion').textContent = data.numero_liquidacion;
     document.getElementById('detalle-total-ordenes').textContent = data.total_ordenes;
-    document.getElementById('detalle-monto-total').textContent = '
+    document.getElementById('detalle-monto-total').textContent = '$' + Number(data.total_monto).toLocaleString('es-CL');
+    document.getElementById('detalle-cliente').textContent = data.ordenes[0]?.cliente_nombre || 'N/A';
+    
+    // Renderizar tabla de órdenes
+    const tbody = document.getElementById('detalle-tabla-body');
+    tbody.innerHTML = data.ordenes.map(orden => `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="px-4 py-3 text-sm text-slate-900">${orden.numero_orden}</td>
+        <td class="px-4 py-3 text-sm text-slate-900 max-w-xs truncate" title="${orden.producto}">${orden.producto}</td>
+        <td class="px-4 py-3 text-sm text-slate-900">${orden.cliente_final || '-'}</td>
+        <td class="px-4 py-3 text-sm text-slate-900">$${Number(orden.precio_cliente || 0).toLocaleString('es-CL')}</td>
+        <td class="px-4 py-3 text-sm font-medium text-green-600">$${Number(orden.monto_liquido || 0).toLocaleString('es-CL')}</td>
+        <td class="px-4 py-3 text-sm text-slate-600">${formatearFecha(orden.fecha_compra)}</td>
+      </tr>
+    `).join('');
+    
+    // Mostrar modal
+    document.getElementById('modal-detalle').classList.remove('hidden');
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al cargar el detalle de la liquidación');
+  }
+}
 
 // Función para cerrar modal de detalle
 function cerrarModalDetalle() {
