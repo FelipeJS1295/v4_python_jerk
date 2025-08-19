@@ -530,6 +530,34 @@
   </div>
 </div>
 
+<!-- Modal para cargar Excel de Falabella -->
+
+<div id="modal-falabella" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+    <h2 class="text-lg font-semibold mb-4">Procesar Liquidación Falabella</h2>
+    
+    <label class="block text-sm font-medium text-gray-700">Fecha Liquidación</label>
+    <input type="date" id="fecha-liquidacion-falabella" class="mt-1 mb-3 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+    
+    <label class="block text-sm font-medium text-gray-700">Archivo Excel</label>
+    <input type="file" id="archivo-falabella" accept=".xlsx,.xls" class="mt-1 mb-3 block w-full">
+    
+    <!-- Barra de progreso -->
+    <div id="progreso-falabella" class="hidden w-full bg-gray-200 rounded-full h-2 mb-4">
+      <div id="barra-progreso-falabella" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+    </div>
+    <p id="texto-progreso-falabella" class="text-sm text-gray-600 mb-3"></p>
+    
+    <!-- Botones -->
+    <div class="flex justify-end space-x-2">
+      <button onclick="cerrarModalFalabella()" class="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
+      <button id="btn-procesar-falabella" onclick="procesarFalabella()" class="px-4 py-2 bg-green-600 text-white rounded">
+        <i class="fas fa-upload mr-2"></i>Procesar
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 // Variables globales
 let paginaActual = 1;
@@ -1127,6 +1155,98 @@ async function procesarRipley() {
     
     cargarDatos(paginaActual);
     cerrarModalRipley();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al procesar la liquidación: ' + error.message);
+    barraProgreso.style.width = '0%';
+    textoProgreso.textContent = 'Error en el procesamiento';
+  } finally {
+    btnProcesar.disabled = false;
+    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
+  }
+}
+
+// Abrir modal
+function abrirModalFalabella() {
+  document.getElementById('modal-falabella').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+  
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fecha-liquidacion-falabella').value = today;
+}
+
+// Cerrar modal
+function cerrarModalFalabella() {
+  document.getElementById('modal-falabella').classList.add('hidden');
+  document.getElementById('archivo-falabella').value = '';
+  document.getElementById('fecha-liquidacion-falabella').value = '';
+  document.getElementById('progreso-falabella').classList.add('hidden');
+}
+
+// Procesar
+async function procesarFalabella() {
+  const archivoInput = document.getElementById('archivo-falabella');
+  const fechaInput = document.getElementById('fecha-liquidacion-falabella');
+  const archivo = archivoInput.files[0];
+  const fechaLiquidacion = fechaInput.value;
+  
+  if (!archivo) {
+    alert('Por favor seleccione un archivo Excel');
+    return;
+  }
+  
+  if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
+    alert('Por favor seleccione un archivo Excel válido (.xlsx o .xls)');
+    return;
+  }
+  
+  if (!fechaLiquidacion) {
+    alert('Por favor seleccione la fecha de liquidación');
+    return;
+  }
+  
+  const progreso = document.getElementById('progreso-falabella');
+  const barraProgreso = document.getElementById('barra-progreso-falabella');
+  const textoProgreso = document.getElementById('texto-progreso-falabella');
+  const btnProcesar = document.getElementById('btn-procesar-falabella');
+  
+  progreso.classList.remove('hidden');
+  btnProcesar.disabled = true;
+  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+  
+  try {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('fecha_liquidacion', fechaLiquidacion);
+    
+    barraProgreso.style.width = '20%';
+    textoProgreso.textContent = 'Subiendo archivo Excel...';
+    
+    const response = await fetch('/liquidaciones/falabella/procesar', {
+      method: 'POST',
+      body: formData
+    });
+    
+    barraProgreso.style.width = '60%';
+    textoProgreso.textContent = 'Procesando liquidación de Falabella...';
+    
+    if (!response.ok) throw new Error('Error al procesar la liquidación');
+    
+    const resultado = await response.json();
+    
+    barraProgreso.style.width = '100%';
+    textoProgreso.textContent = 'Completado';
+    
+    alert(`Liquidación Falabella procesada exitosamente:
+    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
+    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
+    - Órdenes con error: ${resultado.ordenes_con_error}
+    - Total procesadas: ${resultado.total_ordenes_procesadas}
+    - Fecha procesamiento: ${resultado.fecha_procesamiento}`);
+    
+    cargarDatos(paginaActual);
+    cerrarModalFalabella();
     
   } catch (error) {
     console.error('Error:', error);
