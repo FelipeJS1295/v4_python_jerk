@@ -36,6 +36,7 @@ from routers import (
     ripley,
     falabella,
     resumen_liquidacion,
+    paris,
 )
 
 from routers import camaras
@@ -205,4 +206,5 @@ app.include_router(cencosud.router)
 app.include_router(walmart.router)
 app.include_router(ripley.router)
 app.include_router(falabella.router)
+app.include_router(paris.router)
 app.include_router(resumen_liquidacion.router)
