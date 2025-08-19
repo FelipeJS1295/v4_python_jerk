@@ -14,6 +14,32 @@ logger = logging.getLogger(__name__)
 # Crear el router
 router = APIRouter(prefix="/liquidaciones/walmart", tags=["liquidaciones-walmart"])
 
+def determinar_estado_walmart(estados: List[str]) -> str:
+    """
+    Determinar el estado final de una orden basado en los estados de todas sus filas
+    """
+    try:
+        estados_lower = [str(estado).lower() for estado in estados if estado]
+        
+        # Si hay alguna devolución, es fallido
+        if any('devolucion' in estado for estado in estados_lower):
+            return 'fallido'
+        
+        # Si todas son enviado, es pagado
+        if all('enviado' in estado for estado in estados_lower):
+            return 'pagado'
+        
+        # Cualquier otro caso es fallido
+        return 'fallido'
+    except Exception as e:
+        logger.error(f"Error determinando estado: {e}")
+        return 'fallido'
+
+@router.get("/test")
+async def test_walmart():
+    """Ruta de prueba para verificar que el router funciona"""
+    return {"mensaje": "Router de Walmart funcionando correctamente"}
+
 @router.post("/procesar")
 async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
     """
@@ -21,53 +47,67 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
     """
     connection = None
     try:
+        logger.info(f"Iniciando procesamiento de archivo: {archivo.filename}")
+        
         # Validar archivo
-        if not archivo.filename.endswith(('.csv')):
+        if not archivo.filename.endswith('.csv'):
             raise HTTPException(status_code=400, detail="El archivo debe ser un CSV (.csv)")
         
         # Leer archivo CSV
-        logger.info(f"Procesando archivo de Walmart: {archivo.filename}")
-        
         contents = await archivo.read()
+        
         # Intentar con diferentes encodings
         try:
             csv_content = contents.decode('utf-8')
         except UnicodeDecodeError:
-            csv_content = contents.decode('latin-1')
+            try:
+                csv_content = contents.decode('latin-1')
+            except UnicodeDecodeError:
+                csv_content = contents.decode('iso-8859-1')
+        
+        logger.info("Archivo leído correctamente")
         
         # Leer CSV con pandas usando delimitador correcto
         df = pd.read_csv(io.StringIO(csv_content), delimiter=';')
+        logger.info(f"DataFrame creado con {len(df)} filas")
         
         # Validar columnas requeridas
         columnas_requeridas = ['Orden', 'Nº Liq.', 'Fecha Fin Liq.', 'Estado', 'Precio Item', 'Cargo Comision']
+        columnas_encontradas = df.columns.tolist()
+        logger.info(f"Columnas encontradas: {columnas_encontradas}")
+        
         columnas_faltantes = [col for col in columnas_requeridas if col not in df.columns]
         
         if columnas_faltantes:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Columnas faltantes en el CSV: {', '.join(columnas_faltantes)}"
+                detail=f"Columnas faltantes en el CSV: {', '.join(columnas_faltantes)}. Columnas encontradas: {', '.join(columnas_encontradas)}"
             )
         
         # Filtrar solo filas con datos válidos
         df_valido = df.dropna(subset=['Orden', 'Nº Liq.'])
+        logger.info(f"Filas válidas después de filtrar: {len(df_valido)}")
         
         if df_valido.empty:
             raise HTTPException(status_code=400, detail="No se encontraron registros válidos en el archivo")
         
-        logger.info(f"Registros válidos encontrados: {len(df_valido)}")
-        
-        # Agrupar por orden para procesar múltiples filas por orden
+        # Agrupar por orden
         ordenes_agrupadas = defaultdict(list)
         
         for index, row in df_valido.iterrows():
-            orden = str(row['Orden']).strip()
-            ordenes_agrupadas[orden].append(row)
+            try:
+                orden = str(row['Orden']).strip()
+                ordenes_agrupadas[orden].append(row)
+            except Exception as e:
+                logger.error(f"Error procesando fila {index}: {e}")
+                continue
         
         logger.info(f"Órdenes únicas encontradas: {len(ordenes_agrupadas)}")
         
         # Conectar a la base de datos
         connection = conectar_mysql()
         cursor = connection.cursor(dictionary=True)
+        logger.info("Conexión a base de datos establecida")
         
         # Procesar cada orden
         ordenes_actualizadas = 0
@@ -76,13 +116,9 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
         errores = []
         
         for numero_orden, filas_orden in ordenes_agrupadas.items():
-            # Crear un savepoint para cada orden individual
             try:
-                cursor.execute(f"SAVEPOINT orden_{hash(numero_orden) % 1000000}")
-            except:
-                pass  # Si no soporta savepoints, continuar
-            
-            try:
+                logger.info(f"Procesando orden: {numero_orden}")
+                
                 # Tomar datos comunes de la primera fila
                 primera_fila = filas_orden[0]
                 numero_liquidacion = str(primera_fila['Nº Liq.']).strip()
@@ -92,7 +128,6 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
                 fecha_liquidacion = None
                 if pd.notna(fecha_fin_liquidacion):
                     try:
-                        # Formato esperado: dd-mm-yyyy
                         fecha_liquidacion = pd.to_datetime(fecha_fin_liquidacion, format='%d-%m-%Y').date()
                     except:
                         try:
@@ -100,30 +135,29 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
                         except:
                             fecha_liquidacion = None
                 
-                # Calcular monto líquido sumando todas las filas de la orden
+                # Calcular monto líquido
                 monto_total = 0
                 estados_orden = []
                 
                 for fila in filas_orden:
-                    precio_item = float(fila['Precio Item']) if pd.notna(fila['Precio Item']) else 0
-                    cargo_comision = float(fila['Cargo Comision']) if pd.notna(fila['Cargo Comision']) else 0
-                    estado = str(fila['Estado']).strip()
-                    
-                    monto_total += precio_item + cargo_comision
-                    estados_orden.append(estado)
+                    try:
+                        precio_item = float(fila['Precio Item']) if pd.notna(fila['Precio Item']) else 0
+                        cargo_comision = float(fila['Cargo Comision']) if pd.notna(fila['Cargo Comision']) else 0
+                        estado = str(fila['Estado']).strip()
+                        
+                        monto_total += precio_item + cargo_comision
+                        estados_orden.append(estado)
+                    except Exception as e:
+                        logger.error(f"Error procesando fila de orden {numero_orden}: {e}")
+                        continue
                 
-                # Determinar estado final de la orden
+                # Determinar estado final
                 estado_pago = determinar_estado_walmart(estados_orden)
                 
-                logger.info(f"Procesando orden {numero_orden}: monto={monto_total}, estado={estado_pago}, filas={len(filas_orden)}")
+                logger.info(f"Orden {numero_orden}: monto={monto_total}, estado={estado_pago}, filas={len(filas_orden)}")
                 
                 # Buscar la orden en ventas_retail
-                buscar_query = """
-                    SELECT id, numero_orden 
-                    FROM ventas_retail 
-                    WHERE numero_orden = %s
-                """
-                
+                buscar_query = "SELECT id, numero_orden FROM ventas_retail WHERE numero_orden = %s"
                 cursor.execute(buscar_query, (numero_orden,))
                 orden_encontrada = cursor.fetchone()
                 
@@ -133,8 +167,7 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
                         UPDATE ventas_retail 
                         SET numero_liquidacion = %s,
                             fecha_pago_liquidacion = %s,
-                            monto_liquido = %s,
-                            updated_at = NOW()
+                            monto_liquido = %s
                         WHERE id = %s
                     """
                     
@@ -145,48 +178,27 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
                         orden_encontrada['id']
                     ))
                     
-                    # Confirmar esta orden específica si soporta savepoints
-                    try:
-                        cursor.execute(f"RELEASE SAVEPOINT orden_{hash(numero_orden) % 1000000}")
-                    except:
-                        pass
-                    
                     if estado_pago == 'fallido':
                         ordenes_fallidas += 1
                     else:
                         ordenes_actualizadas += 1
                     
-                    logger.info(f"Orden actualizada exitosamente: {numero_orden} -> ID {orden_encontrada['id']} (Estado: {estado_pago})")
+                    logger.info(f"Orden actualizada: {numero_orden} -> ID {orden_encontrada['id']}")
                     
                 else:
-                    # Rollback solo esta orden si soporta savepoints
-                    try:
-                        cursor.execute(f"ROLLBACK TO SAVEPOINT orden_{hash(numero_orden) % 1000000}")
-                        cursor.execute(f"RELEASE SAVEPOINT orden_{hash(numero_orden) % 1000000}")
-                    except:
-                        pass
-                    
                     ordenes_no_encontradas += 1
                     logger.warning(f"Orden no encontrada: {numero_orden}")
-                    errores.append(f"Orden {numero_orden} no encontrada en la base de datos")
+                    errores.append(f"Orden {numero_orden} no encontrada")
                 
             except Exception as e:
-                # Rollback solo esta orden específica si soporta savepoints
-                try:
-                    cursor.execute(f"ROLLBACK TO SAVEPOINT orden_{hash(numero_orden) % 1000000}")
-                    cursor.execute(f"RELEASE SAVEPOINT orden_{hash(numero_orden) % 1000000}")
-                except:
-                    pass
-                
                 logger.error(f"Error procesando orden {numero_orden}: {str(e)}")
                 errores.append(f"Error en orden {numero_orden}: {str(e)}")
                 ordenes_no_encontradas += 1
                 continue
         
-        # Confirmar las transacciones exitosas
+        # Confirmar cambios
         connection.commit()
-        
-        logger.info(f"Procesamiento Walmart completado: {ordenes_actualizadas} actualizadas, {ordenes_fallidas} fallidas, {ordenes_no_encontradas} no encontradas")
+        logger.info("Transacción confirmada")
         
         # Preparar respuesta
         resultado = {
@@ -197,12 +209,11 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
             "ordenes_fallidas": ordenes_fallidas,
             "ordenes_no_encontradas": ordenes_no_encontradas,
             "total_filas_csv": len(df_valido),
-            "errores": errores[:10],  # Mostrar solo los primeros 10 errores
+            "errores": errores[:10],
             "fecha_procesamiento": datetime.now().isoformat()
         }
         
-        logger.info(f"Resultado final: {resultado}")
-        
+        logger.info(f"Procesamiento completado: {resultado}")
         return JSONResponse(content=resultado)
         
     except HTTPException:
@@ -210,36 +221,9 @@ async def procesar_liquidacion_walmart(archivo: UploadFile = File(...)):
     except Exception as e:
         if connection:
             connection.rollback()
-        logger.error(f"Error procesando liquidación de Walmart: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
+        logger.error(f"Error general procesando liquidación: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
     
     finally:
         if connection:
             connection.close()
-
-def determinar_estado_walmart(estados: List[str]) -> str:
-    """
-    Determinar el estado final de una orden basado en los estados de todas sus filas
-    
-    Reglas:
-    - Si todas las filas son "Enviado" -> pagado
-    - Si alguna fila es "Devolucion" -> fallido
-    - Otros casos -> fallido
-    """
-    estados_lower = [estado.lower() for estado in estados]
-    
-    # Si hay alguna devolución, es fallido
-    if any('devolucion' in estado for estado in estados_lower):
-        return 'fallido'
-    
-    # Si todas son enviado, es pagado
-    if all('enviado' in estado for estado in estados_lower):
-        return 'pagado'
-    
-    # Cualquier otro caso es fallido
-    return 'fallido'
-
-@router.get("/test")
-async def test_walmart():
-    """Ruta de prueba para verificar que el router funciona"""
-    return {"mensaje": "Router de Walmart funcionando correctamente"}
