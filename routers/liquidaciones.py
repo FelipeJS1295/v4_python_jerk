@@ -35,6 +35,7 @@ class OrdenLiquidacion(BaseModel):
     monto_liquido: Optional[float]
     precio_cliente: Optional[float]
     fecha_compra: Optional[str]
+    fecha_entrega: Optional[str]
 
 class EstadisticasLiquidacion(BaseModel):
     total_ordenes: int
@@ -59,7 +60,12 @@ async def mostrar_liquidaciones(request: Request):
 @router.get("/api/ventas-retail/liquidacion")
 async def obtener_ordenes_liquidacion(
     search: Optional[str] = Query(None, description="Término de búsqueda"),
+    numero_orden: Optional[str] = Query(None, description="Filtrar por número de orden"),
+    cliente: Optional[str] = Query(None, description="Filtrar por cliente"),
+    numero_liquidacion: Optional[str] = Query(None, description="Filtrar por número de liquidación"),
     estado_pago: Optional[str] = Query(None, description="Filtrar por estado de pago"),
+    fecha_desde: Optional[str] = Query(None, description="Fecha desde (YYYY-MM-DD)"),
+    fecha_hasta: Optional[str] = Query(None, description="Fecha hasta (YYYY-MM-DD)"),
     limite: int = Query(100, description="Límite de resultados"),
     offset: int = Query(0, description="Offset para paginación")
 ):
@@ -87,6 +93,8 @@ async def obtener_ordenes_liquidacion(
                 vr.monto_liquido,
                 vr.precio_cliente,
                 vr.fecha_compra,
+                vr.fecha_entrega,
+                vr.fecha_pago_liquidacion,
                 vr.id
             FROM ventas_retail vr
             LEFT JOIN clientes c ON vr.cliente_id = c.id
@@ -96,16 +104,33 @@ async def obtener_ordenes_liquidacion(
         condiciones = []
         parametros = []
         
-        # Filtro de búsqueda
+        # Filtro de búsqueda general
         if search and search.strip():
             condiciones.append("""
                 (vr.numero_orden LIKE %s 
                 OR vr.producto LIKE %s 
                 OR c.nombre LIKE %s
-                OR CAST(vr.cliente_id AS CHAR) LIKE %s)
+                OR CAST(vr.cliente_id AS CHAR) LIKE %s
+                OR vr.numero_liquidacion LIKE %s)
             """)
             search_param = f"%{search.strip()}%"
-            parametros.extend([search_param, search_param, search_param, search_param])
+            parametros.extend([search_param, search_param, search_param, search_param, search_param])
+        
+        # Filtro específico por número de orden
+        if numero_orden and numero_orden.strip():
+            condiciones.append("vr.numero_orden LIKE %s")
+            parametros.append(f"%{numero_orden.strip()}%")
+        
+        # Filtro específico por cliente
+        if cliente and cliente.strip():
+            condiciones.append("(c.nombre LIKE %s OR CAST(vr.cliente_id AS CHAR) LIKE %s)")
+            cliente_param = f"%{cliente.strip()}%"
+            parametros.extend([cliente_param, cliente_param])
+        
+        # Filtro específico por número de liquidación
+        if numero_liquidacion and numero_liquidacion.strip():
+            condiciones.append("vr.numero_liquidacion LIKE %s")
+            parametros.append(f"%{numero_liquidacion.strip()}%")
         
         # Filtro por estado de pago
         if estado_pago and estado_pago in ['pendiente', 'pagado', 'fallido']:
@@ -115,6 +140,15 @@ async def obtener_ordenes_liquidacion(
                 condiciones.append("vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NOT NULL")
             elif estado_pago == 'fallido':
                 condiciones.append("(vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NULL) OR (vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NOT NULL)")
+        
+        # Filtro por rango de fechas
+        if fecha_desde:
+            condiciones.append("vr.fecha_compra >= %s")
+            parametros.append(fecha_desde)
+        
+        if fecha_hasta:
+            condiciones.append("vr.fecha_compra <= %s")
+            parametros.append(fecha_hasta)
         
         # Agregar condiciones WHERE si existen
         if condiciones:
@@ -142,10 +176,14 @@ async def obtener_ordenes_liquidacion(
                 orden_dict['precio_cliente'] = float(orden_dict['precio_cliente'])
             if orden_dict.get('fecha_compra'):
                 orden_dict['fecha_compra'] = orden_dict['fecha_compra'].isoformat() if hasattr(orden_dict['fecha_compra'], 'isoformat') else str(orden_dict['fecha_compra'])
+            if orden_dict.get('fecha_entrega'):
+                orden_dict['fecha_entrega'] = orden_dict['fecha_entrega'].isoformat() if hasattr(orden_dict['fecha_entrega'], 'isoformat') else str(orden_dict['fecha_entrega'])
+            if orden_dict.get('fecha_pago_liquidacion'):
+                orden_dict['fecha_pago_liquidacion'] = orden_dict['fecha_pago_liquidacion'].isoformat() if hasattr(orden_dict['fecha_pago_liquidacion'], 'isoformat') else str(orden_dict['fecha_pago_liquidacion'])
             
             ordenes_list.append(orden_dict)
         
-        # Obtener estadísticas generales
+        # Obtener estadísticas generales (sin filtros para mostrar totales reales)
         stats_query = """
             SELECT 
                 COUNT(*) as total,
@@ -373,6 +411,9 @@ async def obtener_estadisticas_liquidacion(
 @router.get("/api/exportar-excel")
 async def exportar_liquidaciones_excel(
     search: Optional[str] = Query(None),
+    numero_orden: Optional[str] = Query(None),
+    cliente: Optional[str] = Query(None),
+    numero_liquidacion: Optional[str] = Query(None),
     estado_pago: Optional[str] = Query(None),
     fecha_desde: Optional[str] = Query(None),
     fecha_hasta: Optional[str] = Query(None)
@@ -388,61 +429,78 @@ async def exportar_liquidaciones_excel(
         # Query similar al de obtener_ordenes_liquidacion pero sin límites
         base_query = """
             SELECT 
-                cliente_id,
-                numero_orden,
-                producto,
-                precio_cliente,
+                vr.cliente_id,
+                vr.numero_orden,
+                vr.producto,
+                vr.precio_cliente,
                 CASE 
-                    WHEN numero_liquidacion IS NOT NULL AND fecha_pago_liquidacion IS NOT NULL THEN 'pagado'
-                    WHEN numero_liquidacion IS NULL AND fecha_pago_liquidacion IS NULL THEN 'pendiente'
+                    WHEN vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NOT NULL THEN 'pagado'
+                    WHEN vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NULL THEN 'pendiente'
                     ELSE 'fallido'
                 END AS estado_pago,
-                numero_liquidacion,
-                fecha_pago_liquidacion,
-                monto_liquido,
-                fecha_compra,
-                cliente_final,
-                rut_documento,
-                telefono,
-                direccion,
-                region,
-                comuna
-            FROM ventas_retail
+                vr.numero_liquidacion,
+                vr.fecha_pago_liquidacion,
+                vr.monto_liquido,
+                vr.fecha_compra,
+                vr.fecha_entrega,
+                vr.cliente_final,
+                vr.rut_documento,
+                vr.telefono,
+                vr.direccion,
+                vr.region,
+                vr.comuna
+            FROM ventas_retail vr
+            LEFT JOIN clientes c ON vr.cliente_id = c.id
         """
         
         condiciones = []
         parametros = []
         
-        # Aplicar filtros
+        # Aplicar filtros (mismo lógica que en obtener_ordenes_liquidacion)
         if search and search.strip():
             condiciones.append("""
-                (numero_orden LIKE %s 
-                OR producto LIKE %s 
-                OR CAST(cliente_id AS CHAR) LIKE %s)
+                (vr.numero_orden LIKE %s 
+                OR vr.producto LIKE %s 
+                OR c.nombre LIKE %s
+                OR CAST(vr.cliente_id AS CHAR) LIKE %s
+                OR vr.numero_liquidacion LIKE %s)
             """)
             search_param = f"%{search.strip()}%"
-            parametros.extend([search_param, search_param, search_param])
+            parametros.extend([search_param, search_param, search_param, search_param, search_param])
+        
+        if numero_orden and numero_orden.strip():
+            condiciones.append("vr.numero_orden LIKE %s")
+            parametros.append(f"%{numero_orden.strip()}%")
+        
+        if cliente and cliente.strip():
+            condiciones.append("(c.nombre LIKE %s OR CAST(vr.cliente_id AS CHAR) LIKE %s)")
+            cliente_param = f"%{cliente.strip()}%"
+            parametros.extend([cliente_param, cliente_param])
+        
+        if numero_liquidacion and numero_liquidacion.strip():
+            condiciones.append("vr.numero_liquidacion LIKE %s")
+            parametros.append(f"%{numero_liquidacion.strip()}%")
         
         if estado_pago and estado_pago in ['pendiente', 'pagado', 'fallido']:
             if estado_pago == 'pendiente':
-                condiciones.append("numero_liquidacion IS NULL AND fecha_pago_liquidacion IS NULL")
+                condiciones.append("vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NULL")
             elif estado_pago == 'pagado':
-                condiciones.append("numero_liquidacion IS NOT NULL AND fecha_pago_liquidacion IS NOT NULL")
+                condiciones.append("vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NOT NULL")
             elif estado_pago == 'fallido':
-                condiciones.append("(numero_liquidacion IS NOT NULL AND fecha_pago_liquidacion IS NULL) OR (numero_liquidacion IS NULL AND fecha_pago_liquidacion IS NOT NULL)")
+                condiciones.append("(vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NULL) OR (vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NOT NULL)")
         
         if fecha_desde:
-            condiciones.append("fecha_compra >= %s")
+            condiciones.append("vr.fecha_compra >= %s")
             parametros.append(fecha_desde)
         
         if fecha_hasta:
-            condiciones.append("fecha_compra <= %s")
+            condiciones.append("vr.fecha_compra <= %s")
             parametros.append(fecha_hasta)
         
         if condiciones:
             base_query += " WHERE " + " AND ".join(condiciones)
         
-        base_query += " ORDER BY fecha_compra DESC"
+        base_query += " ORDER BY vr.fecha_compra DESC"
         
         cursor.execute(base_query, parametros)
         data = cursor.fetchall()
@@ -464,6 +522,7 @@ async def exportar_liquidaciones_excel(
             'fecha_pago_liquidacion': 'Fecha Pago',
             'monto_liquido': 'Monto Líquido',
             'fecha_compra': 'Fecha Compra',
+            'fecha_entrega': 'Fecha Entrega',
             'cliente_final': 'Cliente Final',
             'rut_documento': 'RUT',
             'telefono': 'Teléfono',

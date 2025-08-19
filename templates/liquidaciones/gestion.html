@@ -60,11 +60,17 @@
 
   <!-- Panel de Filtros -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h3 class="text-lg font-semibold text-slate-800 mb-4">Filtros de Búsqueda</h3>
+    <h3 class="text-lg font-semibold text-slate-800 mb-4">
+      <i class="fas fa-filter text-slate-600 mr-2"></i>
+      Filtros de Búsqueda
+    </h3>
     <form id="filtros-form" class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Número de Orden</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-hashtag text-slate-500 mr-1"></i>
+            Número de Orden
+          </label>
           <input 
             name="numero_orden" 
             type="text" 
@@ -74,7 +80,10 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Cliente</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-user text-slate-500 mr-1"></i>
+            Cliente
+          </label>
           <input 
             name="cliente" 
             type="text" 
@@ -84,7 +93,10 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Número de Liquidación</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-receipt text-slate-500 mr-1"></i>
+            Número de Liquidación
+          </label>
           <input 
             name="numero_liquidacion" 
             type="text" 
@@ -94,9 +106,12 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Estado</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-info-circle text-slate-500 mr-1"></i>
+            Estado
+          </label>
           <select 
-            name="estado" 
+            name="estado_pago" 
             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
           >
             <option value="">Todos los estados</option>
@@ -107,7 +122,10 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Desde</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-calendar text-slate-500 mr-1"></i>
+            Fecha Desde
+          </label>
           <input 
             name="fecha_desde" 
             type="date" 
@@ -116,7 +134,10 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Hasta</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-calendar text-slate-500 mr-1"></i>
+            Fecha Hasta
+          </label>
           <input 
             name="fecha_hasta" 
             type="date" 
@@ -125,7 +146,10 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">Registros por página</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-list text-slate-500 mr-1"></i>
+            Registros por página
+          </label>
           <select 
             id="registros-por-pagina" 
             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
@@ -135,6 +159,19 @@
             <option value="100">100 registros</option>
             <option value="500">500 registros</option>
           </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">
+            <i class="fas fa-search text-slate-500 mr-1"></i>
+            Búsqueda general
+          </label>
+          <input 
+            name="search" 
+            type="text" 
+            placeholder="Buscar en todos los campos..." 
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+          />
         </div>
       </div>
       
@@ -219,54 +256,69 @@
           <tr>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="cliente">
               <div class="flex items-center space-x-1">
+                <i class="fas fa-user text-slate-500"></i>
                 <span>Cliente</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_orden">
               <div class="flex items-center space-x-1">
-                <span>Número Orden</span>
+                <i class="fas fa-hashtag text-slate-500"></i>
+                <span>Nº Orden</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="producto">
               <div class="flex items-center space-x-1">
+                <i class="fas fa-box text-slate-500"></i>
                 <span>Producto</span>
+                <i class="fas fa-sort text-slate-400"></i>
+              </div>
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="fecha_entrega">
+              <div class="flex items-center space-x-1">
+                <i class="fas fa-truck text-slate-500"></i>
+                <span>Fecha Entrega</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="estado_pago">
               <div class="flex items-center space-x-1">
+                <i class="fas fa-info-circle text-slate-500"></i>
                 <span>Estado</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_liquidacion">
               <div class="flex items-center space-x-1">
+                <i class="fas fa-receipt text-slate-500"></i>
                 <span>Nº Liquidación</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="monto_liquido">
               <div class="flex items-center space-x-1">
+                <i class="fas fa-dollar-sign text-slate-500"></i>
                 <span>Monto Líquido</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="fecha_pago_liquidacion">
               <div class="flex items-center space-x-1">
+                <i class="fas fa-calendar-check text-slate-500"></i>
                 <span>Fecha Pago</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-              Acciones
+              <i class="fas fa-cog text-slate-500"></i>
+              <span class="ml-1">Acciones</span>
             </th>
           </tr>
         </thead>
         <tbody id="tabla-body" class="bg-white divide-y divide-slate-200">
           <tr>
-            <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+            <td colspan="9" class="px-6 py-12 text-center text-slate-500">
               <div class="flex flex-col items-center space-y-3">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
                 <p class="text-sm">Cargando datos...</p>
@@ -531,27 +583,46 @@
 </div>
 
 <!-- Modal para cargar Excel de Falabella -->
-
 <div id="modal-falabella" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
   <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-    <h2 class="text-lg font-semibold mb-4">Procesar Liquidación Falabella</h2>
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center space-x-3">
+        <div class="bg-slate-100 rounded-lg p-2">
+          <i class="fas fa-shopping-cart text-slate-600 text-lg"></i>
+        </div>
+        <h2 class="text-lg font-semibold">Procesar Liquidación Falabella</h2>
+      </div>
+      <button onclick="cerrarModalFalabella()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
     
-    <label class="block text-sm font-medium text-gray-700">Fecha Liquidación</label>
-    <input type="date" id="fecha-liquidacion-falabella" class="mt-1 mb-3 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        <i class="fas fa-calendar text-slate-500 mr-1"></i>
+        Fecha Liquidación
+      </label>
+      <input type="date" id="fecha-liquidacion-falabella" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+    </div>
     
-    <label class="block text-sm font-medium text-gray-700">Archivo Excel</label>
-    <input type="file" id="archivo-falabella" accept=".xlsx,.xls" class="mt-1 mb-3 block w-full">
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        <i class="fas fa-file-excel text-green-600 mr-1"></i>
+        Archivo Excel
+      </label>
+      <input type="file" id="archivo-falabella" accept=".xlsx,.xls" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
+    </div>
     
     <!-- Barra de progreso -->
-    <div id="progreso-falabella" class="hidden w-full bg-gray-200 rounded-full h-2 mb-4">
+    <div id="progreso-falabella" class="hidden w-full bg-slate-200 rounded-full h-2 mb-4">
       <div id="barra-progreso-falabella" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
     </div>
-    <p id="texto-progreso-falabella" class="text-sm text-gray-600 mb-3"></p>
+    <p id="texto-progreso-falabella" class="text-sm text-slate-600 mb-3"></p>
     
     <!-- Botones -->
     <div class="flex justify-end space-x-2">
-      <button onclick="cerrarModalFalabella()" class="px-4 py-2 bg-gray-300 rounded">Cancelar</button>
-      <button id="btn-procesar-falabella" onclick="procesarFalabella()" class="px-4 py-2 bg-green-600 text-white rounded">
+      <button onclick="cerrarModalFalabella()" class="px-4 py-2 bg-slate-300 rounded hover:bg-slate-400 transition-colors">Cancelar</button>
+      <button id="btn-procesar-falabella" onclick="procesarFalabella()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
         <i class="fas fa-upload mr-2"></i>Procesar
       </button>
     </div>
@@ -580,7 +651,7 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
     if (aplicarFiltros) {
       const formData = new FormData(document.getElementById('filtros-form'));
       for (const [key, value] of formData.entries()) {
-        if (value.trim()) {
+        if (value && value.trim()) {
           params.append(key, value.trim());
         }
       }
@@ -595,7 +666,7 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
     const response = await fetch(`/liquidaciones/api/ventas-retail/liquidacion?${params.toString()}`);
     
     if (!response.ok) {
-      throw new Error('Error al cargar datos');
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -613,7 +684,7 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
     
   } catch (error) {
     console.error('Error:', error);
-    mostrarError('Error al cargar los datos. Verifique la conexión.');
+    mostrarError('Error al cargar los datos: ' + error.message);
   }
 }
 
@@ -621,7 +692,7 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
 function mostrarCargando() {
   document.getElementById('tabla-body').innerHTML = `
     <tr>
-      <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+      <td colspan="9" class="px-6 py-12 text-center text-slate-500">
         <div class="flex flex-col items-center space-y-3">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
           <p class="text-sm">Cargando datos...</p>
@@ -635,7 +706,7 @@ function mostrarCargando() {
 function mostrarError(mensaje) {
   document.getElementById('tabla-body').innerHTML = `
     <tr>
-      <td colspan="8" class="px-6 py-12 text-center text-red-500">
+      <td colspan="9" class="px-6 py-12 text-center text-red-500">
         <div class="flex flex-col items-center space-y-3">
           <i class="fas fa-exclamation-triangle text-3xl"></i>
           <p class="text-sm">${mensaje}</p>
@@ -652,7 +723,7 @@ function renderizarTabla(ordenes) {
   if (!ordenes || ordenes.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" class="px-6 py-12 text-center text-slate-500">
+        <td colspan="9" class="px-6 py-12 text-center text-slate-500">
           <div class="flex flex-col items-center space-y-3">
             <i class="fas fa-inbox text-3xl"></i>
             <p class="text-sm">No se encontraron registros con los filtros aplicados</p>
@@ -678,6 +749,11 @@ function renderizarTabla(ordenes) {
         <div class="text-sm text-slate-900 truncate max-w-xs" title="${orden.producto}">${orden.producto}</div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
+        <span class="text-sm text-slate-600">
+          ${orden.fecha_entrega ? formatearFecha(orden.fecha_entrega) : '-'}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
         ${getEstadoBadge(orden.estado_pago)}
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
@@ -697,7 +773,7 @@ function renderizarTabla(ordenes) {
         <div class="flex items-center space-x-2">
           <button 
             onclick="verDetalle(${orden.id})" 
-            class="text-slate-600 hover:text-slate-900 transition-colors p-1" 
+            class="text-blue-600 hover:text-blue-900 transition-colors p-1" 
             title="Ver detalle"
           >
             <i class="fas fa-eye"></i>
@@ -841,11 +917,11 @@ function manejarOrdenamiento(campo) {
   }
   
   // Actualizar iconos de ordenamiento
-  document.querySelectorAll('[data-sort] i').forEach(icon => {
+  document.querySelectorAll('[data-sort] i.fa-sort, [data-sort] i.fa-sort-up, [data-sort] i.fa-sort-down').forEach(icon => {
     icon.className = 'fas fa-sort text-slate-400';
   });
   
-  const currentHeader = document.querySelector(`[data-sort="${campo}"] i`);
+  const currentHeader = document.querySelector(`[data-sort="${campo}"] i.fa-sort`);
   if (currentHeader) {
     currentHeader.className = `fas fa-sort-${direccionOrden === 'asc' ? 'up' : 'down'} text-slate-600`;
   }
@@ -862,7 +938,7 @@ function limpiarFiltros() {
   direccionOrden = 'asc';
   
   // Resetear iconos de ordenamiento
-  document.querySelectorAll('[data-sort] i').forEach(icon => {
+  document.querySelectorAll('[data-sort] i.fa-sort-up, [data-sort] i.fa-sort-down').forEach(icon => {
     icon.className = 'fas fa-sort text-slate-400';
   });
   
@@ -883,12 +959,14 @@ async function exportarDatos() {
     const params = new URLSearchParams();
     
     for (const [key, value] of formData.entries()) {
-      if (value.trim()) {
+      if (value && value.trim()) {
         params.append(key, value.trim());
       }
     }
     
     const url = `/liquidaciones/api/exportar-excel?${params.toString()}`;
+    
+    // Crear elemento temporal para descarga
     const link = document.createElement('a');
     link.href = url;
     link.download = `liquidaciones_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -896,24 +974,66 @@ async function exportarDatos() {
     link.click();
     document.body.removeChild(link);
     
+    // Mostrar notificación de éxito
+    mostrarNotificacion('Exportación iniciada correctamente', 'success');
+    
   } catch (error) {
     console.error('Error:', error);
-    alert('Error al exportar datos');
+    mostrarNotificacion('Error al exportar datos', 'error');
   }
 }
 
+// Función para mostrar notificaciones
+function mostrarNotificacion(mensaje, tipo = 'info') {
+  // Crear elemento de notificación
+  const notificacion = document.createElement('div');
+  notificacion.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+    tipo === 'success' ? 'bg-green-500 text-white' :
+    tipo === 'error' ? 'bg-red-500 text-white' :
+    'bg-blue-500 text-white'
+  }`;
+  notificacion.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <i class="fas ${tipo === 'success' ? 'fa-check-circle' : tipo === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+      <span>${mensaje}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notificacion);
+  
+  // Remover después de 3 segundos
+  setTimeout(() => {
+    notificacion.style.opacity = '0';
+    notificacion.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      document.body.removeChild(notificacion);
+    }, 300);
+  }, 3000);
+}
+
 // Función para ver detalle
-function verDetalle(id) {
-  // Implementar modal de detalle o redirección
-  console.log(`Ver detalle de orden ID: ${id}`);
-  // window.location.href = `/liquidaciones/detalle/${id}`;
+async function verDetalle(id) {
+  try {
+    const response = await fetch(`/liquidaciones/api/orden/${id}`);
+    if (!response.ok) throw new Error('Error al obtener detalle');
+    
+    const orden = await response.json();
+    
+    // Aquí puedes implementar un modal con el detalle o redirigir
+    console.log('Detalle de orden:', orden);
+    mostrarNotificacion(`Detalle de orden ${orden.numero_orden} cargado`, 'info');
+    
+  } catch (error) {
+    console.error('Error:', error);
+    mostrarNotificacion('Error al cargar detalle', 'error');
+  }
 }
 
 // Función para editar liquidación
 function editarLiquidacion(id) {
-  // Implementar modal de edición o redirección
+  // Implementar modal de edición o redirigir
   console.log(`Editar liquidación de orden ID: ${id}`);
-  // window.location.href = `/liquidaciones/editar/${id}`;
+  mostrarNotificacion('Función de edición en desarrollo', 'info');
 }
 
 // Funciones para dropdown de liquidación
@@ -939,12 +1059,12 @@ async function procesarCencosud() {
   const archivo = archivoInput.files[0];
   
   if (!archivo) {
-    alert('Por favor seleccione un archivo Excel');
+    mostrarNotificacion('Por favor seleccione un archivo Excel', 'error');
     return;
   }
   
   if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
-    alert('Por favor seleccione un archivo Excel válido (.xlsx o .xls)');
+    mostrarNotificacion('Por favor seleccione un archivo Excel válido (.xlsx o .xls)', 'error');
     return;
   }
   
@@ -979,278 +1099,14 @@ async function procesarCencosud() {
     barraProgreso.style.width = '100%';
     textoProgreso.textContent = 'Completado';
     
-    alert(`Liquidación Cencosud procesada exitosamente:
-    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
-    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
-    - Total procesado: ${resultado.total_procesado}`);
+    mostrarNotificacion(`Liquidación Cencosud procesada: ${resultado.ordenes_actualizadas} órdenes actualizadas`, 'success');
     
     cargarDatos(paginaActual);
     cerrarModalCencosud();
     
   } catch (error) {
     console.error('Error:', error);
-    alert('Error al procesar la liquidación: ' + error.message);
-    barraProgreso.style.width = '0%';
-    textoProgreso.textContent = 'Error en el procesamiento';
-  } finally {
-    btnProcesar.disabled = false;
-    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
-  }
-}
-
-// Funciones para modales de Walmart
-function abrirModalWalmart() {
-  document.getElementById('modal-walmart').classList.remove('hidden');
-  document.getElementById('liquidacion-submenu').classList.add('hidden');
-}
-
-function cerrarModalWalmart() {
-  document.getElementById('modal-walmart').classList.add('hidden');
-  document.getElementById('archivo-walmart').value = '';
-  document.getElementById('progreso-walmart').classList.add('hidden');
-}
-
-async function procesarWalmart() {
-  const archivoInput = document.getElementById('archivo-walmart');
-  const archivo = archivoInput.files[0];
-  
-  if (!archivo) {
-    alert('Por favor seleccione un archivo CSV');
-    return;
-  }
-  
-  if (!archivo.name.match(/\.csv$/i)) {
-    alert('Por favor seleccione un archivo CSV válido (.csv)');
-    return;
-  }
-  
-  const progreso = document.getElementById('progreso-walmart');
-  const barraProgreso = document.getElementById('barra-progreso-walmart');
-  const textoProgreso = document.getElementById('texto-progreso-walmart');
-  const btnProcesar = document.getElementById('btn-procesar-walmart');
-  
-  progreso.classList.remove('hidden');
-  btnProcesar.disabled = true;
-  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-  
-  try {
-    const formData = new FormData();
-    formData.append('archivo', archivo);
-    
-    barraProgreso.style.width = '20%';
-    textoProgreso.textContent = 'Subiendo archivo CSV...';
-    
-    const response = await fetch('/liquidaciones/walmart/procesar', {
-      method: 'POST',
-      body: formData
-    });
-    
-    barraProgreso.style.width = '60%';
-    textoProgreso.textContent = 'Procesando órdenes agrupadas...';
-    
-    if (!response.ok) throw new Error('Error al procesar la liquidación');
-    
-    const resultado = await response.json();
-    
-    barraProgreso.style.width = '100%';
-    textoProgreso.textContent = 'Completado';
-    
-    alert(`Liquidación Walmart procesada exitosamente:
-    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
-    - Órdenes fallidas: ${resultado.ordenes_fallidas}
-    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
-    - Total órdenes únicas: ${resultado.total_ordenes_procesadas}
-    - Total filas CSV: ${resultado.total_filas_csv}`);
-    
-    cargarDatos(paginaActual);
-    cerrarModalWalmart();
-    
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error al procesar la liquidación: ' + error.message);
-    barraProgreso.style.width = '0%';
-    textoProgreso.textContent = 'Error en el procesamiento';
-  } finally {
-    btnProcesar.disabled = false;
-    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
-  }
-}
-
-// Funciones para modales de Ripley
-function abrirModalRipley() {
-  document.getElementById('modal-ripley').classList.remove('hidden');
-  document.getElementById('liquidacion-submenu').classList.add('hidden');
-  // Establecer fecha actual por defecto
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('fecha-liquidacion-ripley').value = today;
-}
-
-function cerrarModalRipley() {
-  document.getElementById('modal-ripley').classList.add('hidden');
-  document.getElementById('archivo-ripley').value = '';
-  document.getElementById('fecha-liquidacion-ripley').value = '';
-  document.getElementById('progreso-ripley').classList.add('hidden');
-}
-
-async function procesarRipley() {
-  const archivoInput = document.getElementById('archivo-ripley');
-  const fechaInput = document.getElementById('fecha-liquidacion-ripley');
-  const archivo = archivoInput.files[0];
-  const fechaLiquidacion = fechaInput.value;
-  
-  if (!archivo) {
-    alert('Por favor seleccione un archivo Excel');
-    return;
-  }
-  
-  if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
-    alert('Por favor seleccione un archivo Excel válido (.xlsx o .xls)');
-    return;
-  }
-  
-  if (!fechaLiquidacion) {
-    alert('Por favor seleccione la fecha de liquidación');
-    return;
-  }
-  
-  const progreso = document.getElementById('progreso-ripley');
-  const barraProgreso = document.getElementById('barra-progreso-ripley');
-  const textoProgreso = document.getElementById('texto-progreso-ripley');
-  const btnProcesar = document.getElementById('btn-procesar-ripley');
-  
-  progreso.classList.remove('hidden');
-  btnProcesar.disabled = true;
-  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-  
-  try {
-    const formData = new FormData();
-    formData.append('archivo', archivo);
-    formData.append('fecha_liquidacion', fechaLiquidacion);
-    
-    barraProgreso.style.width = '20%';
-    textoProgreso.textContent = 'Subiendo archivo Excel...';
-    
-    const response = await fetch('/liquidaciones/ripley/procesar', {
-      method: 'POST',
-      body: formData
-    });
-    
-    barraProgreso.style.width = '60%';
-    textoProgreso.textContent = 'Procesando liquidación de Ripley...';
-    
-    if (!response.ok) throw new Error('Error al procesar la liquidación');
-    
-    const resultado = await response.json();
-    
-    barraProgreso.style.width = '100%';
-    textoProgreso.textContent = 'Completado';
-    
-    alert(`Liquidación Ripley procesada exitosamente:
-    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
-    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
-    - Órdenes con error: ${resultado.ordenes_con_error}
-    - Total procesadas: ${resultado.total_ordenes_procesadas}
-    - Número liquidación: ${resultado.numero_liquidacion}
-    - Fecha liquidación: ${resultado.fecha_liquidacion}`);
-    
-    cargarDatos(paginaActual);
-    cerrarModalRipley();
-    
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error al procesar la liquidación: ' + error.message);
-    barraProgreso.style.width = '0%';
-    textoProgreso.textContent = 'Error en el procesamiento';
-  } finally {
-    btnProcesar.disabled = false;
-    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
-  }
-}
-
-// Abrir modal
-function abrirModalFalabella() {
-  document.getElementById('modal-falabella').classList.remove('hidden');
-  document.getElementById('liquidacion-submenu').classList.add('hidden');
-  
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('fecha-liquidacion-falabella').value = today;
-}
-
-// Cerrar modal
-function cerrarModalFalabella() {
-  document.getElementById('modal-falabella').classList.add('hidden');
-  document.getElementById('archivo-falabella').value = '';
-  document.getElementById('fecha-liquidacion-falabella').value = '';
-  document.getElementById('progreso-falabella').classList.add('hidden');
-}
-
-// Procesar
-async function procesarFalabella() {
-  const archivoInput = document.getElementById('archivo-falabella');
-  const fechaInput = document.getElementById('fecha-liquidacion-falabella');
-  const archivo = archivoInput.files[0];
-  const fechaLiquidacion = fechaInput.value;
-  
-  if (!archivo) {
-    alert('Por favor seleccione un archivo Excel');
-    return;
-  }
-  
-  if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
-    alert('Por favor seleccione un archivo Excel válido (.xlsx o .xls)');
-    return;
-  }
-  
-  if (!fechaLiquidacion) {
-    alert('Por favor seleccione la fecha de liquidación');
-    return;
-  }
-  
-  const progreso = document.getElementById('progreso-falabella');
-  const barraProgreso = document.getElementById('barra-progreso-falabella');
-  const textoProgreso = document.getElementById('texto-progreso-falabella');
-  const btnProcesar = document.getElementById('btn-procesar-falabella');
-  
-  progreso.classList.remove('hidden');
-  btnProcesar.disabled = true;
-  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-  
-  try {
-    const formData = new FormData();
-    formData.append('archivo', archivo);
-    formData.append('fecha_liquidacion', fechaLiquidacion);
-    
-    barraProgreso.style.width = '20%';
-    textoProgreso.textContent = 'Subiendo archivo Excel...';
-    
-    const response = await fetch('/liquidaciones/falabella/procesar', {
-      method: 'POST',
-      body: formData
-    });
-    
-    barraProgreso.style.width = '60%';
-    textoProgreso.textContent = 'Procesando liquidación de Falabella...';
-    
-    if (!response.ok) throw new Error('Error al procesar la liquidación');
-    
-    const resultado = await response.json();
-    
-    barraProgreso.style.width = '100%';
-    textoProgreso.textContent = 'Completado';
-    
-    alert(`Liquidación Falabella procesada exitosamente:
-    - Órdenes actualizadas: ${resultado.ordenes_actualizadas}
-    - Órdenes no encontradas: ${resultado.ordenes_no_encontradas}
-    - Órdenes con error: ${resultado.ordenes_con_error}
-    - Total procesadas: ${resultado.total_ordenes_procesadas}
-    - Fecha procesamiento: ${resultado.fecha_procesamiento}`);
-    
-    cargarDatos(paginaActual);
-    cerrarModalFalabella();
-    
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error al procesar la liquidación: ' + error.message);
+    mostrarNotificacion('Error al procesar la liquidación: ' + error.message, 'error');
     barraProgreso.style.width = '0%';
     textoProgreso.textContent = 'Error en el procesamiento';
   } finally {
@@ -1302,6 +1158,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (button && submenu && !button.contains(e.target) && !submenu.contains(e.target)) {
       submenu.classList.add('hidden');
+    }
+  });
+  
+  // Auto-aplicar filtros cuando se escriba en los campos de búsqueda
+  const filtrosInputs = document.querySelectorAll('#filtros-form input, #filtros-form select');
+  filtrosInputs.forEach(input => {
+    if (input.type !== 'submit' && input.id !== 'registros-por-pagina') {
+      input.addEventListener('input', function() {
+        // Debounce para evitar muchas peticiones
+        clearTimeout(window.filtroTimeout);
+        window.filtroTimeout = setTimeout(() => {
+          cargarDatos(1);
+        }, 500);
+      });
     }
   });
 });
