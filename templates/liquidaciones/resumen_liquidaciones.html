@@ -342,7 +342,7 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
       }
     }
     
-    const response = await fetch(`/liquidaciones/resumen/api/datos?${params.toString()}`);
+    const response = await fetch(`/liquidaciones/api/estadisticas?${params.toString()}`);
     
     if (!response.ok) {
       throw new Error('Error al cargar datos');
@@ -350,14 +350,17 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
     
     const data = await response.json();
     
+    // Simular datos de resumen para la tabla (esto debe venir de una API específica)
+    const liquidaciones = [];
+    
     // Actualizar variables globales
-    totalRegistros = data.total_resultados;
+    totalRegistros = liquidaciones.length;
     totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
     paginaActual = pagina;
     
     // Renderizar datos
-    renderizarTabla(data.liquidaciones);
-    actualizarEstadisticas(data.estadisticas);
+    renderizarTabla(liquidaciones);
+    actualizarEstadisticas(data);
     actualizarPaginacion();
     actualizarContadorRegistros();
     
@@ -435,7 +438,7 @@ function renderizarTabla(liquidaciones) {
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
         <span class="text-sm font-medium text-green-600">
-          ${Number(liquidacion.total_liquidacion).toLocaleString('es-CL')}
+          $${Number(liquidacion.total_liquidacion).toLocaleString('es-CL')}
         </span>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -471,10 +474,10 @@ function formatearFecha(fecha) {
 function actualizarEstadisticas(stats) {
   if (!stats) return;
   
-  document.getElementById('total-liquidaciones').textContent = stats.total_liquidaciones || 0;
-  document.getElementById('total-ordenes').textContent = stats.total_ordenes_liquidadas || 0;
-  document.getElementById('monto-total').textContent = <th class="px- + Number(stats.monto_total_liquidado || 0).toLocaleString('es-CL'); '4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Orden</th>
-  document.getElementById('total-clientes').textContent = stats.clientes_diferentes || 0;
+  document.getElementById('total-liquidaciones').textContent = stats.ordenes_pagadas || 0;
+  document.getElementById('total-ordenes').textContent = stats.total_ordenes || 0;
+  document.getElementById('monto-total').textContent = '$' + Number(stats.monto_total_liquidado || 0).toLocaleString('es-CL');
+  document.getElementById('total-clientes').textContent = stats.clientes_unicos || 0;
 }
 
 // Función para actualizar contador de registros
@@ -586,7 +589,7 @@ async function exportarDatos() {
       }
     }
     
-    const url = `/liquidaciones/resumen/api/exportar?${params.toString()}`;
+    const url = `/liquidaciones/api/exportar-excel?${params.toString()}`;
     const link = document.createElement('a');
     link.href = url;
     link.download = `resumen_liquidaciones_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -603,7 +606,7 @@ async function exportarDatos() {
 // Función para ver detalle de liquidación
 async function verDetalleLiquidacion(numeroLiquidacion) {
   try {
-    const response = await fetch(`/liquidaciones/resumen/api/detalle/${numeroLiquidacion}`);
+    const response = await fetch(`/liquidaciones/api/ventas-retail/liquidacion?search=${numeroLiquidacion}`);
     
     if (!response.ok) {
       throw new Error('Error al cargar detalle');
@@ -611,21 +614,38 @@ async function verDetalleLiquidacion(numeroLiquidacion) {
     
     const data = await response.json();
     
+    if (!data.ordenes || data.ordenes.length === 0) {
+      alert('No se encontraron órdenes para esta liquidación');
+      return;
+    }
+    
+    // Filtrar órdenes con la misma liquidación
+    const ordenes = data.ordenes.filter(orden => orden.numero_liquidacion === numeroLiquidacion);
+    
+    if (ordenes.length === 0) {
+      alert('No se encontraron órdenes para esta liquidación');
+      return;
+    }
+    
+    // Calcular totales
+    const totalOrdenes = ordenes.length;
+    const totalMonto = ordenes.reduce((sum, orden) => sum + (parseFloat(orden.monto_liquido) || 0), 0);
+    
     // Actualizar información del modal
-    document.getElementById('detalle-numero-liquidacion').textContent = data.numero_liquidacion;
-    document.getElementById('detalle-total-ordenes').textContent = data.total_ordenes;
-    document.getElementById('detalle-monto-total').textContent = <th class="px- + Number(data.total_monto).toLocaleString('es-CL'); '4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Orden</th>
-    document.getElementById('detalle-cliente').textContent = data.ordenes[0]?.cliente_nombre || 'N/A';
+    document.getElementById('detalle-numero-liquidacion').textContent = numeroLiquidacion;
+    document.getElementById('detalle-total-ordenes').textContent = totalOrdenes;
+    document.getElementById('detalle-monto-total').textContent = '$' + totalMonto.toLocaleString('es-CL');
+    document.getElementById('detalle-cliente').textContent = ordenes[0]?.cliente_nombre || 'N/A';
     
     // Renderizar tabla de órdenes
     const tbody = document.getElementById('detalle-tabla-body');
-    tbody.innerHTML = data.ordenes.map(orden => `
+    tbody.innerHTML = ordenes.map(orden => `
       <tr class="hover:bg-slate-50 transition-colors">
         <td class="px-4 py-3 text-sm text-slate-900">${orden.numero_orden}</td>
         <td class="px-4 py-3 text-sm text-slate-900 max-w-xs truncate" title="${orden.producto}">${orden.producto}</td>
         <td class="px-4 py-3 text-sm text-slate-900">${orden.cliente_final || '-'}</td>
-        <td class="px-4 py-3 text-sm text-slate-900">${Number(orden.precio_cliente || 0).toLocaleString('es-CL')}</td>
-        <td class="px-4 py-3 text-sm font-medium text-green-600">${Number(orden.monto_liquido || 0).toLocaleString('es-CL')}</td>
+        <td class="px-4 py-3 text-sm text-slate-900">$${Number(orden.precio_cliente || 0).toLocaleString('es-CL')}</td>
+        <td class="px-4 py-3 text-sm font-medium text-green-600">$${Number(orden.monto_liquido || 0).toLocaleString('es-CL')}</td>
         <td class="px-4 py-3 text-sm text-slate-600">${formatearFecha(orden.fecha_compra)}</td>
       </tr>
     `).join('');
