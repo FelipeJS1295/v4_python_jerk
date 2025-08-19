@@ -2,329 +2,258 @@
 
 {% block title %}Gestión de Liquidaciones{% endblock %}
 {% block header %}Gestión de Liquidaciones{% endblock %}
-{% block breadcrumb %}Liquidaciones > Gestión de Órdenes{% endblock %}
+{% block breadcrumb %}Liquidaciones > Gestión{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-4">
   
   <!-- Panel de Estadísticas -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-    <div class="bg-gradient-to-r from-slate-600 to-slate-700 rounded-xl p-6 text-white shadow-sm">
+  <div class="grid grid-cols-4 gap-4">
+    <div class="bg-slate-700 rounded-lg p-4 text-white">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-slate-200 text-sm font-medium">Total Órdenes</p>
-          <p class="text-3xl font-bold" id="total-ordenes">-</p>
+          <p class="text-slate-300 text-xs font-medium uppercase tracking-wide">Total</p>
+          <p class="text-2xl font-bold" id="total-ordenes">-</p>
         </div>
-        <div class="bg-slate-500 bg-opacity-30 rounded-lg p-3">
-          <i class="fas fa-list-alt text-2xl"></i>
-        </div>
+        <i class="fas fa-list text-xl text-slate-400"></i>
       </div>
     </div>
     
-    <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white shadow-sm">
+    <div class="bg-green-700 rounded-lg p-4 text-white">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-green-100 text-sm font-medium">Pagadas</p>
-          <p class="text-3xl font-bold" id="ordenes-pagadas">-</p>
+          <p class="text-green-200 text-xs font-medium uppercase tracking-wide">Pagadas</p>
+          <p class="text-2xl font-bold" id="ordenes-pagadas">-</p>
         </div>
-        <div class="bg-green-500 bg-opacity-30 rounded-lg p-3">
-          <i class="fas fa-check-circle text-2xl"></i>
-        </div>
+        <i class="fas fa-check text-xl text-green-300"></i>
       </div>
     </div>
     
-    <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-sm">
+    <div class="bg-amber-600 rounded-lg p-4 text-white">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-amber-100 text-sm font-medium">Pendientes</p>
-          <p class="text-3xl font-bold" id="ordenes-pendientes">-</p>
+          <p class="text-amber-200 text-xs font-medium uppercase tracking-wide">Pendientes</p>
+          <p class="text-2xl font-bold" id="ordenes-pendientes">-</p>
         </div>
-        <div class="bg-amber-400 bg-opacity-30 rounded-lg p-3">
-          <i class="fas fa-clock text-2xl"></i>
-        </div>
+        <i class="fas fa-clock text-xl text-amber-300"></i>
       </div>
     </div>
     
-    <div class="bg-gradient-to-r from-red-600 to-red-700 rounded-xl p-6 text-white shadow-sm">
+    <div class="bg-red-700 rounded-lg p-4 text-white">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-red-100 text-sm font-medium">Fallidas</p>
-          <p class="text-3xl font-bold" id="ordenes-fallidas">-</p>
+          <p class="text-red-200 text-xs font-medium uppercase tracking-wide">Fallidas</p>
+          <p class="text-2xl font-bold" id="ordenes-fallidas">-</p>
         </div>
-        <div class="bg-red-500 bg-opacity-30 rounded-lg p-3">
-          <i class="fas fa-exclamation-triangle text-2xl"></i>
-        </div>
+        <i class="fas fa-times text-xl text-red-300"></i>
       </div>
     </div>
   </div>
 
-  <!-- Panel de Filtros -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h3 class="text-lg font-semibold text-slate-800 mb-4">
-      <i class="fas fa-filter text-slate-600 mr-2"></i>
-      Filtros de Búsqueda
-    </h3>
-    <form id="filtros-form" class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-hashtag text-slate-500 mr-1"></i>
-            Número de Orden
-          </label>
-          <input 
-            name="numero_orden" 
-            type="text" 
-            placeholder="Buscar por orden..." 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-user text-slate-500 mr-1"></i>
-            Cliente
-          </label>
-          <input 
-            name="cliente" 
-            type="text" 
-            placeholder="Buscar por cliente..." 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-receipt text-slate-500 mr-1"></i>
-            Número de Liquidación
-          </label>
-          <input 
-            name="numero_liquidacion" 
-            type="text" 
-            placeholder="Buscar por liquidación..." 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-info-circle text-slate-500 mr-1"></i>
-            Estado
-          </label>
-          <select 
-            name="estado_pago" 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          >
-            <option value="">Todos los estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="pagado">Pagado</option>
-            <option value="fallido">Fallido</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-calendar text-slate-500 mr-1"></i>
-            Fecha Desde
-          </label>
-          <input 
-            name="fecha_desde" 
-            type="date" 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-calendar text-slate-500 mr-1"></i>
-            Fecha Hasta
-          </label>
-          <input 
-            name="fecha_hasta" 
-            type="date" 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          />
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-list text-slate-500 mr-1"></i>
-            Registros por página
-          </label>
-          <select 
-            id="registros-por-pagina" 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          >
-            <option value="20">20 registros</option>
-            <option value="50">50 registros</option>
-            <option value="100">100 registros</option>
-            <option value="500">500 registros</option>
-          </select>
-        </div>
-        
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-2">
-            <i class="fas fa-search text-slate-500 mr-1"></i>
-            Búsqueda general
-          </label>
-          <input 
-            name="search" 
-            type="text" 
-            placeholder="Buscar en todos los campos..." 
-            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          />
-        </div>
+  <!-- Filtros -->
+  <div class="bg-white rounded-lg border border-slate-200 p-4">
+    <form id="filtros-form" class="space-y-3">
+      <div class="grid grid-cols-8 gap-3">
+        <input 
+          name="numero_orden" 
+          type="text" 
+          placeholder="N° Orden" 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        />
+        <input 
+          name="cliente" 
+          type="text" 
+          placeholder="Cliente" 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        />
+        <input 
+          name="numero_liquidacion" 
+          type="text" 
+          placeholder="N° Liquidación" 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        />
+        <select 
+          name="estado_pago" 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        >
+          <option value="">Estado</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="pagado">Pagado</option>
+          <option value="fallido">Fallido</option>
+        </select>
+        <input 
+          name="fecha_desde" 
+          type="date" 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        />
+        <input 
+          name="fecha_hasta" 
+          type="date" 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        />
+        <select 
+          id="registros-por-pagina" 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        >
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="500">500</option>
+        </select>
+        <input 
+          name="search" 
+          type="text" 
+          placeholder="Buscar..." 
+          class="px-3 py-2 border border-slate-300 rounded text-sm focus:ring-1 focus:ring-slate-500 focus:border-slate-500"
+        />
       </div>
       
-      <div class="flex justify-end space-x-3 pt-4 border-t border-slate-200">
+      <div class="flex justify-end space-x-2">
         <button 
           type="button" 
           id="btn-limpiar" 
-          class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center space-x-2 transition-colors"
+          class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm rounded transition-colors"
         >
-          <i class="fas fa-eraser text-sm"></i>
-          <span>Limpiar</span>
+          <i class="fas fa-eraser"></i>
         </button>
         <button 
           type="submit" 
-          class="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 flex items-center space-x-2 transition-colors"
+          class="px-4 py-2 bg-slate-600 text-white text-sm rounded hover:bg-slate-700 transition-colors"
         >
-          <i class="fas fa-search text-sm"></i>
-          <span>Buscar</span>
+          <i class="fas fa-search mr-1"></i>Buscar
         </button>
       </div>
     </form>
   </div>
 
-  <!-- Panel de Acciones y Tabla -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200">
-    <!-- Header con acciones -->
-    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+  <!-- Tabla -->
+  <div class="bg-white rounded-lg border border-slate-200">
+    <!-- Header -->
+    <div class="border-b border-slate-200 bg-slate-50 px-4 py-3">
       <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-4">
-          <h3 class="text-lg font-semibold text-slate-800">Lista de Órdenes</h3>
-          <span id="contador-registros" class="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-full font-medium">
+        <div class="flex items-center space-x-3">
+          <span class="font-medium text-slate-800">Órdenes</span>
+          <span id="contador-registros" class="px-2 py-1 bg-slate-200 text-slate-700 text-xs rounded font-medium">
             0 registros
           </span>
         </div>
         
-        <div class="flex items-center space-x-3">
-          <!-- Dropdown Cargar Liquidación -->
-          <div class="relative inline-block text-left">
+        <div class="flex items-center space-x-2">
+          <!-- Dropdown Liquidaciones -->
+          <div class="relative">
             <button 
               type="button" 
-              class="inline-flex justify-center px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors" 
+              class="px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm rounded transition-colors" 
               id="liquidacion-menu-button"
             >
-              <i class="fas fa-upload mr-2"></i>
-              Cargar Liquidación
-              <i class="fas fa-chevron-down ml-2"></i>
+              <i class="fas fa-upload mr-1"></i>
+              Cargar
+              <i class="fas fa-chevron-down ml-1"></i>
             </button>
-            <div class="origin-top-right absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10" id="liquidacion-submenu">
+            <div class="origin-top-right absolute right-0 mt-1 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10" id="liquidacion-submenu">
               <div class="py-1">
-                <button onclick="abrirModalCencosud()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                  <i class="fas fa-building mr-2 text-slate-600"></i>Cencosud
+                <button onclick="abrirModalCencosud()" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  <i class="fas fa-building mr-2 text-slate-500"></i>Cencosud
                 </button>
-                <button onclick="abrirModalWalmart()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                  <i class="fas fa-store mr-2 text-slate-600"></i>Walmart
+                <button onclick="abrirModalWalmart()" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  <i class="fas fa-store mr-2 text-slate-500"></i>Walmart
                 </button>
-                <button onclick="abrirModalRipley()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                  <i class="fas fa-shopping-bag mr-2 text-slate-600"></i>Ripley
+                <button onclick="abrirModalRipley()" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  <i class="fas fa-shopping-bag mr-2 text-slate-500"></i>Ripley
                 </button>
-                <button onclick="abrirModalFalabella()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                  <i class="fas fa-shopping-cart mr-2 text-slate-600"></i>Falabella
+                <button onclick="abrirModalFalabella()" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  <i class="fas fa-shopping-cart mr-2 text-slate-500"></i>Falabella
                 </button>
-                <button onclick="abrirModalParis()" class="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
-                  <i class="fas fa-shopping-center mr-2 text-slate-600"></i>París
+                <button onclick="abrirModalParis()" class="block w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                  <i class="fas fa-store-alt mr-2 text-slate-500"></i>París
                 </button>
               </div>
             </div>
           </div>
           
-          <!-- Botón Exportar -->
+          <!-- Exportar -->
           <button 
             id="btn-exportar" 
-            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
+            class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
           >
             <i class="fas fa-download"></i>
-            <span>Exportar</span>
           </button>
         </div>
       </div>
     </div>
     
-    <!-- Tabla -->
+    <!-- Tabla de datos -->
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead class="bg-slate-50 border-b border-slate-200">
           <tr>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="cliente">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="cliente">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-user text-slate-500"></i>
+                <i class="fas fa-user text-slate-400"></i>
                 <span>Cliente</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_orden">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="numero_orden">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-hashtag text-slate-500"></i>
-                <span>Nº Orden</span>
+                <i class="fas fa-hashtag text-slate-400"></i>
+                <span>Orden</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="producto">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="producto">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-box text-slate-500"></i>
+                <i class="fas fa-box text-slate-400"></i>
                 <span>Producto</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="fecha_entrega">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="fecha_entrega">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-truck text-slate-500"></i>
-                <span>Fecha Entrega</span>
+                <i class="fas fa-truck text-slate-400"></i>
+                <span>Entrega</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="estado_pago">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="estado_pago">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-info-circle text-slate-500"></i>
+                <i class="fas fa-info-circle text-slate-400"></i>
                 <span>Estado</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="numero_liquidacion">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="numero_liquidacion">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-receipt text-slate-500"></i>
-                <span>Nº Liquidación</span>
+                <i class="fas fa-receipt text-slate-400"></i>
+                <span>Liquidación</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="monto_liquido">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="monto_liquido">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-dollar-sign text-slate-500"></i>
-                <span>Monto Líquido</span>
+                <i class="fas fa-dollar-sign text-slate-400"></i>
+                <span>Monto</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors" data-sort="fecha_pago_liquidacion">
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase cursor-pointer hover:bg-slate-100" data-sort="fecha_pago_liquidacion">
               <div class="flex items-center space-x-1">
-                <i class="fas fa-calendar-check text-slate-500"></i>
-                <span>Fecha Pago</span>
+                <i class="fas fa-calendar text-slate-400"></i>
+                <span>F. Pago</span>
                 <i class="fas fa-sort text-slate-400"></i>
               </div>
             </th>
-            <th class="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-              <i class="fas fa-cog text-slate-500"></i>
-              <span class="ml-1">Acciones</span>
+            <th class="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase">
+              <i class="fas fa-cog text-slate-400"></i>
             </th>
           </tr>
         </thead>
-        <tbody id="tabla-body" class="bg-white divide-y divide-slate-200">
+        <tbody id="tabla-body" class="bg-white divide-y divide-slate-100">
           <tr>
-            <td colspan="9" class="px-6 py-12 text-center text-slate-500">
-              <div class="flex flex-col items-center space-y-3">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
-                <p class="text-sm">Cargando datos...</p>
+            <td colspan="9" class="px-4 py-8 text-center text-slate-500">
+              <div class="flex flex-col items-center space-y-2">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600"></div>
+                <p class="text-sm">Cargando...</p>
               </div>
             </td>
           </tr>
@@ -333,46 +262,42 @@
     </div>
     
     <!-- Paginación -->
-    <div class="border-t border-slate-200 bg-slate-50 px-6 py-4">
+    <div class="border-t border-slate-200 bg-slate-50 px-4 py-3">
       <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <span class="text-sm text-slate-600" id="info-paginacion">
-            Mostrando 0-0 de 0 registros
-          </span>
-        </div>
+        <span class="text-sm text-slate-600" id="info-paginacion">
+          Mostrando 0-0 de 0 registros
+        </span>
         
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-1">
           <button 
             id="btn-primera" 
-            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="px-2 py-1 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled
           >
             <i class="fas fa-angle-double-left"></i>
           </button>
           <button 
             id="btn-anterior" 
-            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="px-3 py-1 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled
           >
-            <i class="fas fa-chevron-left mr-1"></i>
-            Anterior
+            <i class="fas fa-chevron-left"></i>
           </button>
           
           <div id="numeros-pagina" class="flex items-center space-x-1">
-            <!-- Números de página se generan dinámicamente -->
+            <!-- Números de página -->
           </div>
           
           <button 
             id="btn-siguiente" 
-            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="px-3 py-1 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled
           >
-            Siguiente
-            <i class="fas fa-chevron-right ml-1"></i>
+            <i class="fas fa-chevron-right"></i>
           </button>
           <button 
             id="btn-ultima" 
-            class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="px-2 py-1 bg-white border border-slate-300 rounded text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled
           >
             <i class="fas fa-angle-double-right"></i>
@@ -383,304 +308,262 @@
   </div>
 </div>
 
-<!-- Modal para cargar Excel de Cencosud -->
-<div id="modal-cencosud" class="fixed inset-0 bg-slate-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-  <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-xl rounded-xl bg-white">
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center space-x-3">
-          <div class="bg-slate-100 rounded-lg p-2">
-            <i class="fas fa-building text-slate-600 text-lg"></i>
+<!-- Modales -->
+
+<!-- Modal Cencosud -->
+<div id="modal-cencosud" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg w-full max-w-md">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-building text-slate-600"></i>
+            <h3 class="font-medium">Cencosud</h3>
           </div>
-          <h3 class="text-lg font-semibold text-slate-900">Liquidación Cencosud</h3>
+          <button onclick="cerrarModalCencosud()" class="text-slate-400 hover:text-slate-600">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <button onclick="cerrarModalCencosud()" class="text-slate-400 hover:text-slate-600 transition-colors">
-          <i class="fas fa-times text-xl"></i>
-        </button>
-      </div>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-slate-700 mb-3">
-          <i class="fas fa-file-excel text-green-600 mr-2"></i>
-          Seleccionar archivo Excel
-        </label>
-        <div class="relative">
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Archivo Excel</label>
           <input 
             type="file" 
             id="archivo-cencosud" 
             accept=".xlsx,.xls" 
-            class="w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors"
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
           />
         </div>
-        <p class="mt-2 text-xs text-slate-500">
-          Formatos soportados: Excel (.xlsx, .xls) - Máximo 10MB
-        </p>
-      </div>
-      
-      <div class="flex justify-end space-x-3">
-        <button 
-          onclick="cerrarModalCencosud()" 
-          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg transition-colors"
-        >
-          Cancelar
-        </button>
-        <button 
-          onclick="procesarCencosud()" 
-          id="btn-procesar-cencosud" 
-          class="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
-        >
-          <i class="fas fa-upload"></i>
-          <span>Procesar</span>
-        </button>
-      </div>
-      
-      <!-- Área de progreso -->
-      <div id="progreso-cencosud" class="mt-6 hidden">
-        <div class="bg-slate-200 rounded-full h-2 mb-2">
-          <div id="barra-progreso-cencosud" class="bg-slate-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        
+        <div class="flex justify-end space-x-2">
+          <button onclick="cerrarModalCencosud()" class="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded hover:bg-slate-200">
+            Cancelar
+          </button>
+          <button onclick="procesarCencosud()" id="btn-procesar-cencosud" class="px-4 py-2 bg-slate-600 text-white text-sm rounded hover:bg-slate-700">
+            <i class="fas fa-upload mr-1"></i>Procesar
+          </button>
         </div>
-        <p id="texto-progreso-cencosud" class="text-sm text-slate-600 text-center">Procesando...</p>
+        
+        <div id="progreso-cencosud" class="mt-4 hidden">
+          <div class="bg-slate-200 rounded-full h-2">
+            <div id="barra-progreso-cencosud" class="bg-slate-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+          <p id="texto-progreso-cencosud" class="text-sm text-slate-600 text-center mt-2">Procesando...</p>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal para cargar CSV de Walmart -->
-<div id="modal-walmart" class="fixed inset-0 bg-slate-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-  <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-xl rounded-xl bg-white">
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center space-x-3">
-          <div class="bg-slate-100 rounded-lg p-2">
-            <i class="fas fa-store text-slate-600 text-lg"></i>
+<!-- Modal Walmart -->
+<div id="modal-walmart" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg w-full max-w-md">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-store text-slate-600"></i>
+            <h3 class="font-medium">Walmart</h3>
           </div>
-          <h3 class="text-lg font-semibold text-slate-900">Liquidación Walmart</h3>
+          <button onclick="cerrarModalWalmart()" class="text-slate-400 hover:text-slate-600">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <button onclick="cerrarModalWalmart()" class="text-slate-400 hover:text-slate-600 transition-colors">
-          <i class="fas fa-times text-xl"></i>
-        </button>
-      </div>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-slate-700 mb-3">
-          <i class="fas fa-file-csv text-orange-600 mr-2"></i>
-          Seleccionar archivo CSV
-        </label>
-        <div class="relative">
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Archivo CSV</label>
           <input 
             type="file" 
             id="archivo-walmart" 
             accept=".csv" 
-            class="w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors"
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
           />
         </div>
-        <p class="mt-2 text-xs text-slate-500">
-          Formato: CSV (.csv) con delimitador punto y coma (;) - Máximo 10MB
-        </p>
-      </div>
-      
-      <div class="flex justify-end space-x-3">
-        <button 
-          onclick="cerrarModalWalmart()" 
-          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg transition-colors"
-        >
-          Cancelar
-        </button>
-        <button 
-          onclick="procesarWalmart()" 
-          id="btn-procesar-walmart" 
-          class="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
-        >
-          <i class="fas fa-upload"></i>
-          <span>Procesar</span>
-        </button>
-      </div>
-      
-      <!-- Área de progreso -->
-      <div id="progreso-walmart" class="mt-6 hidden">
-        <div class="bg-slate-200 rounded-full h-2 mb-2">
-          <div id="barra-progreso-walmart" class="bg-slate-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        
+        <div class="flex justify-end space-x-2">
+          <button onclick="cerrarModalWalmart()" class="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded hover:bg-slate-200">
+            Cancelar
+          </button>
+          <button onclick="procesarWalmart()" id="btn-procesar-walmart" class="px-4 py-2 bg-slate-600 text-white text-sm rounded hover:bg-slate-700">
+            <i class="fas fa-upload mr-1"></i>Procesar
+          </button>
         </div>
-        <p id="texto-progreso-walmart" class="text-sm text-slate-600 text-center">Procesando...</p>
+        
+        <div id="progreso-walmart" class="mt-4 hidden">
+          <div class="bg-slate-200 rounded-full h-2">
+            <div id="barra-progreso-walmart" class="bg-slate-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+          <p id="texto-progreso-walmart" class="text-sm text-slate-600 text-center mt-2">Procesando...</p>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal para cargar Excel de Ripley -->
-<div id="modal-ripley" class="fixed inset-0 bg-slate-900 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-  <div class="relative top-20 mx-auto p-0 border-0 w-96 shadow-xl rounded-xl bg-white">
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center space-x-3">
-          <div class="bg-slate-100 rounded-lg p-2">
-            <i class="fas fa-shopping-bag text-slate-600 text-lg"></i>
+<!-- Modal Ripley -->
+<div id="modal-ripley" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg w-full max-w-md">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-shopping-bag text-slate-600"></i>
+            <h3 class="font-medium">Ripley</h3>
           </div>
-          <h3 class="text-lg font-semibold text-slate-900">Liquidación Ripley</h3>
+          <button onclick="cerrarModalRipley()" class="text-slate-400 hover:text-slate-600">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <button onclick="cerrarModalRipley()" class="text-slate-400 hover:text-slate-600 transition-colors">
-          <i class="fas fa-times text-xl"></i>
-        </button>
-      </div>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-slate-700 mb-3">
-          <i class="fas fa-file-excel text-green-600 mr-2"></i>
-          Seleccionar archivo Excel
-        </label>
-        <div class="relative">
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Liquidación</label>
+          <input 
+            type="date" 
+            id="fecha-liquidacion-ripley" 
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+          />
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Archivo Excel</label>
           <input 
             type="file" 
             id="archivo-ripley" 
             accept=".xlsx,.xls" 
-            class="w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors"
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
           />
         </div>
-        <p class="mt-2 text-xs text-slate-500">
-          Formatos soportados: Excel (.xlsx, .xls) - Máximo 10MB
-        </p>
-      </div>
-      
-      <div class="mb-6">
-        <label class="block text-sm font-medium text-slate-700 mb-3">
-          <i class="fas fa-calendar-alt text-slate-600 mr-2"></i>
-          Fecha de liquidación
-        </label>
-        <input 
-          type="date" 
-          id="fecha-liquidacion-ripley" 
-          class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-          required
-        />
-        <p class="mt-2 text-xs text-slate-500">
-          Fecha de pago de la liquidación (requerida)
-        </p>
-      </div>
-      
-      <div class="flex justify-end space-x-3">
-        <button 
-          onclick="cerrarModalRipley()" 
-          class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg transition-colors"
-        >
-          Cancelar
-        </button>
-        <button 
-          onclick="procesarRipley()" 
-          id="btn-procesar-ripley" 
-          class="px-6 py-2 bg-slate-600 hover:bg-slate-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
-        >
-          <i class="fas fa-upload"></i>
-          <span>Procesar</span>
-        </button>
-      </div>
-      
-      <!-- Área de progreso -->
-      <div id="progreso-ripley" class="mt-6 hidden">
-        <div class="bg-slate-200 rounded-full h-2 mb-2">
-          <div id="barra-progreso-ripley" class="bg-slate-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        
+        <div class="flex justify-end space-x-2">
+          <button onclick="cerrarModalRipley()" class="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded hover:bg-slate-200">
+            Cancelar
+          </button>
+          <button onclick="procesarRipley()" id="btn-procesar-ripley" class="px-4 py-2 bg-slate-600 text-white text-sm rounded hover:bg-slate-700">
+            <i class="fas fa-upload mr-1"></i>Procesar
+          </button>
         </div>
-        <p id="texto-progreso-ripley" class="text-sm text-slate-600 text-center">Procesando...</p>
+        
+        <div id="progreso-ripley" class="mt-4 hidden">
+          <div class="bg-slate-200 rounded-full h-2">
+            <div id="barra-progreso-ripley" class="bg-slate-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+          <p id="texto-progreso-ripley" class="text-sm text-slate-600 text-center mt-2">Procesando...</p>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal para cargar Excel de Falabella -->
-<div id="modal-falabella" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center space-x-3">
-        <div class="bg-slate-100 rounded-lg p-2">
-          <i class="fas fa-shopping-cart text-slate-600 text-lg"></i>
+<!-- Modal Falabella -->
+<div id="modal-falabella" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg w-full max-w-md">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-shopping-cart text-slate-600"></i>
+            <h3 class="font-medium">Falabella</h3>
+          </div>
+          <button onclick="cerrarModalFalabella()" class="text-slate-400 hover:text-slate-600">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <h2 class="text-lg font-semibold">Procesar Liquidación Falabella</h2>
-      </div>
-      <button onclick="cerrarModalFalabella()" class="text-slate-400 hover:text-slate-600 transition-colors">
-        <i class="fas fa-times text-xl"></i>
-      </button>
-    </div>
-    
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-slate-700 mb-2">
-        <i class="fas fa-calendar text-slate-500 mr-1"></i>
-        Fecha Liquidación
-      </label>
-      <input type="date" id="fecha-liquidacion-falabella" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
-    </div>
-    
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-slate-700 mb-2">
-        <i class="fas fa-file-excel text-green-600 mr-1"></i>
-        Archivo Excel
-      </label>
-      <input type="file" id="archivo-falabella" accept=".xlsx,.xls" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
-    </div>
-    
-    <!-- Barra de progreso -->
-    <div id="progreso-falabella" class="hidden w-full bg-slate-200 rounded-full h-2 mb-4">
-      <div id="barra-progreso-falabella" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
-    </div>
-    <p id="texto-progreso-falabella" class="text-sm text-slate-600 mb-3"></p>
-    
-    <!-- Botones -->
-    <div class="flex justify-end space-x-2">
-      <button onclick="cerrarModalFalabella()" class="px-4 py-2 bg-slate-300 rounded hover:bg-slate-400 transition-colors">Cancelar</button>
-      <button id="btn-procesar-falabella" onclick="procesarFalabella()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
-        <i class="fas fa-upload mr-2"></i>Procesar
-      </button>
-    </div>
-  </div>
-
-  <!-- Modal para cargar Excel de París -->
-<div id="modal-paris" class="hidden fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center space-x-3">
-        <div class="bg-slate-100 rounded-lg p-2">
-          <i class="fas fa-shopping-center text-slate-600 text-lg"></i>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Liquidación</label>
+          <input 
+            type="date" 
+            id="fecha-liquidacion-falabella" 
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+          />
         </div>
-        <h2 class="text-lg font-semibold">Procesar Liquidación París</h2>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Archivo Excel</label>
+          <input 
+            type="file" 
+            id="archivo-falabella" 
+            accept=".xlsx,.xls" 
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+          />
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+          <button onclick="cerrarModalFalabella()" class="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded hover:bg-slate-200">
+            Cancelar
+          </button>
+          <button onclick="procesarFalabella()" id="btn-procesar-falabella" class="px-4 py-2 bg-slate-600 text-white text-sm rounded hover:bg-slate-700">
+            <i class="fas fa-upload mr-1"></i>Procesar
+          </button>
+        </div>
+        
+        <div id="progreso-falabella" class="mt-4 hidden">
+          <div class="bg-slate-200 rounded-full h-2">
+            <div id="barra-progreso-falabella" class="bg-slate-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+          <p id="texto-progreso-falabella" class="text-sm text-slate-600 text-center mt-2">Procesando...</p>
+        </div>
       </div>
-      <button onclick="cerrarModalParis()" class="text-slate-400 hover:text-slate-600 transition-colors">
-        <i class="fas fa-times text-xl"></i>
-      </button>
-    </div>
-    
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-slate-700 mb-2">
-        <i class="fas fa-calendar text-slate-500 mr-1"></i>
-        Fecha Liquidación
-      </label>
-      <input type="date" id="fecha-liquidacion-paris" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
-    </div>
-    
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-slate-700 mb-2">
-        <i class="fas fa-file-excel text-green-600 mr-1"></i>
-        Archivo Excel
-      </label>
-      <input type="file" id="archivo-paris" accept=".xlsx,.xls" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500">
-    </div>
-    
-    <!-- Barra de progreso -->
-    <div id="progreso-paris" class="hidden w-full bg-slate-200 rounded-full h-2 mb-4">
-      <div id="barra-progreso-paris" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
-    </div>
-    <p id="texto-progreso-paris" class="text-sm text-slate-600 mb-3"></p>
-    
-    <!-- Botones -->
-    <div class="flex justify-end space-x-2">
-      <button onclick="cerrarModalParis()" class="px-4 py-2 bg-slate-300 rounded hover:bg-slate-400 transition-colors">Cancelar</button>
-      <button id="btn-procesar-paris" onclick="procesarParis()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
-        <i class="fas fa-upload mr-2"></i>Procesar
-      </button>
     </div>
   </div>
 </div>
 
+<!-- Modal París -->
+<div id="modal-paris" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-lg w-full max-w-md">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-store-alt text-slate-600"></i>
+            <h3 class="font-medium">París</h3>
+          </div>
+          <button onclick="cerrarModalParis()" class="text-slate-400 hover:text-slate-600">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Fecha Liquidación</label>
+          <input 
+            type="date" 
+            id="fecha-liquidacion-paris" 
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+          />
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Archivo Excel</label>
+          <input 
+            type="file" 
+            id="archivo-paris" 
+            accept=".xlsx,.xls" 
+            class="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+          />
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+          <button onclick="cerrarModalParis()" class="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded hover:bg-slate-200">
+            Cancelar
+          </button>
+          <button onclick="procesarParis()" id="btn-procesar-paris" class="px-4 py-2 bg-slate-600 text-white text-sm rounded hover:bg-slate-700">
+            <i class="fas fa-upload mr-1"></i>Procesar
+          </button>
+        </div>
+        
+        <div id="progreso-paris" class="mt-4 hidden">
+          <div class="bg-slate-200 rounded-full h-2">
+            <div id="barra-progreso-paris" class="bg-slate-600 h-2 rounded-full" style="width: 0%"></div>
+          </div>
+          <p id="texto-progreso-paris" class="text-sm text-slate-600 text-center mt-2">Procesando...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
-// Variables globales
+    // Variables globales
 let paginaActual = 1;
 let registrosPorPagina = 20;
 let totalPaginas = 1;
@@ -697,7 +580,6 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
     params.append('limite', registrosPorPagina);
     params.append('offset', (pagina - 1) * registrosPorPagina);
     
-    // Aplicar filtros si está habilitado
     if (aplicarFiltros) {
       const formData = new FormData(document.getElementById('filtros-form'));
       for (const [key, value] of formData.entries()) {
@@ -707,7 +589,6 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
       }
     }
     
-    // Aplicar ordenamiento
     if (ordenActual) {
       params.append('ordenar_por', ordenActual);
       params.append('direccion', direccionOrden);
@@ -721,12 +602,10 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
     
     const data = await response.json();
     
-    // Actualizar variables globales
     totalRegistros = data.estadisticas.total;
     totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
     paginaActual = pagina;
     
-    // Renderizar datos
     renderizarTabla(data.ordenes);
     actualizarEstadisticas(data.estadisticas);
     actualizarPaginacion();
@@ -738,27 +617,27 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
   }
 }
 
-// Función para mostrar loading
+// Mostrar estado de carga
 function mostrarCargando() {
   document.getElementById('tabla-body').innerHTML = `
     <tr>
-      <td colspan="9" class="px-6 py-12 text-center text-slate-500">
-        <div class="flex flex-col items-center space-y-3">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
-          <p class="text-sm">Cargando datos...</p>
+      <td colspan="9" class="px-4 py-8 text-center text-slate-500">
+        <div class="flex flex-col items-center space-y-2">
+          <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-600"></div>
+          <p class="text-sm">Cargando...</p>
         </div>
       </td>
     </tr>
   `;
 }
 
-// Función para mostrar error
+// Mostrar error
 function mostrarError(mensaje) {
   document.getElementById('tabla-body').innerHTML = `
     <tr>
-      <td colspan="9" class="px-6 py-12 text-center text-red-500">
-        <div class="flex flex-col items-center space-y-3">
-          <i class="fas fa-exclamation-triangle text-3xl"></i>
+      <td colspan="9" class="px-4 py-8 text-center text-red-500">
+        <div class="flex flex-col items-center space-y-2">
+          <i class="fas fa-exclamation-triangle text-2xl"></i>
           <p class="text-sm">${mensaje}</p>
         </div>
       </td>
@@ -766,17 +645,17 @@ function mostrarError(mensaje) {
   `;
 }
 
-// Función para renderizar tabla
+// Renderizar tabla
 function renderizarTabla(ordenes) {
   const tbody = document.getElementById('tabla-body');
   
   if (!ordenes || ordenes.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="px-6 py-12 text-center text-slate-500">
-          <div class="flex flex-col items-center space-y-3">
-            <i class="fas fa-inbox text-3xl"></i>
-            <p class="text-sm">No se encontraron registros con los filtros aplicados</p>
+        <td colspan="9" class="px-4 py-8 text-center text-slate-500">
+          <div class="flex flex-col items-center space-y-2">
+            <i class="fas fa-inbox text-2xl"></i>
+            <p class="text-sm">No se encontraron registros</p>
           </div>
         </td>
       </tr>
@@ -785,52 +664,52 @@ function renderizarTabla(ordenes) {
   }
   
   tbody.innerHTML = ordenes.map(orden => `
-    <tr class="hover:bg-slate-50 transition-colors">
-      <td class="px-6 py-4 whitespace-nowrap">
+    <tr class="hover:bg-slate-50">
+      <td class="px-4 py-3">
         <div>
-          <div class="text-sm font-medium text-slate-900">${orden.cliente_nombre || 'Cliente no encontrado'}</div>
+          <div class="text-sm font-medium text-slate-900">${orden.cliente_nombre || 'N/A'}</div>
           ${orden.cliente_id ? `<div class="text-xs text-slate-500">ID: ${orden.cliente_id}</div>` : ''}
         </div>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap">
-        <span class="text-sm font-semibold text-slate-900">${orden.numero_orden}</span>
+      <td class="px-4 py-3">
+        <span class="text-sm font-medium text-slate-900">${orden.numero_orden}</span>
       </td>
-      <td class="px-6 py-4">
+      <td class="px-4 py-3">
         <div class="text-sm text-slate-900 truncate max-w-xs" title="${orden.producto}">${orden.producto}</div>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td class="px-4 py-3">
         <span class="text-sm text-slate-600">
           ${orden.fecha_entrega ? formatearFecha(orden.fecha_entrega) : '-'}
         </span>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td class="px-4 py-3">
         ${getEstadoBadge(orden.estado_pago)}
       </td>
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td class="px-4 py-3">
         <span class="text-sm text-slate-900">${orden.numero_liquidacion || '-'}</span>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td class="px-4 py-3">
         <span class="text-sm font-medium text-green-600">
           ${orden.monto_liquido ? '$' + Number(orden.monto_liquido).toLocaleString('es-CL') : '-'}
         </span>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap">
+      <td class="px-4 py-3">
         <span class="text-sm text-slate-600">
           ${orden.fecha_pago_liquidacion ? formatearFecha(orden.fecha_pago_liquidacion) : '-'}
         </span>
       </td>
-      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        <div class="flex items-center space-x-2">
+      <td class="px-4 py-3">
+        <div class="flex items-center space-x-1">
           <button 
             onclick="verDetalle(${orden.id})" 
-            class="text-blue-600 hover:text-blue-900 transition-colors p-1" 
+            class="text-blue-600 hover:text-blue-800 p-1" 
             title="Ver detalle"
           >
             <i class="fas fa-eye"></i>
           </button>
           <button 
             onclick="editarLiquidacion(${orden.id})" 
-            class="text-amber-600 hover:text-amber-900 transition-colors p-1" 
+            class="text-amber-600 hover:text-amber-800 p-1" 
             title="Editar"
           >
             <i class="fas fa-edit"></i>
@@ -841,17 +720,17 @@ function renderizarTabla(ordenes) {
   `).join('');
 }
 
-// Función para obtener badge de estado
+// Estados de pago
 function getEstadoBadge(estado) {
   const badges = {
-    'pendiente': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><i class="fas fa-clock mr-1"></i>Pendiente</span>',
-    'pagado': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>Pagado</span>',
-    'fallido': '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-times-circle mr-1"></i>Fallido</span>'
+    'pendiente': '<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800"><i class="fas fa-clock mr-1"></i>Pendiente</span>',
+    'pagado': '<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check mr-1"></i>Pagado</span>',
+    'fallido': '<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-times mr-1"></i>Fallido</span>'
   };
-  return badges[estado] || '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Desconocido</span>';
+  return badges[estado] || '<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-slate-100 text-slate-800">N/A</span>';
 }
 
-// Función para formatear fecha
+// Formatear fecha
 function formatearFecha(fecha) {
   if (!fecha) return '-';
   try {
@@ -865,7 +744,7 @@ function formatearFecha(fecha) {
   }
 }
 
-// Función para actualizar estadísticas
+// Actualizar estadísticas
 function actualizarEstadisticas(stats) {
   if (!stats) return;
   
@@ -875,7 +754,7 @@ function actualizarEstadisticas(stats) {
   document.getElementById('ordenes-fallidas').textContent = stats.fallidos || 0;
 }
 
-// Función para actualizar contador de registros
+// Actualizar contador de registros
 function actualizarContadorRegistros() {
   const inicio = ((paginaActual - 1) * registrosPorPagina) + 1;
   const fin = Math.min(paginaActual * registrosPorPagina, totalRegistros);
@@ -885,24 +764,22 @@ function actualizarContadorRegistros() {
     `Mostrando ${inicio}-${fin} de ${totalRegistros} registros`;
 }
 
-// Función para actualizar paginación
+// Actualizar paginación
 function actualizarPaginacion() {
   const btnPrimera = document.getElementById('btn-primera');
   const btnAnterior = document.getElementById('btn-anterior');
   const btnSiguiente = document.getElementById('btn-siguiente');
   const btnUltima = document.getElementById('btn-ultima');
   
-  // Actualizar estado de botones
   btnPrimera.disabled = paginaActual <= 1;
   btnAnterior.disabled = paginaActual <= 1;
   btnSiguiente.disabled = paginaActual >= totalPaginas;
   btnUltima.disabled = paginaActual >= totalPaginas;
   
-  // Generar números de página
   generarNumerosPagina();
 }
 
-// Función para generar números de página
+// Generar números de página
 function generarNumerosPagina() {
   const container = document.getElementById('numeros-pagina');
   const maxVisible = 5;
@@ -920,7 +797,7 @@ function generarNumerosPagina() {
     html += `
       <button 
         onclick="irAPagina(${i})"
-        class="px-3 py-2 text-sm rounded-lg transition-colors ${
+        class="px-2 py-1 text-sm rounded transition-colors ${
           isActive 
             ? 'bg-slate-600 text-white' 
             : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-50'
@@ -934,30 +811,19 @@ function generarNumerosPagina() {
   container.innerHTML = html;
 }
 
-// Funciones de navegación
+// Navegación
 function irAPagina(pagina) {
   if (pagina >= 1 && pagina <= totalPaginas && pagina !== paginaActual) {
     cargarDatos(pagina);
   }
 }
 
-function irAPrimera() {
-  irAPagina(1);
-}
+function irAPrimera() { irAPagina(1); }
+function irAAnterior() { irAPagina(paginaActual - 1); }
+function irASiguiente() { irAPagina(paginaActual + 1); }
+function irAUltima() { irAPagina(totalPaginas); }
 
-function irAAnterior() {
-  irAPagina(paginaActual - 1);
-}
-
-function irASiguiente() {
-  irAPagina(paginaActual + 1);
-}
-
-function irAUltima() {
-  irAPagina(totalPaginas);
-}
-
-// Función para manejar ordenamiento
+// Ordenamiento
 function manejarOrdenamiento(campo) {
   if (ordenActual === campo) {
     direccionOrden = direccionOrden === 'asc' ? 'desc' : 'asc';
@@ -966,7 +832,6 @@ function manejarOrdenamiento(campo) {
     direccionOrden = 'asc';
   }
   
-  // Actualizar iconos de ordenamiento
   document.querySelectorAll('[data-sort] i.fa-sort, [data-sort] i.fa-sort-up, [data-sort] i.fa-sort-down').forEach(icon => {
     icon.className = 'fas fa-sort text-slate-400';
   });
@@ -979,7 +844,7 @@ function manejarOrdenamiento(campo) {
   cargarDatos(1);
 }
 
-// Función para limpiar filtros
+// Limpiar filtros
 function limpiarFiltros() {
   document.getElementById('filtros-form').reset();
   document.getElementById('registros-por-pagina').value = '20';
@@ -987,7 +852,6 @@ function limpiarFiltros() {
   ordenActual = '';
   direccionOrden = 'asc';
   
-  // Resetear iconos de ordenamiento
   document.querySelectorAll('[data-sort] i.fa-sort-up, [data-sort] i.fa-sort-down').forEach(icon => {
     icon.className = 'fas fa-sort text-slate-400';
   });
@@ -995,14 +859,14 @@ function limpiarFiltros() {
   cargarDatos(1);
 }
 
-// Función para cambiar registros por página
+// Cambiar registros por página
 function cambiarRegistrosPorPagina() {
   const select = document.getElementById('registros-por-pagina');
   registrosPorPagina = parseInt(select.value);
   cargarDatos(1);
 }
 
-// Función para exportar datos
+// Exportar datos
 async function exportarDatos() {
   try {
     const formData = new FormData(document.getElementById('filtros-form'));
@@ -1016,7 +880,6 @@ async function exportarDatos() {
     
     const url = `/liquidaciones/api/exportar-excel?${params.toString()}`;
     
-    // Crear elemento temporal para descarga
     const link = document.createElement('a');
     link.href = url;
     link.download = `liquidaciones_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -1024,54 +887,51 @@ async function exportarDatos() {
     link.click();
     document.body.removeChild(link);
     
-    // Mostrar notificación de éxito
-    mostrarNotificacion('Exportación iniciada correctamente', 'success');
+    mostrarNotificacion('Exportación iniciada', 'success');
     
   } catch (error) {
     console.error('Error:', error);
-    mostrarNotificacion('Error al exportar datos', 'error');
+    mostrarNotificacion('Error al exportar', 'error');
   }
 }
 
-// Función para mostrar notificaciones
+// Notificaciones
 function mostrarNotificacion(mensaje, tipo = 'info') {
-  // Crear elemento de notificación
   const notificacion = document.createElement('div');
-  notificacion.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+  notificacion.className = `fixed top-4 right-4 px-4 py-2 rounded shadow-lg z-50 transition-all duration-300 ${
     tipo === 'success' ? 'bg-green-500 text-white' :
     tipo === 'error' ? 'bg-red-500 text-white' :
     'bg-blue-500 text-white'
   }`;
   notificacion.innerHTML = `
     <div class="flex items-center space-x-2">
-      <i class="fas ${tipo === 'success' ? 'fa-check-circle' : tipo === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-      <span>${mensaje}</span>
+      <i class="fas ${tipo === 'success' ? 'fa-check' : tipo === 'error' ? 'fa-times' : 'fa-info'}"></i>
+      <span class="text-sm">${mensaje}</span>
     </div>
   `;
   
   document.body.appendChild(notificacion);
   
-  // Remover después de 3 segundos
   setTimeout(() => {
     notificacion.style.opacity = '0';
     notificacion.style.transform = 'translateX(100%)';
     setTimeout(() => {
-      document.body.removeChild(notificacion);
+      if (document.body.contains(notificacion)) {
+        document.body.removeChild(notificacion);
+      }
     }, 300);
   }, 3000);
 }
 
-// Función para ver detalle
+// Ver detalle
 async function verDetalle(id) {
   try {
     const response = await fetch(`/liquidaciones/api/orden/${id}`);
     if (!response.ok) throw new Error('Error al obtener detalle');
     
     const orden = await response.json();
-    
-    // Aquí puedes implementar un modal con el detalle o redirigir
     console.log('Detalle de orden:', orden);
-    mostrarNotificacion(`Detalle de orden ${orden.numero_orden} cargado`, 'info');
+    mostrarNotificacion(`Detalle de orden ${orden.numero_orden}`, 'info');
     
   } catch (error) {
     console.error('Error:', error);
@@ -1079,20 +939,21 @@ async function verDetalle(id) {
   }
 }
 
-// Función para editar liquidación
+// Editar liquidación
 function editarLiquidacion(id) {
-  // Implementar modal de edición o redirigir
-  console.log(`Editar liquidación de orden ID: ${id}`);
-  mostrarNotificacion('Función de edición en desarrollo', 'info');
+  console.log(`Editar liquidación ID: ${id}`);
+  mostrarNotificacion('Función en desarrollo', 'info');
 }
 
-// Funciones para dropdown de liquidación
+// Dropdown liquidación
 function toggleLiquidacionMenu() {
   const submenu = document.getElementById('liquidacion-submenu');
   submenu.classList.toggle('hidden');
 }
 
-// Funciones para modales de Cencosud
+// === MODALES ===
+
+// Cencosud
 function abrirModalCencosud() {
   document.getElementById('modal-cencosud').classList.remove('hidden');
   document.getElementById('liquidacion-submenu').classList.add('hidden');
@@ -1105,67 +966,116 @@ function cerrarModalCencosud() {
 }
 
 async function procesarCencosud() {
-  const archivoInput = document.getElementById('archivo-cencosud');
-  const archivo = archivoInput.files[0];
+  const archivo = document.getElementById('archivo-cencosud').files[0];
   
   if (!archivo) {
-    mostrarNotificacion('Por favor seleccione un archivo Excel', 'error');
+    mostrarNotificacion('Seleccione un archivo Excel', 'error');
     return;
   }
   
   if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
-    mostrarNotificacion('Por favor seleccione un archivo Excel válido (.xlsx o .xls)', 'error');
+    mostrarNotificacion('Archivo Excel inválido', 'error');
     return;
   }
   
-  const progreso = document.getElementById('progreso-cencosud');
-  const barraProgreso = document.getElementById('barra-progreso-cencosud');
-  const textoProgreso = document.getElementById('texto-progreso-cencosud');
-  const btnProcesar = document.getElementById('btn-procesar-cencosud');
-  
-  progreso.classList.remove('hidden');
-  btnProcesar.disabled = true;
-  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-  
-  try {
-    const formData = new FormData();
-    formData.append('archivo', archivo);
-    
-    barraProgreso.style.width = '20%';
-    textoProgreso.textContent = 'Subiendo archivo...';
-    
-    const response = await fetch('/liquidaciones/cencosud/procesar', {
-      method: 'POST',
-      body: formData
-    });
-    
-    barraProgreso.style.width = '60%';
-    textoProgreso.textContent = 'Procesando liquidación...';
-    
-    if (!response.ok) throw new Error('Error al procesar la liquidación');
-    
-    const resultado = await response.json();
-    
-    barraProgreso.style.width = '100%';
-    textoProgreso.textContent = 'Completado';
-    
-    mostrarNotificacion(`Liquidación Cencosud procesada: ${resultado.ordenes_actualizadas} órdenes actualizadas`, 'success');
-    
-    cargarDatos(paginaActual);
-    cerrarModalCencosud();
-    
-  } catch (error) {
-    console.error('Error:', error);
-    mostrarNotificacion('Error al procesar la liquidación: ' + error.message, 'error');
-    barraProgreso.style.width = '0%';
-    textoProgreso.textContent = 'Error en el procesamiento';
-  } finally {
-    btnProcesar.disabled = false;
-    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
-  }
+  await procesarArchivo('cencosud', archivo, null, 'Cencosud');
 }
 
-// Funciones para modales de París
+// Walmart
+function abrirModalWalmart() {
+  document.getElementById('modal-walmart').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+}
+
+function cerrarModalWalmart() {
+  document.getElementById('modal-walmart').classList.add('hidden');
+  document.getElementById('archivo-walmart').value = '';
+  document.getElementById('progreso-walmart').classList.add('hidden');
+}
+
+async function procesarWalmart() {
+  const archivo = document.getElementById('archivo-walmart').files[0];
+  
+  if (!archivo) {
+    mostrarNotificacion('Seleccione un archivo CSV', 'error');
+    return;
+  }
+  
+  if (!archivo.name.match(/\.csv$/i)) {
+    mostrarNotificacion('Archivo CSV inválido', 'error');
+    return;
+  }
+  
+  await procesarArchivo('walmart', archivo, null, 'Walmart');
+}
+
+// Ripley
+function abrirModalRipley() {
+  document.getElementById('modal-ripley').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+  
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fecha-liquidacion-ripley').value = today;
+}
+
+function cerrarModalRipley() {
+  document.getElementById('modal-ripley').classList.add('hidden');
+  document.getElementById('archivo-ripley').value = '';
+  document.getElementById('fecha-liquidacion-ripley').value = '';
+  document.getElementById('progreso-ripley').classList.add('hidden');
+}
+
+async function procesarRipley() {
+  const archivo = document.getElementById('archivo-ripley').files[0];
+  const fecha = document.getElementById('fecha-liquidacion-ripley').value;
+  
+  if (!archivo) {
+    mostrarNotificacion('Seleccione un archivo Excel', 'error');
+    return;
+  }
+  
+  if (!fecha) {
+    mostrarNotificacion('Seleccione la fecha de liquidación', 'error');
+    return;
+  }
+  
+  await procesarArchivo('ripley', archivo, fecha, 'Ripley');
+}
+
+// Falabella
+function abrirModalFalabella() {
+  document.getElementById('modal-falabella').classList.remove('hidden');
+  document.getElementById('liquidacion-submenu').classList.add('hidden');
+  
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fecha-liquidacion-falabella').value = today;
+}
+
+function cerrarModalFalabella() {
+  document.getElementById('modal-falabella').classList.add('hidden');
+  document.getElementById('archivo-falabella').value = '';
+  document.getElementById('fecha-liquidacion-falabella').value = '';
+  document.getElementById('progreso-falabella').classList.add('hidden');
+}
+
+async function procesarFalabella() {
+  const archivo = document.getElementById('archivo-falabella').files[0];
+  const fecha = document.getElementById('fecha-liquidacion-falabella').value;
+  
+  if (!archivo) {
+    mostrarNotificacion('Seleccione un archivo Excel', 'error');
+    return;
+  }
+  
+  if (!fecha) {
+    mostrarNotificacion('Seleccione la fecha de liquidación', 'error');
+    return;
+  }
+  
+  await procesarArchivo('falabella', archivo, fecha, 'Falabella');
+}
+
+// París
 function abrirModalParis() {
   document.getElementById('modal-paris').classList.remove('hidden');
   document.getElementById('liquidacion-submenu').classList.add('hidden');
@@ -1182,80 +1092,77 @@ function cerrarModalParis() {
 }
 
 async function procesarParis() {
-  const archivoInput = document.getElementById('archivo-paris');
-  const fechaInput = document.getElementById('fecha-liquidacion-paris');
-  const archivo = archivoInput.files[0];
-  const fechaLiquidacion = fechaInput.value;
+  const archivo = document.getElementById('archivo-paris').files[0];
+  const fecha = document.getElementById('fecha-liquidacion-paris').value;
   
   if (!archivo) {
-    mostrarNotificacion('Por favor seleccione un archivo Excel', 'error');
+    mostrarNotificacion('Seleccione un archivo Excel', 'error');
     return;
   }
   
-  if (!archivo.name.match(/\.(xlsx|xls)$/i)) {
-    mostrarNotificacion('Por favor seleccione un archivo Excel válido (.xlsx o .xls)', 'error');
+  if (!fecha) {
+    mostrarNotificacion('Seleccione la fecha de liquidación', 'error');
     return;
   }
   
-  if (!fechaLiquidacion) {
-    mostrarNotificacion('Por favor seleccione la fecha de liquidación', 'error');
-    return;
-  }
-  
-  const progreso = document.getElementById('progreso-paris');
-  const barraProgreso = document.getElementById('barra-progreso-paris');
-  const textoProgreso = document.getElementById('texto-progreso-paris');
-  const btnProcesar = document.getElementById('btn-procesar-paris');
+  await procesarArchivo('paris', archivo, fecha, 'París');
+}
+
+// Función genérica para procesar archivos
+async function procesarArchivo(tienda, archivo, fecha, nombreTienda) {
+  const progreso = document.getElementById(`progreso-${tienda}`);
+  const barraProgreso = document.getElementById(`barra-progreso-${tienda}`);
+  const textoProgreso = document.getElementById(`texto-progreso-${tienda}`);
+  const btnProcesar = document.getElementById(`btn-procesar-${tienda}`);
   
   progreso.classList.remove('hidden');
   btnProcesar.disabled = true;
-  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+  btnProcesar.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Procesando...';
   
   try {
     const formData = new FormData();
     formData.append('archivo', archivo);
-    formData.append('fecha_liquidacion', fechaLiquidacion);
+    if (fecha) formData.append('fecha_liquidacion', fecha);
     
     barraProgreso.style.width = '20%';
-    textoProgreso.textContent = 'Subiendo archivo Excel...';
+    textoProgreso.textContent = 'Subiendo archivo...';
     
-    const response = await fetch('/liquidaciones/paris/procesar', {
+    const response = await fetch(`/liquidaciones/${tienda}/procesar`, {
       method: 'POST',
       body: formData
     });
     
     barraProgreso.style.width = '60%';
-    textoProgreso.textContent = 'Procesando liquidación de París...';
+    textoProgreso.textContent = 'Procesando liquidación...';
     
-    if (!response.ok) throw new Error('Error al procesar la liquidación');
+    if (!response.ok) throw new Error('Error al procesar');
     
     const resultado = await response.json();
     
     barraProgreso.style.width = '100%';
     textoProgreso.textContent = 'Completado';
     
-    mostrarNotificacion(`Liquidación París procesada: ${resultado.ordenes_actualizadas} órdenes actualizadas de ${resultado.total_ordenes_procesadas} procesadas`, 'success');
+    mostrarNotificacion(`${nombreTienda}: ${resultado.ordenes_actualizadas} órdenes actualizadas`, 'success');
     
     cargarDatos(paginaActual);
-    cerrarModalParis();
+    eval(`cerrarModal${nombreTienda}()`);
     
   } catch (error) {
     console.error('Error:', error);
-    mostrarNotificacion('Error al procesar la liquidación: ' + error.message, 'error');
+    mostrarNotificacion(`Error al procesar ${nombreTienda}`, 'error');
     barraProgreso.style.width = '0%';
-    textoProgreso.textContent = 'Error en el procesamiento';
+    textoProgreso.textContent = 'Error';
   } finally {
     btnProcesar.disabled = false;
-    btnProcesar.innerHTML = '<i class="fas fa-upload mr-2"></i>Procesar';
+    btnProcesar.innerHTML = '<i class="fas fa-upload mr-1"></i>Procesar';
   }
 }
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-  // Cargar datos iniciales
   cargarDatos(1);
   
-  // Event listeners para filtros
+  // Filtros
   document.getElementById('filtros-form').addEventListener('submit', function(e) {
     e.preventDefault();
     cargarDatos(1);
@@ -1263,16 +1170,16 @@ document.addEventListener('DOMContentLoaded', function() {
   
   document.getElementById('btn-limpiar').addEventListener('click', limpiarFiltros);
   
-  // Event listeners para paginación
+  // Paginación
   document.getElementById('btn-primera').addEventListener('click', irAPrimera);
   document.getElementById('btn-anterior').addEventListener('click', irAAnterior);
   document.getElementById('btn-siguiente').addEventListener('click', irASiguiente);
   document.getElementById('btn-ultima').addEventListener('click', irAUltima);
   
-  // Event listener para cambio de registros por página
+  // Registros por página
   document.getElementById('registros-por-pagina').addEventListener('change', cambiarRegistrosPorPagina);
   
-  // Event listeners para ordenamiento
+  // Ordenamiento
   document.querySelectorAll('[data-sort]').forEach(header => {
     header.addEventListener('click', function() {
       const campo = this.getAttribute('data-sort');
@@ -1280,10 +1187,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
-  // Event listener para dropdown de liquidación
+  // Dropdown
   document.getElementById('liquidacion-menu-button').addEventListener('click', toggleLiquidacionMenu);
   
-  // Event listener para exportar
+  // Exportar
   document.getElementById('btn-exportar').addEventListener('click', exportarDatos);
   
   // Cerrar dropdown al hacer clic fuera
@@ -1296,12 +1203,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Auto-aplicar filtros cuando se escriba en los campos de búsqueda
+  // Auto-filtros con debounce
   const filtrosInputs = document.querySelectorAll('#filtros-form input, #filtros-form select');
   filtrosInputs.forEach(input => {
     if (input.type !== 'submit' && input.id !== 'registros-por-pagina') {
       input.addEventListener('input', function() {
-        // Debounce para evitar muchas peticiones
         clearTimeout(window.filtroTimeout);
         window.filtroTimeout = setTimeout(() => {
           cargarDatos(1);
@@ -1311,5 +1217,4 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-
 {% endblock %}
