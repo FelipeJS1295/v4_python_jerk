@@ -34,7 +34,8 @@ from routers import (
     cencosud,
     walmart,
     ripley,
-    falabella
+    falabella,
+    resumen_liquidacion,
 )
 
 from routers import camaras
@@ -204,3 +205,4 @@ app.include_router(cencosud.router)
 app.include_router(walmart.router)
 app.include_router(ripley.router)
 app.include_router(falabella.router)
+app.include_router(resumen_liquidacion.router)
