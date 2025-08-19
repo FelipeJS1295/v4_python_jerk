@@ -47,7 +47,7 @@ async def procesar_liquidacion_paris(archivo: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail=f"Error leyendo Excel: {str(e)}")
         
         # Validar columnas requeridas
-        columnas_requeridas = ['número orden', 'monto a pagar', 'fecha factura', 'nro solicitud pago']
+        columnas_requeridas = ['nro suborden', 'monto a pagar', 'fecha factura', 'nro solicitud pago']
         columnas_encontradas = df.columns.tolist()
         columnas_faltantes = [col for col in columnas_requeridas if col not in df.columns]
         
@@ -60,7 +60,7 @@ async def procesar_liquidacion_paris(archivo: UploadFile = File(...)):
         
         # Filtrar filas válidas (que tengan número de orden)
         df_inicial = len(df)
-        df_valido = df[df['número orden'].notna() & (df['número orden'] != '')]
+        df_valido = df[df['nro suborden'].notna() & (df['nro suborden'] != '')]
         logger.info(f"Filas válidas (con número de orden): {len(df_valido)} de {df_inicial}")
         
         if df_valido.empty:
@@ -69,13 +69,13 @@ async def procesar_liquidacion_paris(archivo: UploadFile = File(...)):
         # Mostrar algunas filas de ejemplo
         logger.info("Primeras 3 órdenes válidas:")
         for i, row in df_valido.head(3).iterrows():
-            logger.info(f"  Fila {i}: Orden={row['número orden']}, Monto={row['monto a pagar']}")
+            logger.info(f"  Fila {i}: Orden={row['nro suborden']}, Monto={row['monto a pagar']}")
         
         # Agrupar por número de orden y sumar montos
         ordenes_agrupadas = defaultdict(list)
         for index, row in df_valido.iterrows():
             try:
-                numero_orden = str(row['número orden']).strip()
+                numero_orden = str(row['nro suborden']).strip()
                 if numero_orden and numero_orden != 'nan':
                     ordenes_agrupadas[numero_orden].append(row)
             except Exception as e:
