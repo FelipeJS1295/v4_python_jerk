@@ -66,6 +66,10 @@ async def obtener_ordenes_liquidacion(
     estado_pago: Optional[str] = Query(None, description="Filtrar por estado de pago"),
     fecha_desde: Optional[str] = Query(None, description="Fecha desde (YYYY-MM-DD)"),
     fecha_hasta: Optional[str] = Query(None, description="Fecha hasta (YYYY-MM-DD)"),
+    ordenar_por: Optional[str] = Query(None, description="Campo para ordenar"),
+    direccion: Optional[str] = Query("asc", description="Dirección del ordenamiento (asc/desc)"),
+    ordenar_secundario: Optional[str] = Query(None, description="Campo para ordenamiento secundario"),
+    direccion_secundaria: Optional[str] = Query("desc", description="Dirección del ordenamiento secundario"),
     limite: int = Query(100, description="Límite de resultados"),
     offset: int = Query(0, description="Offset para paginación")
 ):
@@ -154,11 +158,55 @@ async def obtener_ordenes_liquidacion(
         if condiciones:
             base_query += " WHERE " + " AND ".join(condiciones)
         
-        # Agregar ordenamiento y paginación
-        base_query += " ORDER BY vr.fecha_compra DESC, vr.id DESC"
-        base_query += " LIMIT %s OFFSET %s"
+        # ===== LÓGICA DE ORDENAMIENTO =====
+        orden_clausulas = []
         
+        # Mapeo de campos del frontend a campos de la base de datos
+        campo_mapeo = {
+            'cliente': 'c.nombre',
+            'numero_orden': 'vr.numero_orden',
+            'producto': 'vr.producto',
+            'fecha_entrega': 'vr.fecha_entrega',
+            'estado_pago': 'estado_pago',
+            'numero_liquidacion': 'vr.numero_liquidacion',
+            'monto_liquido': 'vr.monto_liquido',
+            'fecha_pago_liquidacion': 'vr.fecha_pago_liquidacion'
+        }
+        
+        # Ordenamiento principal
+        if ordenar_por and ordenar_por in campo_mapeo:
+            campo_db = campo_mapeo[ordenar_por]
+            direccion_sql = 'ASC' if direccion.lower() == 'asc' else 'DESC'
+            
+            # Manejar el estado_pago que es un campo calculado
+            if ordenar_por == 'estado_pago':
+                orden_clausulas.append(f"estado_pago {direccion_sql}")
+            else:
+                orden_clausulas.append(f"{campo_db} {direccion_sql}")
+        
+        # Ordenamiento secundario (siempre por fecha si se especifica)
+        if ordenar_secundario and ordenar_secundario in campo_mapeo:
+            campo_secundario_db = campo_mapeo[ordenar_secundario]
+            direccion_secundaria_sql = 'ASC' if direccion_secundaria.lower() == 'asc' else 'DESC'
+            orden_clausulas.append(f"{campo_secundario_db} {direccion_secundaria_sql}")
+        
+        # Si no hay ordenamiento específico, ordenar por fecha_entrega DESC por defecto
+        if not orden_clausulas:
+            orden_clausulas.append("vr.fecha_entrega DESC")
+        
+        # Siempre agregar ID como último criterio de ordenamiento para consistencia
+        orden_clausulas.append("vr.id DESC")
+        
+        # Agregar ORDER BY
+        base_query += " ORDER BY " + ", ".join(orden_clausulas)
+        
+        # Agregar paginación
+        base_query += " LIMIT %s OFFSET %s"
         parametros.extend([limite, offset])
+        
+        # Log para debug
+        logger.info(f"Query de ordenamiento: {base_query}")
+        logger.info(f"Parámetros: {parametros}")
         
         # Ejecutar query
         cursor.execute(base_query, parametros)
@@ -212,7 +260,13 @@ async def obtener_ordenes_liquidacion(
             'estadisticas': estadisticas,
             'total_resultados': len(ordenes_list),
             'offset': offset,
-            'limite': limite
+            'limite': limite,
+            'ordenamiento': {
+                'campo': ordenar_por,
+                'direccion': direccion,
+                'campo_secundario': ordenar_secundario,
+                'direccion_secundaria': direccion_secundaria
+            }
         }
         
     except Exception as e:
@@ -416,10 +470,14 @@ async def exportar_liquidaciones_excel(
     numero_liquidacion: Optional[str] = Query(None),
     estado_pago: Optional[str] = Query(None),
     fecha_desde: Optional[str] = Query(None),
-    fecha_hasta: Optional[str] = Query(None)
+    fecha_hasta: Optional[str] = Query(None),
+    ordenar_por: Optional[str] = Query(None, description="Campo para ordenar"),
+    direccion: Optional[str] = Query("asc", description="Dirección del ordenamiento"),
+    ordenar_secundario: Optional[str] = Query(None, description="Campo para ordenamiento secundario"),
+    direccion_secundaria: Optional[str] = Query("desc", description="Dirección del ordenamiento secundario")
 ):
     """
-    Exportar liquidaciones a Excel
+    Exportar liquidaciones a Excel con ordenamiento
     """
     connection = None
     try:
@@ -433,6 +491,7 @@ async def exportar_liquidaciones_excel(
                 vr.numero_orden,
                 vr.producto,
                 vr.precio_cliente,
+                c.nombre as cliente_nombre,
                 CASE 
                     WHEN vr.numero_liquidacion IS NOT NULL AND vr.fecha_pago_liquidacion IS NOT NULL THEN 'pagado'
                     WHEN vr.numero_liquidacion IS NULL AND vr.fecha_pago_liquidacion IS NULL THEN 'pendiente'
@@ -456,7 +515,7 @@ async def exportar_liquidaciones_excel(
         condiciones = []
         parametros = []
         
-        # Aplicar filtros (mismo lógica que en obtener_ordenes_liquidacion)
+        # Aplicar filtros (misma lógica que en obtener_ordenes_liquidacion)
         if search and search.strip():
             condiciones.append("""
                 (vr.numero_orden LIKE %s 
@@ -500,7 +559,40 @@ async def exportar_liquidaciones_excel(
         if condiciones:
             base_query += " WHERE " + " AND ".join(condiciones)
         
-        base_query += " ORDER BY vr.fecha_compra DESC"
+        # Aplicar ordenamiento (misma lógica que en obtener_ordenes_liquidacion)
+        orden_clausulas = []
+        
+        campo_mapeo = {
+            'cliente': 'c.nombre',
+            'numero_orden': 'vr.numero_orden',
+            'producto': 'vr.producto',
+            'fecha_entrega': 'vr.fecha_entrega',
+            'estado_pago': 'estado_pago',
+            'numero_liquidacion': 'vr.numero_liquidacion',
+            'monto_liquido': 'vr.monto_liquido',
+            'fecha_pago_liquidacion': 'vr.fecha_pago_liquidacion'
+        }
+        
+        if ordenar_por and ordenar_por in campo_mapeo:
+            campo_db = campo_mapeo[ordenar_por]
+            direccion_sql = 'ASC' if direccion.lower() == 'asc' else 'DESC'
+            
+            if ordenar_por == 'estado_pago':
+                orden_clausulas.append(f"estado_pago {direccion_sql}")
+            else:
+                orden_clausulas.append(f"{campo_db} {direccion_sql}")
+        
+        if ordenar_secundario and ordenar_secundario in campo_mapeo:
+            campo_secundario_db = campo_mapeo[ordenar_secundario]
+            direccion_secundaria_sql = 'ASC' if direccion_secundaria.lower() == 'asc' else 'DESC'
+            orden_clausulas.append(f"{campo_secundario_db} {direccion_secundaria_sql}")
+        
+        if not orden_clausulas:
+            orden_clausulas.append("vr.fecha_entrega DESC")
+        
+        orden_clausulas.append("vr.id DESC")
+        
+        base_query += " ORDER BY " + ", ".join(orden_clausulas)
         
         cursor.execute(base_query, parametros)
         data = cursor.fetchall()
@@ -517,6 +609,7 @@ async def exportar_liquidaciones_excel(
             'numero_orden': 'Número Orden',
             'producto': 'Producto',
             'precio_cliente': 'Precio Cliente',
+            'cliente_nombre': 'Nombre Cliente',
             'estado_pago': 'Estado Pago',
             'numero_liquidacion': 'Nº Liquidación',
             'fecha_pago_liquidacion': 'Fecha Pago',
