@@ -563,7 +563,7 @@
 </div>
 
 <script>
-    // Variables globales
+// Variables globales
 let paginaActual = 1;
 let registrosPorPagina = 20;
 let totalPaginas = 1;
@@ -823,36 +823,55 @@ function irAAnterior() { irAPagina(paginaActual - 1); }
 function irASiguiente() { irAPagina(paginaActual + 1); }
 function irAUltima() { irAPagina(totalPaginas); }
 
-// Ordenamiento
+// ===== FUNCIONES DE ORDENAMIENTO CORREGIDAS =====
+
+// Función principal de ordenamiento
 function manejarOrdenamiento(campo) {
+  console.log(`Ordenando por: ${campo}`);
+  
+  // Si es la misma columna, cambiar dirección
   if (ordenActual === campo) {
     direccionOrden = direccionOrden === 'asc' ? 'desc' : 'asc';
   } else {
+    // Nueva columna, comenzar con ascendente
     ordenActual = campo;
     direccionOrden = 'asc';
   }
   
-  document.querySelectorAll('[data-sort] i.fa-sort, [data-sort] i.fa-sort-up, [data-sort] i.fa-sort-down').forEach(icon => {
-    icon.className = 'fas fa-sort text-slate-400';
-  });
+  // Actualizar iconos visuales
+  actualizarIconosOrdenamiento(campo);
   
-  const currentHeader = document.querySelector(`[data-sort="${campo}"] i.fa-sort`);
-  if (currentHeader) {
-    currentHeader.className = `fas fa-sort-${direccionOrden === 'asc' ? 'up' : 'down'} text-slate-600`;
-  }
-  
+  // Recargar datos con el nuevo ordenamiento (volver a página 1)
   cargarDatos(1);
 }
 
-// Limpiar filtros
+// Actualizar iconos de ordenamiento
+function actualizarIconosOrdenamiento(campoActivo) {
+  // Resetear todos los iconos
+  document.querySelectorAll('[data-sort] .fa-sort, [data-sort] .fa-sort-up, [data-sort] .fa-sort-down').forEach(icon => {
+    icon.className = 'fas fa-sort text-slate-400';
+  });
+  
+  // Actualizar el icono de la columna activa
+  const headerActivo = document.querySelector(`[data-sort="${campoActivo}"] .fa-sort`);
+  if (headerActivo) {
+    const iconClass = direccionOrden === 'asc' ? 'fa-sort-up' : 'fa-sort-down';
+    headerActivo.className = `fas ${iconClass} text-slate-600`;
+  }
+}
+
+// Limpiar filtros y ordenamiento
 function limpiarFiltros() {
   document.getElementById('filtros-form').reset();
   document.getElementById('registros-por-pagina').value = '20';
   registrosPorPagina = 20;
+  
+  // Limpiar ordenamiento
   ordenActual = '';
   direccionOrden = 'asc';
   
-  document.querySelectorAll('[data-sort] i.fa-sort-up, [data-sort] i.fa-sort-down').forEach(icon => {
+  // Resetear iconos de ordenamiento
+  document.querySelectorAll('[data-sort] .fa-sort-up, [data-sort] .fa-sort-down').forEach(icon => {
     icon.className = 'fas fa-sort text-slate-400';
   });
   
@@ -876,6 +895,12 @@ async function exportarDatos() {
       if (value && value.trim()) {
         params.append(key, value.trim());
       }
+    }
+    
+    // Incluir ordenamiento en la exportación
+    if (ordenActual) {
+      params.append('ordenar_por', ordenActual);
+      params.append('direccion', direccionOrden);
     }
     
     const url = `/liquidaciones/api/exportar-excel?${params.toString()}`;
@@ -1158,8 +1183,10 @@ async function procesarArchivo(tienda, archivo, fecha, nombreTienda) {
   }
 }
 
-// Event Listeners
+// ===== EVENT LISTENERS =====
 document.addEventListener('DOMContentLoaded', function() {
+  console.log('Inicializando gestión de liquidaciones...');
+  
   cargarDatos(1);
   
   // Filtros
@@ -1179,12 +1206,19 @@ document.addEventListener('DOMContentLoaded', function() {
   // Registros por página
   document.getElementById('registros-por-pagina').addEventListener('change', cambiarRegistrosPorPagina);
   
-  // Ordenamiento
+  // ===== ORDENAMIENTO - EVENT LISTENERS CORREGIDOS =====
   document.querySelectorAll('[data-sort]').forEach(header => {
-    header.addEventListener('click', function() {
+    header.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
       const campo = this.getAttribute('data-sort');
+      console.log(`Click en header: ${campo}`);
       manejarOrdenamiento(campo);
     });
+    
+    // Agregar estilo pointer para indicar que es clickeable
+    header.style.cursor = 'pointer';
   });
   
   // Dropdown
@@ -1215,6 +1249,8 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   });
+  
+  console.log('Gestión de liquidaciones inicializada correctamente');
 });
 </script>
 {% endblock %}
