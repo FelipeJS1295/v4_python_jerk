@@ -589,9 +589,17 @@ async function cargarDatos(pagina = 1, aplicarFiltros = true) {
       }
     }
     
+    // Siempre ordenar por fecha como ordenamiento secundario
     if (ordenActual) {
       params.append('ordenar_por', ordenActual);
       params.append('direccion', direccionOrden);
+      // Agregar ordenamiento secundario por fecha
+      params.append('ordenar_secundario', 'fecha_entrega');
+      params.append('direccion_secundaria', 'desc');
+    } else {
+      // Si no hay ordenamiento principal, ordenar solo por fecha
+      params.append('ordenar_por', 'fecha_entrega');
+      params.append('direccion', 'desc');
     }
     
     const response = await fetch(`/liquidaciones/api/ventas-retail/liquidacion?${params.toString()}`);
@@ -897,10 +905,15 @@ async function exportarDatos() {
       }
     }
     
-    // Incluir ordenamiento en la exportación
+    // Incluir ordenamiento en la exportación con fecha como secundario
     if (ordenActual) {
       params.append('ordenar_por', ordenActual);
       params.append('direccion', direccionOrden);
+      params.append('ordenar_secundario', 'fecha_entrega');
+      params.append('direccion_secundaria', 'desc');
+    } else {
+      params.append('ordenar_por', 'fecha_entrega');
+      params.append('direccion', 'desc');
     }
     
     const url = `/liquidaciones/api/exportar-excel?${params.toString()}`;
@@ -1186,6 +1199,10 @@ async function procesarArchivo(tienda, archivo, fecha, nombreTienda) {
 // ===== EVENT LISTENERS =====
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Inicializando gestión de liquidaciones...');
+  
+  // Establecer ordenamiento inicial por fecha
+  ordenActual = '';
+  direccionOrden = 'desc';
   
   cargarDatos(1);
   
