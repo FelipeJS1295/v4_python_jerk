@@ -1,49 +1,49 @@
 <div class="overflow-x-auto">
   <table class="w-full">
-  <thead class="bg-slate-50 border-b border-slate-200">
-    <tr>
-      <th class="px-4 py-3 text-left">
-        <input 
-          type="checkbox" 
-          id="select-all"
-          onchange="toggleSelectAll(this)"
-          class="rounded border-slate-300 text-slate-600 focus:ring-slate-500"
-        />
-      </th>
-      
-      {% set flecha = direccion == 'asc' and '↑' or '↓' %}
-      
-      <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('numero_orden')">
-        N° Orden {% if ordenar_por == 'numero_orden' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
-      </th>
-      
-      <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('cliente')">
-        Cliente {% if ordenar_por == 'cliente' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
-      </th>
-      
-      <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('producto')">
-        Producto {% if ordenar_por == 'producto' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
-      </th>
-      
-      <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('fecha_entrega')">
-        Fecha Entrega {% if ordenar_por == 'fecha_entrega' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
-      </th>
-      
-      <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('estado')">
-        Estado {% if ordenar_por == 'estado' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
-      </th>
-      
-      <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-        Acciones
-      </th>
-    </tr>
-  </thead>
+    <thead class="bg-slate-50 border-b border-slate-200">
+      <tr>
+        <th class="px-4 py-3 text-left">
+          <input 
+            type="checkbox" 
+            id="select-all"
+            onchange="toggleSelectAll(this)"
+            class="rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+          />
+        </th>
+        
+        {% set flecha = direccion == 'asc' and '↑' or '↓' %}
+        
+        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('numero_orden')">
+          N° Orden {% if ordenar_por == 'numero_orden' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
+        </th>
+        
+        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('cliente')">
+          Cliente {% if ordenar_por == 'cliente' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
+        </th>
+        
+        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('producto')">
+          Producto {% if ordenar_por == 'producto' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
+        </th>
+        
+        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('fecha_entrega')">
+          Fecha Entrega {% if ordenar_por == 'fecha_entrega' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
+        </th>
+        
+        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:text-slate-900" onclick="ordenarTabla('estado')">
+          Estado {% if ordenar_por == 'estado' %}<span class="ml-1">{{ flecha }}</span>{% endif %}
+        </th>
+        
+        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          Acciones
+        </th>
+      </tr>
+    </thead>
 
     <tbody class="divide-y divide-slate-200">
       {% for venta in ventas %}
       <tr
-        data-fecha-entrega="{{ venta.fecha_entrega }}"  <!-- YYYY-MM-DD -->
-        data-estado="{{ venta.estado|lower }}"
+        data-fecha-entrega="{{ venta.fecha_entrega|default('', true) }}"
+        data-estado="{{ venta.estado|default('', true)|lower }}"
         class="hover:bg-slate-50"
       >
         <td class="px-4 py-4">
@@ -51,8 +51,7 @@
             type="checkbox" 
             name="venta-select"
             value="{{ venta.id }}"
-            onchange="updateSelectionCounter()
-"
+            onchange="updateSelectionCounter()"
             class="rounded border-slate-300 text-slate-600 focus:ring-slate-500"
           />
         </td>
@@ -96,8 +95,7 @@
 
   {% if not ventas %}
   <div class="text-center py-12">
-    <svg class="mx-auto h-12 w-12 text-slate-4
-00" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
     </svg>
     <h3 class="mt-2 text-sm font-medium text-slate-900">No hay ventas</h3>
