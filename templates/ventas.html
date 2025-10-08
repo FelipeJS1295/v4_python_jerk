@@ -371,6 +371,35 @@ function setupClickOutside() {
   });
 }
 
+function parseISODateOnly(s) {
+  if (!s || typeof s !== 'string') return null;
+  const [Y, M, D] = s.split('-').map(Number);
+  if (!Y || !M || !D) return null;
+  return new Date(Y, M - 1, D, 0, 0, 0, 0);
+}
+
+// Parse seguro de 'YYYY-MM-DD' sin liarla con timezones
+function marcarAtrasadas() {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  document.querySelectorAll('#contenido-tabla tr[data-fecha-entrega]').forEach(tr => {
+    const estado = (tr.getAttribute('data-estado') || '').toLowerCase();
+    const fechaStr = tr.getAttribute('data-fecha-entrega') || '';
+    const fecha = parseISODateOnly(fechaStr);
+
+    // Solo marcar si es NUEVA y la fecha_entrega es anterior a hoy
+    if (estado === 'nueva' && fecha && fecha < hoy) {
+      tr.classList.add('bg-red-50');      // rojo claro (Tailwind)
+      // opcionales: un poco más de contraste sin ser agresivo
+      // tr.classList.add('text-red-800');
+    } else {
+      tr.classList.remove('bg-red-50');
+      // tr.classList.remove('text-red-800');
+    }
+  });
+}
+
 // Event listeners principales
 function initEventListeners() {
   // Event listener para limpiar filtros
@@ -597,6 +626,8 @@ document.addEventListener('DOMContentLoaded', function() {
   initNuboxMenu(); // ✅ NUEVO
   setupClickOutside();
   initEventListeners();
+
+  marcarAtrasadas();
   
   // Cargar datos iniciales
   const form = document.getElementById('filtros-form');
@@ -610,6 +641,8 @@ document.body.addEventListener('htmx:afterSwap', function() {
   initMenuButton();
   initNuboxMenu(); // ✅ NUEVO
   updateSelectionCounter();
+
+  marcarAtrasadas();
   
   // Re-enlazar event listeners para checkboxes individuales
   document.querySelectorAll('input[name="venta-select"]').forEach(checkbox => {
