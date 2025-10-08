@@ -29,7 +29,24 @@ def procesar_csv_ripley(ruta_archivo):
                     return None
                 if isinstance(valor, pd.Timestamp):
                     return valor.strftime("%Y-%m-%d")
+                # Ej: 2025-10-14T02:59:59.999Z -> "2025-10-14"
                 return datetime.strptime(str(valor), "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d")
+            except:
+                return None
+
+        def ajustar_deadline_menos_1dia_fecha(valor):
+            """
+            Resta 1 día al ISO8601 de Ripley y devuelve solo la fecha 'YYYY-MM-DD'.
+            Ej: 2025-10-14T02:59:59.999Z -> 2025-10-13
+            """
+            try:
+                if pd.isna(valor):
+                    return None
+                ts = pd.to_datetime(str(valor), utc=True, errors="coerce")
+                if pd.isna(ts):
+                    return None
+                ts2 = ts - pd.Timedelta(days=1)
+                return ts2.date().isoformat()
             except:
                 return None
 
@@ -67,7 +84,8 @@ def procesar_csv_ripley(ruta_archivo):
             "giro": None,
             "direccion_factura": None,
             "fecha_compra": convertir_fecha(row.get("_created_on", None)),
-            "fecha_entrega": convertir_fecha(row.get("shipping_deadline", None)),
+            # ↙️ ahora guarda YYYY-MM-DD con 1 día menos respecto a shipping_deadline
+            "fecha_entrega": ajustar_deadline_menos_1dia_fecha(row.get("shipping_deadline", None)),
             "fecha_cliente": None,
             "estado": "nueva",
             "unidades": 1,
