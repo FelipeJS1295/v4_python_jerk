@@ -803,21 +803,22 @@ async def descargar_excel_ventas(
         if orden:
             filtros.append("vr.numero_orden LIKE %s"); params.append(f"%{orden}%")
         if desde:
-            filtros.append("vr.fecha_compra >= %s"); params.append(desde)
+            filtros.append("vr.fecha_entrega >= %s"); params.append(desde)   # mismo criterio que la vista
         if hasta:
-            filtros.append("vr.fecha_compra <= %s"); params.append(hasta)
+            filtros.append("vr.fecha_entrega <= %s"); params.append(hasta)
         if estado:
             filtros.append("vr.estado = %s"); params.append(estado)
         where_clause = "WHERE " + " AND ".join(filtros) if filtros else ""
 
-        # 👉 AÑADIMOS numero_orden
+        # 👉 Añadimos fecha_entrega como Fecha de Envío
         query = f"""
             SELECT 
-                c.nombre              AS cliente_nombre,
-                vr.numero_orden       AS numero_orden,
-                vr.fecha_compra       AS fecha_compra,
-                vr.producto           AS producto,
-                vr.precio_cliente     AS precio_cliente
+                c.nombre          AS cliente_nombre,
+                vr.numero_orden   AS numero_orden,
+                vr.fecha_compra   AS fecha_compra,
+                vr.fecha_entrega  AS fecha_envio,
+                vr.producto       AS producto,
+                vr.precio_cliente AS precio_cliente
             FROM ventas_retail vr
             JOIN clientes c ON vr.cliente_id = c.id
             {where_clause}
@@ -833,30 +834,32 @@ async def descargar_excel_ventas(
 
         df = pd.DataFrame(datos)
 
-        # Columnas “bonitas” con la OC
-        df.columns = ['Cliente', 'Orden de Compra', 'Fecha Compra', 'Producto', 'Precio Cliente']
+        # Columnas “bonitas” (incluye Fecha de Envío)
+        df.columns = ['Cliente', 'Orden de Compra', 'Fecha Compra', 'Fecha Envío', 'Producto', 'Precio Cliente']
 
         # Tipos correctos
         df['Fecha Compra'] = pd.to_datetime(df['Fecha Compra'])
+        df['Fecha Envío']  = pd.to_datetime(df['Fecha Envío'])
         df['Precio Cliente'] = pd.to_numeric(df['Precio Cliente']).fillna(0)
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            # Hoja principal
             df.to_excel(writer, sheet_name='Ventas', index=False)
             wb = writer.book
             ws = writer.sheets['Ventas']
 
-            # Formatos: fecha y moneda (chilena genérica con miles)
-            # Mapear cabeceras -> índice de columna
+            # Map cabeceras -> índice
             cols = {cell.value: idx+1 for idx, cell in enumerate(ws[1])}
 
-            # Fecha
-            for col in ws.iter_cols(min_col=cols['Fecha Compra'], max_col=cols['Fecha Compra'], min_row=2, max_row=ws.max_row):
-                for c in col: c.number_format = 'DD/MM/YYYY'
+            # Formato fechas
+            for col_name in ['Fecha Compra', 'Fecha Envío']:
+                for col in ws.iter_cols(min_col=cols[col_name], max_col=cols[col_name],
+                                        min_row=2, max_row=ws.max_row):
+                    for c in col: c.number_format = 'DD/MM/YYYY'
 
-            # Precio
-            for col in ws.iter_cols(min_col=cols['Precio Cliente'], max_col=cols['Precio Cliente'], min_row=2, max_row=ws.max_row):
+            # Formato moneda (miles)
+            for col in ws.iter_cols(min_col=cols['Precio Cliente'], max_col=cols['Precio Cliente'],
+                                    min_row=2, max_row=ws.max_row):
                 for c in col: c.number_format = '#,##0'
 
             # Auto ancho
@@ -864,7 +867,7 @@ async def descargar_excel_ventas(
                 max_len = max(len(str(c.value)) if c.value is not None else 0 for c in column_cells)
                 ws.column_dimensions[column_cells[0].column_letter].width = min(max_len + 2, 60)
 
-            # Resumen por Cliente (conteo de ítems y $ total)
+            # Resumen por Cliente (conteo + suma real en $)
             resumen_cliente = (
                 df.groupby('Cliente', as_index=False)
                   .agg(**{
@@ -874,7 +877,7 @@ async def descargar_excel_ventas(
             )
             resumen_cliente.to_excel(writer, sheet_name='Resumen por Cliente', index=False)
 
-            # Resumen por Orden de Compra (útil para conciliaciones)
+            # Resumen por OC (útil para logística/conciliación)
             resumen_oc = (
                 df.groupby(['Cliente','Orden de Compra'], as_index=False)
                   .agg(**{
