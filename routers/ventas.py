@@ -794,121 +794,108 @@ async def descargar_excel_ventas(
     hasta: str = "",
     estado: str = ""
 ):
-    """Descargar Excel con datos de ventas aplicando los mismos filtros que la tabla"""
-    
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
-    
     try:
-        # Construir filtros (misma lógica que en vista_ventas)
-        filtros = []
-        params = []
-
+        filtros, params = [], []
         if cliente:
-            filtros.append("c.nombre LIKE %s")
-            params.append(f"%{cliente}%")
+            filtros.append("c.nombre LIKE %s"); params.append(f"%{cliente}%")
         if orden:
-            filtros.append("vr.numero_orden LIKE %s")
-            params.append(f"%{orden}%")
+            filtros.append("vr.numero_orden LIKE %s"); params.append(f"%{orden}%")
         if desde:
-            filtros.append("vr.fecha_entrega >= %s")
-            params.append(desde)
+            filtros.append("vr.fecha_compra >= %s"); params.append(desde)
         if hasta:
-            filtros.append("vr.fecha_entrega <= %s")
-            params.append(hasta)
+            filtros.append("vr.fecha_compra <= %s"); params.append(hasta)
         if estado:
-            filtros.append("vr.estado = %s")
-            params.append(estado)
-
+            filtros.append("vr.estado = %s"); params.append(estado)
         where_clause = "WHERE " + " AND ".join(filtros) if filtros else ""
 
-        # Query para obtener los datos del Excel
+        # 👉 AÑADIMOS numero_orden
         query = f"""
             SELECT 
-                c.nombre as cliente_nombre,
-                vr.fecha_compra,
-                vr.producto,
-                vr.precio_cliente
+                c.nombre              AS cliente_nombre,
+                vr.numero_orden       AS numero_orden,
+                vr.fecha_compra       AS fecha_compra,
+                vr.producto           AS producto,
+                vr.precio_cliente     AS precio_cliente
             FROM ventas_retail vr
             JOIN clientes c ON vr.cliente_id = c.id
             {where_clause}
-            ORDER BY vr.fecha_compra DESC, c.nombre
+            ORDER BY vr.fecha_compra DESC, c.nombre, vr.numero_orden
         """
-        
         cursor.execute(query, params)
         datos = cursor.fetchall()
-        
         if not datos:
             raise HTTPException(status_code=404, detail="No se encontraron datos para exportar")
-        
-        # Crear DataFrame con pandas
+
+        import pandas as pd, io
+        from openpyxl.styles import numbers
+
         df = pd.DataFrame(datos)
-        
-        # Renombrar columnas para que sean más legibles
-        df.columns = ['Cliente', 'Fecha Compra', 'Producto', 'Precio Cliente']
-        
-        # Formatear fecha si es necesario
-        if 'Fecha Compra' in df.columns:
-            df['Fecha Compra'] = pd.to_datetime(df['Fecha Compra']).dt.strftime('%d/%m/%Y')
-        
-        # Formatear precio como moneda chilena
-        if 'Precio Cliente' in df.columns:
-            df['Precio Cliente'] = df['Precio Cliente'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else "$0")
-        
-        # Crear archivo Excel en memoria
+
+        # Columnas “bonitas” con la OC
+        df.columns = ['Cliente', 'Orden de Compra', 'Fecha Compra', 'Producto', 'Precio Cliente']
+
+        # Tipos correctos
+        df['Fecha Compra'] = pd.to_datetime(df['Fecha Compra'])
+        df['Precio Cliente'] = pd.to_numeric(df['Precio Cliente']).fillna(0)
+
         output = io.BytesIO()
-        
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            # Escribir datos principales
+            # Hoja principal
             df.to_excel(writer, sheet_name='Ventas', index=False)
-            
-            # Obtener el workbook y worksheet para formato
-            workbook = writer.book
-            worksheet = writer.sheets['Ventas']
-            
-            # Aplicar formato a las columnas
-            for column in worksheet.columns:
-                max_length = 0
-                column_letter = column[0].column_letter
-                
-                for cell in column:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                
-                # Ajustar ancho de columna
-                adjusted_width = min(max_length + 2, 50)
-                worksheet.column_dimensions[column_letter].width = adjusted_width
-            
-            # Crear hoja de resumen si hay datos
-            if len(datos) > 0:
-                # Resumen por cliente
-                resumen_cliente = df.groupby('Cliente').agg({
-                    'Producto': 'count',
-                    'Precio Cliente': lambda x: len(x)  # Contar registros
-                }).reset_index()
-                resumen_cliente.columns = ['Cliente', 'Total Productos', 'Total Ventas']
-                resumen_cliente.to_excel(writer, sheet_name='Resumen por Cliente', index=False)
-        
+            wb = writer.book
+            ws = writer.sheets['Ventas']
+
+            # Formatos: fecha y moneda (chilena genérica con miles)
+            # Mapear cabeceras -> índice de columna
+            cols = {cell.value: idx+1 for idx, cell in enumerate(ws[1])}
+
+            # Fecha
+            for col in ws.iter_cols(min_col=cols['Fecha Compra'], max_col=cols['Fecha Compra'], min_row=2, max_row=ws.max_row):
+                for c in col: c.number_format = 'DD/MM/YYYY'
+
+            # Precio
+            for col in ws.iter_cols(min_col=cols['Precio Cliente'], max_col=cols['Precio Cliente'], min_row=2, max_row=ws.max_row):
+                for c in col: c.number_format = '#,##0'
+
+            # Auto ancho
+            for column_cells in ws.columns:
+                max_len = max(len(str(c.value)) if c.value is not None else 0 for c in column_cells)
+                ws.column_dimensions[column_cells[0].column_letter].width = min(max_len + 2, 60)
+
+            # Resumen por Cliente (conteo de ítems y $ total)
+            resumen_cliente = (
+                df.groupby('Cliente', as_index=False)
+                  .agg(**{
+                      'Total Productos': ('Producto', 'count'),
+                      'Total Ventas':    ('Precio Cliente', 'sum')
+                  })
+            )
+            resumen_cliente.to_excel(writer, sheet_name='Resumen por Cliente', index=False)
+
+            # Resumen por Orden de Compra (útil para conciliaciones)
+            resumen_oc = (
+                df.groupby(['Cliente','Orden de Compra'], as_index=False)
+                  .agg(**{
+                      'Items': ('Producto', 'count'),
+                      'Total OC': ('Precio Cliente', 'sum')
+                  })
+                  .sort_values(['Cliente','Orden de Compra'])
+            )
+            resumen_oc.to_excel(writer, sheet_name='Resumen por OC', index=False)
+
         output.seek(0)
-        
-        # Generar nombre de archivo con fecha
-        fecha_actual = datetime.now().strftime('%Y%m%d_%H%M%S')
-        nombre_archivo = f"ventas_export_{fecha_actual}.xlsx"
-        
+        nombre_archivo = f"ventas_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         return StreamingResponse(
             io.BytesIO(output.read()),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
         )
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar Excel: {str(e)}")
     finally:
-        cursor.close()
-        conn.close()
+        cursor.close(); conn.close()
 
 # Agregar estos endpoints al final de ventas.py
 
