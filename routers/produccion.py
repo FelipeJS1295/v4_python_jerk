@@ -134,6 +134,7 @@ def _obtener_resumen_trabajador(conn, filtro: FiltroResumen) -> Dict[str, Any]:
 
         # Query para detalle
         if campo_costo == "precio_reparacion":
+            # Si no existe costo por rol, usa siempre el precio de reparación
             query = """
                 SELECT 
                     p.fecha,
@@ -147,6 +148,7 @@ def _obtener_resumen_trabajador(conn, filtro: FiltroResumen) -> Dict[str, Any]:
                 WHERE p.trabajadores_id = %s
             """
         else:
+            # Si hay costo por rol, aún así respeta reparaciones
             query = f"""
                 SELECT 
                     p.fecha,
@@ -154,7 +156,10 @@ def _obtener_resumen_trabajador(conn, filtro: FiltroResumen) -> Dict[str, Any]:
                     pr.nombre AS producto,
                     p.tipo,
                     p.descripcion,
-                    COALESCE(pr.{campo_costo}, p.precio_reparacion, 0) AS costo
+                    CASE 
+                    WHEN p.tipo = 'reparacion' THEN COALESCE(p.precio_reparacion, 0)
+                    ELSE COALESCE(pr.{campo_costo}, 0)
+                    END AS costo
                 FROM produccion p
                 JOIN productos pr ON p.productos_id = pr.id
                 WHERE p.trabajadores_id = %s
