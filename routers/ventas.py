@@ -803,20 +803,22 @@ async def descargar_excel_ventas(
         if orden:
             filtros.append("vr.numero_orden LIKE %s"); params.append(f"%{orden}%")
         if desde:
-            filtros.append("vr.fecha_entrega >= %s"); params.append(desde)   # mismo criterio que la vista
+            filtros.append("vr.fecha_entrega >= %s"); params.append(desde)
         if hasta:
             filtros.append("vr.fecha_entrega <= %s"); params.append(hasta)
         if estado:
             filtros.append("vr.estado = %s"); params.append(estado)
+
         where_clause = "WHERE " + " AND ".join(filtros) if filtros else ""
 
-        # 👉 Añadimos fecha_entrega como Fecha de Envío
+        # ✅ Agregamos SKU
         query = f"""
             SELECT 
                 c.nombre          AS cliente_nombre,
                 vr.numero_orden   AS numero_orden,
                 vr.fecha_compra   AS fecha_compra,
                 vr.fecha_entrega  AS fecha_envio,
+                vr.sku            AS sku,
                 vr.producto       AS producto,
                 vr.precio_cliente AS precio_cliente
             FROM ventas_retail vr
@@ -826,48 +828,54 @@ async def descargar_excel_ventas(
         """
         cursor.execute(query, params)
         datos = cursor.fetchall()
+
         if not datos:
             raise HTTPException(status_code=404, detail="No se encontraron datos para exportar")
 
         import pandas as pd, io
-        from openpyxl.styles import numbers
 
         df = pd.DataFrame(datos)
 
-        # Columnas “bonitas” (incluye Fecha de Envío)
-        df.columns = ['Cliente', 'Orden de Compra', 'Fecha Compra', 'Fecha Envío', 'Producto', 'Precio Cliente']
+        # ✅ Nuevas columnas “bonitas”
+        df.columns = ['Cliente', 'Orden de Compra', 'Fecha Compra', 'Fecha Envío', 'SKU', 'Producto', 'Precio Cliente']
 
         # Tipos correctos
-        df['Fecha Compra'] = pd.to_datetime(df['Fecha Compra'])
-        df['Fecha Envío']  = pd.to_datetime(df['Fecha Envío'])
-        df['Precio Cliente'] = pd.to_numeric(df['Precio Cliente']).fillna(0)
+        df['Fecha Compra'] = pd.to_datetime(df['Fecha Compra'], errors='coerce')
+        df['Fecha Envío']  = pd.to_datetime(df['Fecha Envío'], errors='coerce')
+        df['Precio Cliente'] = pd.to_numeric(df['Precio Cliente'], errors='coerce').fillna(0)
+        df['SKU'] = df['SKU'].fillna("").astype(str)
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name='Ventas', index=False)
-            wb = writer.book
             ws = writer.sheets['Ventas']
 
             # Map cabeceras -> índice
-            cols = {cell.value: idx+1 for idx, cell in enumerate(ws[1])}
+            cols = {cell.value: idx + 1 for idx, cell in enumerate(ws[1])}
 
             # Formato fechas
             for col_name in ['Fecha Compra', 'Fecha Envío']:
-                for col in ws.iter_cols(min_col=cols[col_name], max_col=cols[col_name],
-                                        min_row=2, max_row=ws.max_row):
-                    for c in col: c.number_format = 'DD/MM/YYYY'
+                for col in ws.iter_cols(
+                    min_col=cols[col_name], max_col=cols[col_name],
+                    min_row=2, max_row=ws.max_row
+                ):
+                    for c in col:
+                        c.number_format = 'DD/MM/YYYY'
 
             # Formato moneda (miles)
-            for col in ws.iter_cols(min_col=cols['Precio Cliente'], max_col=cols['Precio Cliente'],
-                                    min_row=2, max_row=ws.max_row):
-                for c in col: c.number_format = '#,##0'
+            for col in ws.iter_cols(
+                min_col=cols['Precio Cliente'], max_col=cols['Precio Cliente'],
+                min_row=2, max_row=ws.max_row
+            ):
+                for c in col:
+                    c.number_format = '#,##0'
 
             # Auto ancho
             for column_cells in ws.columns:
                 max_len = max(len(str(c.value)) if c.value is not None else 0 for c in column_cells)
                 ws.column_dimensions[column_cells[0].column_letter].width = min(max_len + 2, 60)
 
-            # Resumen por Cliente (conteo + suma real en $)
+            # Resumen por Cliente
             resumen_cliente = (
                 df.groupby('Cliente', as_index=False)
                   .agg(**{
@@ -877,28 +885,32 @@ async def descargar_excel_ventas(
             )
             resumen_cliente.to_excel(writer, sheet_name='Resumen por Cliente', index=False)
 
-            # Resumen por OC (útil para logística/conciliación)
+            # ✅ Resumen por OC (ahora incluye SKU para que no se mezcle todo)
             resumen_oc = (
-                df.groupby(['Cliente','Orden de Compra'], as_index=False)
+                df.groupby(['Cliente', 'Orden de Compra', 'SKU', 'Producto'], as_index=False)
                   .agg(**{
                       'Items': ('Producto', 'count'),
                       'Total OC': ('Precio Cliente', 'sum')
                   })
-                  .sort_values(['Cliente','Orden de Compra'])
+                  .sort_values(['Cliente', 'Orden de Compra'])
             )
             resumen_oc.to_excel(writer, sheet_name='Resumen por OC', index=False)
 
         output.seek(0)
         nombre_archivo = f"ventas_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
         return StreamingResponse(
             io.BytesIO(output.read()),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
         )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar Excel: {str(e)}")
     finally:
-        cursor.close(); conn.close()
+        cursor.close()
+        conn.close()
+
 
 # Agregar estos endpoints al final de ventas.py
 
