@@ -1301,70 +1301,76 @@ async def guardar_venta_manual(venta_data: VentaManualRequest):
         cursor.close()
         conn.close()
 
+def obtener_siguiente_dia_habil(fecha):
+    """Suma días a una fecha saltando Sábados (5) y Domingos (6)"""
+    # weekday() -> 0: Lunes, 1: Martes, ..., 5: Sábado, 6: Domingo
+    if fecha.weekday() == 5: # Si es Sábado
+        return fecha + timedelta(days=2) # Pasa a Lunes
+    if fecha.weekday() == 6: # Si es Domingo
+        return fecha + timedelta(days=1) # Pasa a Lunes
+    return fecha
+
 @router.get("/manifiesto/imprimir", response_class=HTMLResponse)
-async def vista_imprimir_manifiesto(
-    request: Request,
-    cliente: str = "",
-    orden: str = "",
-    desde: str = "",
-    hasta: str = ""
-):
+async def vista_imprimir_manifiesto(request: Request):
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
+    
     hoy = datetime.now().date()
     
-    # Definimos el límite: Pasado Mañana
-    limite_entrega = hoy + timedelta(days=2)
+    # CALCULAMOS LOS 2 SIGUIENTES DÍAS HÁBILES
+    # Día 1 hábil (Mañana o Lunes si hoy es viernes)
+    dia_habil_1 = obtener_siguiente_dia_habil(hoy + timedelta(days=1))
+    
+    # Día 2 hábil (Pasado mañana o Martes si hoy es viernes)
+    dia_habil_2 = obtener_siguiente_dia_habil(dia_habil_1 + timedelta(days=1))
     
     try:
-        # Filtramos hasta pasado mañana
+        # La query ahora busca todo lo menor o igual al segundo día hábil
         query = """
-            SELECT 
-                c.nombre AS cliente, 
-                vr.fecha_entrega, 
-                vr.numero_orden, 
-                vr.producto,
-                vr.courier
+            SELECT c.nombre AS cliente, vr.fecha_entrega, vr.numero_orden, 
+                   vr.producto, vr.courier
             FROM ventas_retail vr
             JOIN clientes c ON vr.cliente_id = c.id
-            WHERE vr.estado = 'nueva' 
-              AND vr.fecha_entrega <= %s
+            WHERE vr.estado = 'nueva' AND vr.fecha_entrega <= %s
             ORDER BY vr.fecha_entrega ASC, vr.courier ASC
         """
-        cursor.execute(query, (limite_entrega,))
+        cursor.execute(query, (dia_habil_2,))
         ventas_raw = cursor.fetchall()
 
         ventas_procesadas = []
         for v in ventas_raw:
-            # Calculamos la diferencia de días
-            diferencia = hoy - v['fecha_entrega']
-            dias_num = diferencia.days
+            fecha_v = v['fecha_entrega']
+            if isinstance(fecha_v, datetime): fecha_v = fecha_v.date()
             
-            # Lógica de etiqueta de atraso:
-            # Si dias_num > 0: es atraso real (días pasados)
-            # Si dias_num == 0: es para hoy
-            # Si dias_num == -1: es para mañana (lo mostramos como pendiente/atraso preventivo)
-            # Si dias_num == -2: es para pasado mañana
+            dias_num = (hoy - fecha_v).days
             
-            if dias_num > 0:
-                etiqueta_atraso = f"{dias_num}d"
-            elif dias_num == 0:
-                etiqueta_atraso = "Hoy"
-            elif dias_num == -1:
-                etiqueta_atraso = "Mañana"
-            elif dias_num == -2:
-                etiqueta_atraso = "P. Mañana"
+            # LÓGICA DE ETIQUETAS DINÁMICAS
+            if fecha_v < hoy:
+                etiqueta = f"{dias_num}d"
+            elif fecha_v == hoy:
+                etiqueta = "Hoy"
+            elif fecha_v == dia_habil_1:
+                # Si dia_habil_1 es Lunes pero hoy es Viernes, dirá "Lunes"
+                etiqueta = "Mañana" if (dia_habil_1 - hoy).days == 1 else dia_habil_1.strftime('%A').capitalize()
+            elif fecha_v == dia_habil_2:
+                etiqueta = "P. Mañana" if (dia_habil_2 - hoy).days <= 2 else dia_habil_2.strftime('%A').capitalize()
             else:
-                etiqueta_atraso = "-"
+                etiqueta = fecha_v.strftime('%d-%m')
+
+            # Traducción simple de días si no usas locales en español
+            dias_esp = {"Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", 
+                        "Thursday": "Jueves", "Friday": "Viernes"}
+            for eng, esp in dias_esp.items():
+                etiqueta = etiqueta.replace(eng, esp)
 
             ventas_procesadas.append({
                 "cliente": v['cliente'],
-                "fecha_entrega": v['fecha_entrega'].strftime('%d-%m-%Y'),
+                "fecha_entrega": fecha_v.strftime('%d-%m-%Y'),
                 "numero_orden": v['numero_orden'],
                 "producto": v['producto'],
                 "courier": v['courier'] or "Por asignar",
-                "dias_atraso": etiqueta_atraso,
-                "es_alerta": dias_num >= 0  # Para resaltar en rojo lo de hoy y atrás
+                "dias_atraso": etiqueta,
+                "es_alerta": fecha_v <= hoy
             })
 
         return templates.TemplateResponse("ventas/manifiesto_print.html", {
@@ -1372,7 +1378,6 @@ async def vista_imprimir_manifiesto(
             "ventas": ventas_procesadas,
             "hoy": hoy.strftime('%d-%m-%Y')
         })
-        
     finally:
         cursor.close()
         conn.close()
