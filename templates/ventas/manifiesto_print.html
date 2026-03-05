@@ -107,11 +107,9 @@
                     <td class="p-2 align-top text-center italic">{{ v.courier }}</td>
                     <td class="p-2 align-top text-center">{{ v.fecha_entrega }}</td>
                     <td class="p-2 align-top text-center">
-                        {% if v.dias_atraso > 0 %}
-                        <span class="font-bold underline">{{ v.dias_atraso }}d</span>
-                        {% else %}
-                        -
-                        {% endif %}
+                        <span class="{% if v.es_alerta %}font-bold underline{% endif %}">
+                            {{ v.dias_atraso }}
+                        </span>
                     </td>
                 </tr>
                 {% endfor %}

@@ -1313,8 +1313,11 @@ async def vista_imprimir_manifiesto(
     cursor = conn.cursor(dictionary=True)
     hoy = datetime.now().date()
     
+    # Definimos el límite: Pasado Mañana
+    limite_entrega = hoy + timedelta(days=2)
+    
     try:
-        # ✅ Agregamos vr.courier a la consulta
+        # Filtramos hasta pasado mañana
         query = """
             SELECT 
                 c.nombre AS cliente, 
@@ -1328,19 +1331,40 @@ async def vista_imprimir_manifiesto(
               AND vr.fecha_entrega <= %s
             ORDER BY vr.fecha_entrega ASC, vr.courier ASC
         """
-        cursor.execute(query, (hoy,))
+        cursor.execute(query, (limite_entrega,))
         ventas_raw = cursor.fetchall()
 
         ventas_procesadas = []
         for v in ventas_raw:
-            atraso = (hoy - v['fecha_entrega']).days
+            # Calculamos la diferencia de días
+            diferencia = hoy - v['fecha_entrega']
+            dias_num = diferencia.days
+            
+            # Lógica de etiqueta de atraso:
+            # Si dias_num > 0: es atraso real (días pasados)
+            # Si dias_num == 0: es para hoy
+            # Si dias_num == -1: es para mañana (lo mostramos como pendiente/atraso preventivo)
+            # Si dias_num == -2: es para pasado mañana
+            
+            if dias_num > 0:
+                etiqueta_atraso = f"{dias_num}d"
+            elif dias_num == 0:
+                etiqueta_atraso = "Hoy"
+            elif dias_num == -1:
+                etiqueta_atraso = "Mañana"
+            elif dias_num == -2:
+                etiqueta_atraso = "P. Mañana"
+            else:
+                etiqueta_atraso = "-"
+
             ventas_procesadas.append({
                 "cliente": v['cliente'],
                 "fecha_entrega": v['fecha_entrega'].strftime('%d-%m-%Y'),
                 "numero_orden": v['numero_orden'],
                 "producto": v['producto'],
-                "courier": v['courier'] or "No asignado", # ✅ Manejo de nulos
-                "dias_atraso": atraso if atraso > 0 else 0
+                "courier": v['courier'] or "Por asignar",
+                "dias_atraso": etiqueta_atraso,
+                "es_alerta": dias_num >= 0  # Para resaltar en rojo lo de hoy y atrás
             })
 
         return templates.TemplateResponse("ventas/manifiesto_print.html", {
