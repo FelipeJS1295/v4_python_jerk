@@ -1300,3 +1300,48 @@ async def guardar_venta_manual(venta_data: VentaManualRequest):
     finally:
         cursor.close()
         conn.close()
+
+@router.get("/manifiesto/imprimir", response_class=HTMLResponse)
+async def vista_imprimir_manifiesto(request: Request):
+    conn = conectar_mysql()
+    cursor = conn.cursor(dictionary=True)
+    hoy = datetime.now().date()
+    
+    try:
+        # Consulta: Solo "nueva" y fecha_entrega <= hoy
+        query = """
+            SELECT 
+                c.nombre AS cliente, 
+                vr.fecha_entrega, 
+                vr.numero_orden, 
+                vr.producto
+            FROM ventas_retail vr
+            JOIN clientes c ON vr.cliente_id = c.id
+            WHERE vr.estado = 'nueva' 
+              AND vr.fecha_entrega <= %s
+            ORDER BY vr.fecha_entrega ASC
+        """
+        cursor.execute(query, (hoy,))
+        ventas_raw = cursor.fetchall()
+
+        # Procesar datos y calcular atraso
+        ventas_procesadas = []
+        for v in ventas_raw:
+            atraso = (hoy - v['fecha_entrega']).days
+            ventas_procesadas.append({
+                "cliente": v['cliente'],
+                "fecha_entrega": v['fecha_entrega'].strftime('%d-%m-%Y'),
+                "numero_orden": v['numero_orden'],
+                "producto": v['producto'],
+                "dias_atraso": atraso if atraso > 0 else 0
+            })
+
+        return templates.TemplateResponse("ventas/manifiesto_print.html", {
+            "request": request,
+            "ventas": ventas_procesadas,
+            "hoy": hoy.strftime('%d-%m-%Y')
+        })
+        
+    finally:
+        cursor.close()
+        conn.close()

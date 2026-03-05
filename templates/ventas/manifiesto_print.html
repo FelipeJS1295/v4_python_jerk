@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Manifiesto de Carga - {{ hoy }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                margin: 0;
+                padding: 20px;
+            }
+
+            table {
+                border: 1px solid black;
+            }
+
+            th,
+            td {
+                border: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-white p-8">
+
+    <div class="flex justify-between items-center mb-6 no-print">
+        <h1 class="text-2xl font-bold text-gray-800">Vista Previa de Manifiesto</h1>
+        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+            🖨️ Imprimir Ahora
+        </button>
+    </div>
+
+    <div class="border-b-2 border-black pb-4 mb-6">
+        <h2 class="text-3xl font-bold uppercase text-center">Manifiesto de Entrega Diaria</h2>
+        <p class="text-center text-gray-600">Fecha de Generación: <strong>{{ hoy }}</strong></p>
+    </div>
+
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="bg-gray-100">
+                <th class="p-3 border">Cliente</th>
+                <th class="p-3 border">Fecha Entrega</th>
+                <th class="p-3 border">N° Orden</th>
+                <th class="p-3 border">Producto</th>
+                <th class="p-3 border text-center">Días de Atraso</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in ventas %}
+            <tr class="{% if v.dias_atraso > 0 %}bg-red-50{% endif %}">
+                <td class="p-3 border font-semibold">{{ v.cliente }}</td>
+                <td class="p-3 border">{{ v.fecha_entrega }}</td>
+                <td class="p-3 border text-sm">{{ v.numero_orden }}</td>
+                <td class="p-3 border">{{ v.producto }}</td>
+                <td class="p-3 border text-center">
+                    {% if v.dias_atraso > 0 %}
+                    <span class="text-red-600 font-bold">+{{ v.dias_atraso }} días</span>
+                    {% else %}
+                    <span class="text-green-600">Al día</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="mt-12 grid grid-cols-2 gap-8 text-center pt-10">
+        <div>
+            <div class="border-t border-black w-48 mx-auto mt-10"></div>
+            <p class="font-bold">Firma Despacho</p>
+        </div>
+        <div>
+            <div class="border-t border-black w-48 mx-auto mt-10"></div>
+            <p class="font-bold">Firma Recepción Bodega</p>
+        </div>
+    </div>
+
+</body>
+
+</html>
