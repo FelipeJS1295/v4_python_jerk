@@ -6,79 +6,137 @@
     <title>Manifiesto de Carga - {{ hoy }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Configuración de página Tamaño Carta */
+        @page {
+            size: letter;
+            margin: 1.5cm;
+            /* Margen estándar de oficina */
+        }
+
         @media print {
             .no-print {
-                display: none;
+                display: none !important;
             }
 
             body {
-                margin: 0;
-                padding: 20px;
+                background-color: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 10pt;
+                /* Fuente más pequeña para que quepa más info */
+            }
+
+            .container-print {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
             table {
-                border: 1px solid black;
+                width: 100% !important;
+                border-collapse: collapse !important;
+                table-layout: auto !important;
             }
 
             th,
             td {
-                border: 1px solid #ddd;
+                padding: 6px 4px !important;
+                /* Espaciado más compacto */
+                border: 1px solid #333 !important;
+                /* Bordes más visibles en impresión */
+                word-wrap: break-word;
             }
+
+            /* Evita que una fila se corte entre dos páginas */
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Estilo para vista previa en pantalla */
+        .container-print {
+            max-width: 21.59cm;
+            /* Ancho real de hoja carta */
+            margin: 20px auto;
+            background: white;
+            padding: 1.5cm;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 
-<body class="bg-white p-8">
+<body class="bg-slate-100">
 
-    <div class="flex justify-between items-center mb-6 no-print">
-        <h1 class="text-2xl font-bold text-gray-800">Vista Previa de Manifiesto</h1>
-        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
-            🖨️ Imprimir Ahora
+    <div class="fixed top-4 right-4 no-print">
+        <button onclick="window.print()"
+            class="bg-amber-600 text-white px-6 py-2 rounded-full shadow-lg hover:bg-amber-700 font-bold flex items-center gap-2">
+            <i class="fas fa-print"></i> 🖨️ IMPRIMIR MANIFIESTO
         </button>
     </div>
 
-    <div class="border-b-2 border-black pb-4 mb-6">
-        <h2 class="text-3xl font-bold uppercase text-center">Manifiesto de Entrega Diaria</h2>
-        <p class="text-center text-gray-600">Fecha de Generación: <strong>{{ hoy }}</strong></p>
-    </div>
-
-    <table class="w-full text-left border-collapse">
-        <thead>
-            <tr class="bg-gray-100">
-                <th class="p-3 border">Cliente</th>
-                <th class="p-3 border">Fecha Entrega</th>
-                <th class="p-3 border">N° Orden</th>
-                <th class="p-3 border">Producto</th>
-                <th class="p-3 border text-center">Días de Atraso</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for v in ventas %}
-            <tr class="{% if v.dias_atraso > 0 %}bg-red-50{% endif %}">
-                <td class="p-3 border font-semibold">{{ v.cliente }}</td>
-                <td class="p-3 border">{{ v.fecha_entrega }}</td>
-                <td class="p-3 border text-sm">{{ v.numero_orden }}</td>
-                <td class="p-3 border">{{ v.producto }}</td>
-                <td class="p-3 border text-center">
-                    {% if v.dias_atraso > 0 %}
-                    <span class="text-red-600 font-bold">+{{ v.dias_atraso }} días</span>
-                    {% else %}
-                    <span class="text-green-600">Al día</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="mt-12 grid grid-cols-2 gap-8 text-center pt-10">
-        <div>
-            <div class="border-t border-black w-48 mx-auto mt-10"></div>
-            <p class="font-bold">Firma Despacho</p>
+    <div class="container-print">
+        <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-4">
+            <div>
+                <h1 class="text-xl font-bold uppercase">Manifiesto de Entrega</h1>
+                <p class="text-sm text-gray-600">Jerkhome Atelier - Logística</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm font-bold">Fecha: {{ hoy }}</p>
+                <p class="text-xs text-gray-500">Documento Interno</p>
+            </div>
         </div>
-        <div>
-            <div class="border-t border-black w-48 mx-auto mt-10"></div>
-            <p class="font-bold">Firma Recepción Bodega</p>
+
+        <table class="w-full text-xs">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="border border-black p-2 text-left w-1/4">Cliente</th>
+                    <th class="border border-black p-2 text-center">N° Orden</th>
+                    <th class="border border-black p-2 text-left w-1/3">Producto</th>
+                    <th class="border border-black p-2 text-center">Entrega</th>
+                    <th class="border border-black p-2 text-center">Atraso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in ventas %}
+                <tr class="border-b border-gray-300">
+                    <td class="p-2 align-top font-medium">{{ v.cliente }}</td>
+                    <td class="p-2 align-top text-center font-mono">{{ v.numero_orden }}</td>
+                    <td class="p-2 align-top">{{ v.producto }}</td>
+                    <td class="p-2 align-top text-center">{{ v.fecha_entrega }}</td>
+                    <td class="p-2 align-top text-center">
+                        {% if v.dias_atraso > 0 %}
+                        <span class="font-bold underline">{{ v.dias_atraso }}d</span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="mt-4 text-xs text-right">
+            <p>Total de entregas programadas: <strong>{{ ventas|length }}</strong></p>
+        </div>
+
+        <div class="mt-16 grid grid-cols-2 gap-20">
+            <div class="text-center">
+                <div class="border-t border-black pt-2">
+                    <p class="text-[10px] font-bold uppercase">Firma Despacho</p>
+                    <p class="text-[9px] text-gray-500">Nombre:</p>
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="border-t border-black pt-2">
+                    <p class="text-[10px] font-bold uppercase">Firma Recepción Bodega</p>
+                    <p class="text-[9px] text-gray-500">Rut:</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-[8px] text-gray-400 text-center uppercase">
+            Copia de control interno - Generado el {{ hoy }}
         </div>
     </div>
 
