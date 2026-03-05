@@ -1302,29 +1302,35 @@ async def guardar_venta_manual(venta_data: VentaManualRequest):
         conn.close()
 
 @router.get("/manifiesto/imprimir", response_class=HTMLResponse)
-async def vista_imprimir_manifiesto(request: Request):
+async def vista_imprimir_manifiesto(
+    request: Request,
+    cliente: str = "",
+    orden: str = "",
+    desde: str = "",
+    hasta: str = ""
+):
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
     hoy = datetime.now().date()
     
     try:
-        # Consulta: Solo "nueva" y fecha_entrega <= hoy
+        # ✅ Agregamos vr.courier a la consulta
         query = """
             SELECT 
                 c.nombre AS cliente, 
                 vr.fecha_entrega, 
                 vr.numero_orden, 
-                vr.producto
+                vr.producto,
+                vr.courier
             FROM ventas_retail vr
             JOIN clientes c ON vr.cliente_id = c.id
             WHERE vr.estado = 'nueva' 
               AND vr.fecha_entrega <= %s
-            ORDER BY vr.fecha_entrega ASC
+            ORDER BY vr.fecha_entrega ASC, vr.courier ASC
         """
         cursor.execute(query, (hoy,))
         ventas_raw = cursor.fetchall()
 
-        # Procesar datos y calcular atraso
         ventas_procesadas = []
         for v in ventas_raw:
             atraso = (hoy - v['fecha_entrega']).days
@@ -1333,6 +1339,7 @@ async def vista_imprimir_manifiesto(request: Request):
                 "fecha_entrega": v['fecha_entrega'].strftime('%d-%m-%Y'),
                 "numero_orden": v['numero_orden'],
                 "producto": v['producto'],
+                "courier": v['courier'] or "No asignado", # ✅ Manejo de nulos
                 "dias_atraso": atraso if atraso > 0 else 0
             })
 
