@@ -45,7 +45,7 @@ from routers.config import usuarios_acciones
 from routers.logistica import devoluciones
 from routers.logistica.bodega import facturas
 from routers.config import productos_base
-from routers.produccion import esqueleteria
+from routers import esqueleteria
 
 # Routers de configuración
 from routers.config import (
