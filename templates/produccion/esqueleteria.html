@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Esqueletería{% endblock %}
+{% block header %}Ingreso de Orden de Trabajo - Esqueletería{% endblock %}
+{% block breadcrumb %}Producción > Esqueletería{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">Órdenes de Trabajo</h2>
+            <p class="text-sm text-slate-500">Registro de producción por esqueletero.</p>
+        </div>
+        <button onclick="abrirModalOT()"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors shadow-sm">
+            <i class="fas fa-plus mr-2"></i> Nueva OT
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Fecha</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Esqueletero</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">OT</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Modelos (Cant)</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Total Pago</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-ot-body" class="divide-y divide-slate-100">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="modalOT" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <h3 class="text-lg font-bold text-slate-800">Registrar Trabajo de Esqueletería</h3>
+            <button onclick="cerrarModalOT()" class="text-slate-400 hover:text-slate-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="formOT" class="p-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha</label>
+                    <input type="date" id="fecha" required
+                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">N° OT</label>
+                    <input type="text" id="ot" required
+                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        placeholder="Ej: 4500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Esqueletero</label>
+                    <select id="esqueletero_id" required
+                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </select>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="flex justify-between items-center">
+                <h4 class="font-bold text-slate-700 italic">Detalle de Modelos</h4>
+                <button type="button" onclick="agregarFilaModelo()"
+                    class="text-indigo-600 hover:text-indigo-800 text-sm font-bold">
+                    <i class="fas fa-plus-circle"></i> Añadir Modelo
+                </button>
+            </div>
+
+            <div id="contenedor-items" class="space-y-3 max-h-60 overflow-y-auto p-1">
+            </div>
+
+            <div class="pt-6 flex space-x-3">
+                <button type="button" onclick="cerrarModalOT()"
+                    class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
+                <button type="submit"
+                    class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-bold">Guardar
+                    Orden</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let listaModelos = []; // Para guardar los productos base
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        await cargarSelects();
+        listarOrdenes();
+
+        document.getElementById('formOT').addEventListener('submit', guardarOrden);
+    });
+
+    async function cargarSelects() {
+        // 1. Cargar Esqueleteros
+        const resE = await fetch('/produccion/esqueleteria/api/esqueleteros');
+        const esqueleteros = await resE.json();
+        const selectE = document.getElementById('esqueletero_id');
+        esqueleteros.forEach(e => selectE.innerHTML += `<option value="${e.id}">${e.nombre}</option>`);
+
+        // 2. Cargar Modelos (Productos Base)
+        const resM = await fetch('/produccion/esqueleteria/api/modelos');
+        listaModelos = await resM.json();
+
+        // Agregar la primera fila por defecto
+        agregarFilaModelo();
+    }
+
+    function agregarFilaModelo() {
+        const contenedor = document.getElementById('contenedor-items');
+        const div = document.createElement('div');
+        div.className = "flex items-center space-x-3 bg-slate-50 p-3 rounded-lg border border-slate-100 item-row";
+
+        let opciones = listaModelos.map(m => `<option value="${m.id}">${m.nombre} ($${m.costo})</option>`).join('');
+
+        div.innerHTML = `
+        <div class="flex-1">
+            <select class="modelo-select w-full px-3 py-2 border rounded-lg outline-none">
+                ${opciones}
+            </select>
+        </div>
+        <div class="w-24">
+            <input type="number" placeholder="Cant." min="1" value="1" class="cantidad-input w-full px-3 py-2 border rounded-lg outline-none text-center">
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+        contenedor.appendChild(div);
+    }
+
+    async function listarOrdenes() {
+        const res = await fetch('/produccion/esqueleteria/api/listado');
+        const data = await res.json();
+        const tbody = document.getElementById('tabla-ot-body');
+        tbody.innerHTML = '';
+
+        data.forEach(o => {
+            const total = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(o.total_orden);
+            tbody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-6 py-4 text-sm text-slate-600">${o.fecha}</td>
+                <td class="px-6 py-4 text-sm font-bold text-slate-800">${o.esqueletero}</td>
+                <td class="px-6 py-4 text-sm font-mono text-indigo-600">OT-${o.ot}</td>
+                <td class="px-6 py-4 text-sm text-slate-600">${o.modelos}</td>
+                <td class="px-6 py-4 text-sm font-bold text-green-600">${total}</td>
+                <td class="px-6 py-4 text-center">
+                    <button class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+        });
+    }
+
+    function abrirModalOT() {
+        document.getElementById('formOT').reset();
+        document.getElementById('contenedor-items').innerHTML = '';
+        agregarFilaModelo();
+        document.getElementById('modalOT').classList.remove('hidden');
+    }
+
+    function cerrarModalOT() {
+        document.getElementById('modalOT').classList.add('hidden');
+    }
+
+    async function guardarOrden(e) {
+        e.preventDefault();
+
+        const items = [];
+        document.querySelectorAll('.item-row').forEach(row => {
+            items.push({
+                modelo_id: parseInt(row.querySelector('.modelo-select').value),
+                cantidad: parseInt(row.querySelector('.cantidad-input').value)
+            });
+        });
+
+        const payload = {
+            fecha: document.getElementById('fecha').value,
+            ot: document.getElementById('ot').value,
+            esqueletero_id: parseInt(document.getElementById('esqueletero_id').value),
+            items: items
+        };
+
+        const res = await fetch('/produccion/esqueleteria/api/guardar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            cerrarModalOT();
+            listarOrdenes();
+        } else {
+            alert("Error al guardar la orden");
+        }
+    }
+</script>
+{% endblock %}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -154,7 +155,7 @@
       visibility: hidden;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     .mobile-overlay.active {
       opacity: 1;
       visibility: visible;
@@ -165,7 +166,7 @@
       transform: translateX(-100%);
       transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     .sidebar-mobile.active {
       transform: translateX(0);
     }
@@ -216,18 +217,21 @@
     }
   </style>
 </head>
+
 <body class="flex h-screen bg-slate-50 text-slate-700">
 
   <!-- Overlay para cerrar menú en móvil -->
   <div id="mobileOverlay" class="mobile-overlay md:hidden" onclick="closeMobileMenu()"></div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-80 sidebar flex flex-col fixed md:relative z-50 h-full sidebar-mobile md:flex md:transform-none">
+  <aside id="sidebar"
+    class="w-80 sidebar flex flex-col fixed md:relative z-50 h-full sidebar-mobile md:flex md:transform-none">
     <!-- Logo Area -->
     <div class="logo-area p-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div
+            class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
             <span class="text-white font-bold text-xl">JH</span>
           </div>
           <div>
@@ -236,70 +240,102 @@
           </div>
         </div>
         <!-- Botón cerrar en móvil -->
-        <button onclick="closeMobileMenu()" class="md:hidden p-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition-colors">
+        <button onclick="closeMobileMenu()"
+          class="md:hidden p-2 hover:bg-white hover:bg-opacity-10 rounded-lg transition-colors">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
     </div>
-    
+
     <!-- Navigation -->
     <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
       <a href="/" class="nav-item flex items-center space-x-4 px-4 py-3 rounded-xl text-white font-medium">
         <i class="fas fa-chart-line nav-icon"></i>
         <span>Dashboard</span>
       </a>
-      
+
       <!-- Menú de Ventas -->
       <div class="nav-item">
-        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
-                onclick="toggleSubmenu('ventas-submenu', 'ventas-arrow')">
+        <button
+          class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors"
+          onclick="toggleSubmenu('ventas-submenu', 'ventas-arrow')">
           <div class="flex items-center space-x-4">
             <i class="fas fa-shopping-cart nav-icon"></i>
             <span>Ventas</span>
           </div>
-          <svg class="w-4 h-4 transition-transform duration-300" id="ventas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          <svg class="w-4 h-4 transition-transform duration-300" id="ventas-arrow" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        
+
         <div id="ventas-submenu" class="hidden mt-2 space-y-1">
-          <a href="/ventas/vista" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/ventas/vista"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-list w-4 h-4"></i>
             <span>Lista de Ventas</span>
           </a>
-          <a href="/ventas/maestra" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/ventas/maestra"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-table w-4 h-4"></i>
             <span>Maestra</span>
           </a>
         </div>
       </div>
-      
-      <a href="/produccion" class="nav-item flex items-center space-x-4 px-4 py-3 rounded-xl text-white font-medium">
-        <i class="fas fa-industry nav-icon"></i>
-        <span>Producción</span>
-      </a>
+
+      <div class="nav-item">
+        <button
+          class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors"
+          onclick="toggleSubmenu('produccion-submenu', 'produccion-arrow')">
+          <div class="flex items-center space-x-4">
+            <i class="fas fa-industry nav-icon"></i>
+            <span>Producción</span>
+          </div>
+          <svg class="w-4 h-4 transition-transform duration-300" id="produccion-arrow" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <div id="produccion-submenu" class="hidden mt-2 space-y-1">
+          <a href="/produccion"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-tasks w-4 h-4"></i>
+            <span>Panel de Producción</span>
+          </a>
+          <a href="/produccion/esqueleteria"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-couch w-4 h-4"></i>
+            <span>Esqueletería</span>
+          </a>
+        </div>
+      </div>
 
       <!-- Menú de Liquidaciones -->
       <div class="nav-item">
-        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
-                onclick="toggleSubmenu('liquidaciones-submenu', 'liquidaciones-arrow')">
+        <button
+          class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors"
+          onclick="toggleSubmenu('liquidaciones-submenu', 'liquidaciones-arrow')">
           <div class="flex items-center space-x-4">
             <i class="fas fa-receipt nav-icon"></i>
             <span>Liquidaciones</span>
           </div>
-          <svg class="w-4 h-4 transition-transform duration-300" id="liquidaciones-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          <svg class="w-4 h-4 transition-transform duration-300" id="liquidaciones-arrow" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         <div id="liquidaciones-submenu" class="hidden mt-2 space-y-1">
-          <a href="/liquidaciones" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/liquidaciones"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-list-alt w-4 h-4"></i>
             <span>Gestión de Órdenes</span>
           </a>
-          <a href="/liquidaciones/resumen/" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/liquidaciones/resumen/"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-chart-bar w-4 h-4"></i>
             <span>Liquidaciones</span>
           </a>
@@ -308,23 +344,27 @@
 
       <!-- Menú de Logística -->
       <div class="nav-item">
-        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
-                onclick="toggleSubmenu('logistica-submenu', 'logistica-arrow')">
+        <button
+          class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors"
+          onclick="toggleSubmenu('logistica-submenu', 'logistica-arrow')">
           <div class="flex items-center space-x-4">
             <i class="fas fa-truck nav-icon"></i>
             <span>Logística</span>
           </div>
-          <svg class="w-4 h-4 transition-transform duration-300" id="logistica-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          <svg class="w-4 h-4 transition-transform duration-300" id="logistica-arrow" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         <div id="logistica-submenu" class="hidden mt-2 space-y-1">
-          <a href="/logistica/devoluciones" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/logistica/devoluciones"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-undo w-4 h-4"></i>
             <span>Devoluciones</span>
           </a>
-          <a href="/bodega/facturas" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/bodega/facturas"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-file-invoice w-4 h-4"></i>
             <span>Facturas de Compra</span>
           </a>
@@ -333,29 +373,33 @@
 
       <!-- Menú de Finanzas -->
       <div class="nav-item">
-        <button class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors" 
-                onclick="toggleSubmenu('finanzas-submenu', 'finanzas-arrow')">
+        <button
+          class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors"
+          onclick="toggleSubmenu('finanzas-submenu', 'finanzas-arrow')">
           <div class="flex items-center space-x-4">
             <i class="fas fa-chart-pie nav-icon"></i>
             <span>Finanzas</span>
           </div>
-          <svg class="w-4 h-4 transition-transform duration-300" id="finanzas-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          <svg class="w-4 h-4 transition-transform duration-300" id="finanzas-arrow" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
 
         <div id="finanzas-submenu" class="hidden mt-2 space-y-1">
-          <a href="/finanzas" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/finanzas"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-file-invoice-dollar w-4 h-4"></i>
             <span>Facturas</span>
           </a>
-          <a href="/finanzas/cheques" class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+          <a href="/finanzas/cheques"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
             <i class="fas fa-money-check-alt w-4 h-4"></i>
             <span>Cheques</span>
           </a>
         </div>
       </div>
-      
+
       <a href="/configuracion" class="nav-item flex items-center space-x-4 px-4 py-3 rounded-xl text-white font-medium">
         <i class="fas fa-cog nav-icon"></i>
         <span>Configuración</span>
@@ -366,12 +410,13 @@
         <span>Cámaras de Seguridad</span>
       </a>
     </nav>
-    
+
     <!-- User Section -->
     <div class="user-section p-4">
       <div class="flex items-center justify-between px-4 py-4">
         <div class="flex items-center space-x-3 flex-1 min-w-0">
-          <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+          <div
+            class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
             <i class="fas fa-user text-white"></i>
           </div>
           <div class="flex-1 min-w-0">
@@ -379,12 +424,10 @@
             <p class="text-xs text-slate-300 truncate" id="usuario-email">admin@jerkhome.com</p>
           </div>
         </div>
-        
-        <button 
-          onclick="logout()" 
+
+        <button onclick="logout()"
           class="ml-3 p-2 text-slate-300 hover:text-red-400 hover:bg-red-500 hover:bg-opacity-10 rounded-lg transition-all duration-200 group"
-          title="Cerrar Sesión"
-        >
+          title="Cerrar Sesión">
           <i class="fas fa-sign-out-alt group-hover:scale-110 transition-transform"></i>
         </button>
       </div>
@@ -393,16 +436,17 @@
 
   <!-- Mobile Menu Button -->
   <div class="md:hidden fixed top-4 left-4 z-50">
-    <button onclick="toggleMobileMenu()" class="mobile-menu-btn p-3 rounded-xl hover:bg-white transition-all duration-200">
+    <button onclick="toggleMobileMenu()"
+      class="mobile-menu-btn p-3 rounded-xl hover:bg-white transition-all duration-200">
       <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
       </svg>
     </button>
   </div>
 
   <!-- Main Container -->
   <div class="flex-1 flex flex-col min-w-0">
-    
+
     <!-- Header -->
     <header class="main-header px-6 py-4">
       <div class="flex justify-between items-center">
@@ -413,42 +457,37 @@
             <p class="breadcrumb mt-1">{% block breadcrumb %}Inicio{% endblock %}</p>
           </div>
         </div>
-        
+
         <div class="flex items-center space-x-4">
           <!-- Search -->
           <div class="relative hidden sm:block">
-            <input 
-              type="text" 
-              placeholder="Buscar en el sistema..." 
-              class="search-input w-80 pl-12 pr-4 py-3 rounded-xl text-sm focus:outline-none transition-all duration-300"
-            />
+            <input type="text" placeholder="Buscar en el sistema..."
+              class="search-input w-80 pl-12 pr-4 py-3 rounded-xl text-sm focus:outline-none transition-all duration-300" />
             <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
           </div>
-          
+
           <!-- User Info (Mobile) -->
           <div class="md:hidden flex items-center space-x-3">
             <span class="text-sm font-medium text-slate-700" id="usuario-nombre-mobile">Admin</span>
-            <button 
-              onclick="logout()" 
+            <button onclick="logout()"
               class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Cerrar Sesión"
-            >
+              title="Cerrar Sesión">
               <i class="fas fa-sign-out-alt"></i>
             </button>
           </div>
-          
+
           <!-- Action Buttons (Desktop) -->
           <div class="hidden md:flex items-center space-x-2">
             <button class="btn-secondary p-3 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
               <i class="fas fa-bell"></i>
             </button>
-            
+
             <button class="btn-secondary p-3 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
               <i class="fas fa-envelope"></i>
             </button>
-            
+
             <div class="w-px h-8 bg-slate-200 mx-2"></div>
-            
+
             <button class="btn-secondary p-3 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
               <i class="fas fa-cog"></i>
             </button>
@@ -463,11 +502,13 @@
         {% block content %}
         <div class="content-card rounded-2xl p-8">
           <div class="text-center py-12">
-            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+            <div
+              class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center">
               <i class="fas fa-chart-line text-2xl text-white"></i>
             </div>
             <h2 class="text-2xl font-bold text-slate-800 mb-4">Bienvenido al Panel Administrativo</h2>
-            <p class="text-slate-600 max-w-lg mx-auto">Gestiona tu negocio de manera eficiente con nuestras herramientas empresariales integradas.</p>
+            <p class="text-slate-600 max-w-lg mx-auto">Gestiona tu negocio de manera eficiente con nuestras herramientas
+              empresariales integradas.</p>
           </div>
         </div>
         {% endblock %}
@@ -481,7 +522,7 @@
     function toggleMobileMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('mobileOverlay');
-      
+
       if (mobileMenuOpen) {
         closeMobileMenu();
       } else {
@@ -492,7 +533,7 @@
     function openMobileMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('mobileOverlay');
-      
+
       sidebar.classList.add('active');
       overlay.classList.add('active');
       mobileMenuOpen = true;
@@ -502,14 +543,14 @@
     function closeMobileMenu() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('mobileOverlay');
-      
+
       sidebar.classList.remove('active');
       overlay.classList.remove('active');
       mobileMenuOpen = false;
       document.body.style.overflow = 'auto';
     }
 
-    window.addEventListener('resize', function() {
+    window.addEventListener('resize', function () {
       if (window.innerWidth >= 768 && mobileMenuOpen) {
         closeMobileMenu();
       }
@@ -523,7 +564,7 @@
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (response.ok) {
           localStorage.clear();
           sessionStorage.clear();
@@ -541,7 +582,7 @@
     function toggleSubmenu(submenuId, arrowId) {
       const submenu = document.getElementById(submenuId);
       const arrow = document.getElementById(arrowId);
-      
+
       if (submenu.classList.contains('hidden')) {
         submenu.classList.remove('hidden');
         if (arrow) {
@@ -555,7 +596,7 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       fetch('/usuarios/verificar-sesion')
         .then(response => response.json())
         .then(data => {
@@ -563,7 +604,7 @@
             const nombreElement = document.getElementById('usuario-nombre');
             const emailElement = document.getElementById('usuario-email');
             const nombreMobileElement = document.getElementById('usuario-nombre-mobile');
-            
+
             if (nombreElement) nombreElement.textContent = data.usuario.nombre_usuario;
             if (emailElement) emailElement.textContent = data.usuario.email || 'admin@jerkhome.com';
             if (nombreMobileElement) nombreMobileElement.textContent = data.usuario.nombre_usuario;
@@ -575,12 +616,12 @@
         });
 
       const currentPath = window.location.pathname;
-      
+
       // Mantener submenús abiertos según la ruta actual
       if (currentPath.startsWith('/ventas/')) {
         const ventasSubmenu = document.getElementById('ventas-submenu');
         const ventasArrow = document.getElementById('ventas-arrow');
-        
+
         if (ventasSubmenu && ventasArrow) {
           ventasSubmenu.classList.remove('hidden');
           ventasArrow.style.transform = 'rotate(180deg)';
@@ -590,7 +631,7 @@
       if (currentPath.startsWith('/liquidaciones/')) {
         const liquidacionesSubmenu = document.getElementById('liquidaciones-submenu');
         const liquidacionesArrow = document.getElementById('liquidaciones-arrow');
-        
+
         if (liquidacionesSubmenu && liquidacionesArrow) {
           liquidacionesSubmenu.classList.remove('hidden');
           liquidacionesArrow.style.transform = 'rotate(180deg)';
@@ -600,7 +641,7 @@
       if (currentPath.startsWith('/finanzas/')) {
         const finanzasSubmenu = document.getElementById('finanzas-submenu');
         const finanzasArrow = document.getElementById('finanzas-arrow');
-        
+
         if (finanzasSubmenu && finanzasArrow) {
           finanzasSubmenu.classList.remove('hidden');
           finanzasArrow.style.transform = 'rotate(180deg)';
@@ -610,7 +651,7 @@
       if (currentPath.startsWith('/logistica/')) {
         const logisticaSubmenu = document.getElementById('logistica-submenu');
         const logisticaArrow = document.getElementById('logistica-arrow');
-        
+
         if (logisticaSubmenu && logisticaArrow) {
           logisticaSubmenu.classList.remove('hidden');
           logisticaArrow.style.transform = 'rotate(180deg)';
@@ -626,4 +667,5 @@
   </script>
 
 </body>
+
 </html>

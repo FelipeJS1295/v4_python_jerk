@@ -45,6 +45,7 @@ from routers.config import usuarios_acciones
 from routers.logistica import devoluciones
 from routers.logistica.bodega import facturas
 from routers.config import productos_base
+from routers.produccion import esqueleteria
 
 # Routers de configuración
 from routers.config import (
@@ -211,3 +212,4 @@ app.include_router(paris.router)
 app.include_router(resumen_liquidacion.router)
 
 app.include_router(productos_base.router)
+app.include_router(esqueleteria.router)
