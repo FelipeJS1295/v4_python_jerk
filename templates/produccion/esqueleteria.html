@@ -166,37 +166,52 @@
     }
 
     function filtrarYMostrar() {
-        const esqueletero = document.getElementById('filtro_esqueletero').value;
+        const esqueleteroIdFiltro = document.getElementById('filtro_esqueletero').value;
         const desde = document.getElementById('filtro_desde').value;
         const hasta = document.getElementById('filtro_hasta').value;
-        const ot = document.getElementById('filtro_ot').value.toLowerCase();
+        const otBusqueda = document.getElementById('filtro_ot').value.toLowerCase();
 
         const filtradas = todasLasOrdenes.filter(o => {
-            const matchE = esqueletero === "" || o.esqueletero_id == esqueletero;
-            const matchOT = o.ot.toLowerCase().includes(ot);
-            const fechaO = o.fecha.split('-').reverse().join('-'); // Convierte DD-MM-YYYY a YYYY-MM-DD
-            const matchDesde = desde === "" || fechaO >= desde;
-            const matchHasta = hasta === "" || fechaO <= hasta;
+            // Filtro por Trabajador (Importante: o.esqueletero_id debe existir en el JSON)
+            const matchE = esqueleteroIdFiltro === "" || String(o.esqueletero_id) === String(esqueleteroIdFiltro);
+
+            // Filtro por OT
+            const matchOT = o.ot.toLowerCase().includes(otBusqueda);
+
+            // Filtro por Fechas
+            const fechaOrden = o.fecha.split('-').reverse().join('-'); // Convierte DD-MM-YYYY a YYYY-MM-DD
+            const matchDesde = desde === "" || fechaOrden >= desde;
+            const matchHasta = hasta === "" || fechaOrden <= hasta;
+
             return matchE && matchOT && matchDesde && matchHasta;
         });
 
+        renderizarTabla(filtradas);
+    }
+
+    function renderizarTabla(lista) {
         const tbody = document.getElementById('tabla-ot-body');
         tbody.innerHTML = '';
 
-        filtradas.forEach(o => {
+        if (lista.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-10 text-center text-slate-400">No se encontraron registros con los filtros seleccionados.</td></tr>';
+            return;
+        }
+
+        lista.forEach(o => {
             const total = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(o.total_orden);
             tbody.innerHTML += `
-                <tr class="hover:bg-slate-50">
-                    <td class="px-6 py-4 text-sm">${o.fecha}</td>
-                    <td class="px-6 py-4 text-sm font-bold">${o.esqueletero}</td>
-                    <td class="px-6 py-4 text-sm font-mono text-indigo-600">OT-${o.ot}</td>
-                    <td class="px-6 py-4 text-sm">${o.modelos}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-green-600">${total}</td>
-                    <td class="px-6 py-4 text-center space-x-2">
-                        <button onclick="verDetalle(${o.id})" class="text-blue-500 hover:text-blue-700" title="Ver Detalle"><i class="fas fa-eye"></i></button>
-                        <button onclick="eliminarOT(${o.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
+            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                <td class="px-6 py-4 text-sm text-slate-600">${o.fecha}</td>
+                <td class="px-6 py-4 text-sm font-bold text-slate-800">${o.esqueletero}</td>
+                <td class="px-6 py-4 text-sm font-mono text-indigo-600">OT-${o.ot}</td>
+                <td class="px-6 py-4 text-sm text-slate-600">${o.modelos}</td>
+                <td class="px-6 py-4 text-sm font-bold text-green-600">${total}</td>
+                <td class="px-6 py-4 text-center space-x-2">
+                    <button onclick="verDetalle(${o.id})" class="text-blue-500 hover:text-blue-700"><i class="fas fa-eye"></i></button>
+                    <button onclick="eliminarOT(${o.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
         });
     }
 

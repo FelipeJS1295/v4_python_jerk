@@ -59,8 +59,14 @@ def listar_ordenes():
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
     query = """
-        SELECT o.id, DATE_FORMAT(o.fecha, '%d-%m-%Y') as fecha, o.ot, u.nombre_usuario as esqueletero, o.total_orden,
-        GROUP_CONCAT(CONCAT(p.nombre, ' (', d.cantidad, ')') SEPARATOR ', ') as modelos
+        SELECT 
+            o.id, 
+            DATE_FORMAT(o.fecha, '%d-%m-%Y') as fecha, 
+            o.ot, 
+            u.id as esqueletero_id, -- AGREGAR ESTA LÍNEA
+            u.nombre_usuario as esqueletero, 
+            o.total_orden,
+            GROUP_CONCAT(CONCAT(p.nombre, ' (', d.cantidad, ')') SEPARATOR ', ') as modelos
         FROM esqueleteria_ordenes o
         JOIN users u ON o.esqueletero_id = u.id
         JOIN esqueleteria_detalle d ON o.id = d.orden_id
