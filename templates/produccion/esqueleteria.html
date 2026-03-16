@@ -1,20 +1,53 @@
 {% extends "base.html" %}
 
 {% block title %}Esqueletería{% endblock %}
-{% block header %}Ingreso de Orden de Trabajo - Esqueletería{% endblock %}
+{% block header %}Gestión de Esqueletería{% endblock %}
 {% block breadcrumb %}Producción > Esqueletería{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-    <div class="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <div>
-            <h2 class="text-xl font-bold text-slate-800">Órdenes de Trabajo</h2>
-            <p class="text-sm text-slate-500">Registro de producción por esqueletero.</p>
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">Órdenes de Trabajo</h2>
+                <p class="text-sm text-slate-500">Filtrar y gestionar la producción de esqueletería.</p>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="imprimirResumen()"
+                    class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg flex items-center transition-colors shadow-sm text-sm">
+                    <i class="fas fa-print mr-2"></i> Imprimir Resumen
+                </button>
+                <button onclick="abrirModalOT()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors shadow-sm text-sm font-bold">
+                    <i class="fas fa-plus mr-2"></i> Nueva OT
+                </button>
+            </div>
         </div>
-        <button onclick="abrirModalOT()"
-            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors shadow-sm">
-            <i class="fas fa-plus mr-2"></i> Nueva OT
-        </button>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Esqueletero</label>
+                <select id="filtro_esqueletero" onchange="listarOrdenes()"
+                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+                    <option value="">Todos los trabajadores</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Desde</label>
+                <input type="date" id="filtro_desde" onchange="listarOrdenes()"
+                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hasta</label>
+                <input type="date" id="filtro_hasta" onchange="listarOrdenes()"
+                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">N° OT</label>
+                <input type="text" id="filtro_ot" onkeyup="listarOrdenes()" placeholder="Buscar OT..."
+                    class="w-full px-3 py-2 border rounded-lg text-sm outline-none">
+            </div>
+        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -25,7 +58,7 @@
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Esqueletero</th>
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">OT</th>
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Modelos (Cant)</th>
-                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Total Pago</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Total</th>
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-center">Acciones</th>
                 </tr>
             </thead>
@@ -36,129 +69,157 @@
 </div>
 
 <div id="modalOT" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-            <h3 class="text-lg font-bold text-slate-800">Registrar Trabajo de Esqueletería</h3>
-            <button onclick="cerrarModalOT()" class="text-slate-400 hover:text-slate-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
+            <h3 class="text-lg font-bold text-slate-800">Registrar Trabajo</h3>
+            <button onclick="cerrarModalOT()" class="text-slate-400 hover:text-slate-600"><i
+                    class="fas fa-times text-xl"></i></button>
         </div>
-
         <form id="formOT" class="p-6 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha</label>
-                    <input type="date" id="fecha" required
-                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="date" id="fecha" required class="w-full px-3 py-2 border rounded-lg outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1">N° OT</label>
-                    <input type="text" id="ot" required
-                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    <input type="text" id="ot" required class="w-full px-3 py-2 border rounded-lg outline-none"
                         placeholder="Ej: 4500">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Esqueletero</label>
                     <select id="esqueletero_id" required
-                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </select>
+                        class="w-full px-3 py-2 border rounded-lg outline-none"></select>
                 </div>
             </div>
-
-            <hr class="my-4">
-
-            <div class="flex justify-between items-center">
-                <h4 class="font-bold text-slate-700 italic">Detalle de Modelos</h4>
-                <button type="button" onclick="agregarFilaModelo()"
-                    class="text-indigo-600 hover:text-indigo-800 text-sm font-bold">
-                    <i class="fas fa-plus-circle"></i> Añadir Modelo
-                </button>
+            <div class="flex justify-between items-center pt-4">
+                <h4 class="font-bold text-slate-700">Modelos Realizados</h4>
+                <button type="button" onclick="agregarFilaModelo()" class="text-indigo-600 text-sm font-bold">+
+                    Añadir</button>
             </div>
-
-            <div id="contenedor-items" class="space-y-3 max-h-60 overflow-y-auto p-1">
-            </div>
-
+            <div id="contenedor-items" class="space-y-3 max-h-60 overflow-y-auto"></div>
             <div class="pt-6 flex space-x-3">
                 <button type="button" onclick="cerrarModalOT()"
-                    class="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">Cancelar</button>
-                <button type="submit"
-                    class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-bold">Guardar
+                    class="flex-1 py-2 border rounded-lg text-slate-600">Cancelar</button>
+                <button type="submit" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-bold">Guardar
                     Orden</button>
             </div>
         </form>
     </div>
 </div>
 
+<div id="modalDetalle"
+    class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-lg font-bold text-slate-800">Detalle de OT</h3>
+            <button onclick="cerrarModalDetalle()" class="text-slate-400"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="contenido-detalle" class="p-6 space-y-4">
+        </div>
+    </div>
+</div>
+
 <script>
-    let listaModelos = []; // Para guardar los productos base
+    let listaModelos = [];
+    let todasLasOrdenes = [];
 
     document.addEventListener('DOMContentLoaded', async function () {
         await cargarSelects();
         listarOrdenes();
-
         document.getElementById('formOT').addEventListener('submit', guardarOrden);
     });
 
     async function cargarSelects() {
-        // 1. Cargar Esqueleteros
         const resE = await fetch('/produccion/esqueleteria/api/esqueleteros');
         const esqueleteros = await resE.json();
         const selectE = document.getElementById('esqueletero_id');
-        esqueleteros.forEach(e => selectE.innerHTML += `<option value="${e.id}">${e.nombre}</option>`);
+        const filtroE = document.getElementById('filtro_esqueletero');
 
-        // 2. Cargar Modelos (Productos Base)
+        esqueleteros.forEach(e => {
+            const opt = `<option value="${e.id}">${e.nombre}</option>`;
+            selectE.innerHTML += opt;
+            filtroE.innerHTML += opt;
+        });
+
         const resM = await fetch('/produccion/esqueleteria/api/modelos');
         listaModelos = await resM.json();
-
-        // Agregar la primera fila por defecto
         agregarFilaModelo();
     }
 
     function agregarFilaModelo() {
         const contenedor = document.getElementById('contenedor-items');
         const div = document.createElement('div');
-        div.className = "flex items-center space-x-3 bg-slate-50 p-3 rounded-lg border border-slate-100 item-row";
-
+        div.className = "flex items-center space-x-3 bg-slate-50 p-3 rounded-lg border item-row";
         let opciones = listaModelos.map(m => `<option value="${m.id}">${m.nombre} ($${m.costo})</option>`).join('');
-
         div.innerHTML = `
-        <div class="flex-1">
-            <select class="modelo-select w-full px-3 py-2 border rounded-lg outline-none">
-                ${opciones}
-            </select>
-        </div>
-        <div class="w-24">
-            <input type="number" placeholder="Cant." min="1" value="1" class="cantidad-input w-full px-3 py-2 border rounded-lg outline-none text-center">
-        </div>
-        <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600">
-            <i class="fas fa-trash"></i>
-        </button>
-    `;
+            <div class="flex-1"><select class="modelo-select w-full px-3 py-2 border rounded-lg text-sm">${opciones}</select></div>
+            <div class="w-20"><input type="number" min="1" value="1" class="cantidad-input w-full px-3 py-2 border rounded-lg text-sm text-center"></div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-red-400"><i class="fas fa-trash"></i></button>`;
         contenedor.appendChild(div);
     }
 
     async function listarOrdenes() {
         const res = await fetch('/produccion/esqueleteria/api/listado');
-        const data = await res.json();
+        todasLasOrdenes = await res.json();
+        filtrarYMostrar();
+    }
+
+    function filtrarYMostrar() {
+        const esqueletero = document.getElementById('filtro_esqueletero').value;
+        const desde = document.getElementById('filtro_desde').value;
+        const hasta = document.getElementById('filtro_hasta').value;
+        const ot = document.getElementById('filtro_ot').value.toLowerCase();
+
+        const filtradas = todasLasOrdenes.filter(o => {
+            const matchE = esqueletero === "" || o.esqueletero_id == esqueletero;
+            const matchOT = o.ot.toLowerCase().includes(ot);
+            const fechaO = o.fecha.split('-').reverse().join('-'); // Convierte DD-MM-YYYY a YYYY-MM-DD
+            const matchDesde = desde === "" || fechaO >= desde;
+            const matchHasta = hasta === "" || fechaO <= hasta;
+            return matchE && matchOT && matchDesde && matchHasta;
+        });
+
         const tbody = document.getElementById('tabla-ot-body');
         tbody.innerHTML = '';
 
-        data.forEach(o => {
+        filtradas.forEach(o => {
             const total = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(o.total_orden);
             tbody.innerHTML += `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="px-6 py-4 text-sm text-slate-600">${o.fecha}</td>
-                <td class="px-6 py-4 text-sm font-bold text-slate-800">${o.esqueletero}</td>
-                <td class="px-6 py-4 text-sm font-mono text-indigo-600">OT-${o.ot}</td>
-                <td class="px-6 py-4 text-sm text-slate-600">${o.modelos}</td>
-                <td class="px-6 py-4 text-sm font-bold text-green-600">${total}</td>
-                <td class="px-6 py-4 text-center">
-                    <button class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>
-        `;
+                <tr class="hover:bg-slate-50">
+                    <td class="px-6 py-4 text-sm">${o.fecha}</td>
+                    <td class="px-6 py-4 text-sm font-bold">${o.esqueletero}</td>
+                    <td class="px-6 py-4 text-sm font-mono text-indigo-600">OT-${o.ot}</td>
+                    <td class="px-6 py-4 text-sm">${o.modelos}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-green-600">${total}</td>
+                    <td class="px-6 py-4 text-center space-x-2">
+                        <button onclick="verDetalle(${o.id})" class="text-blue-500 hover:text-blue-700" title="Ver Detalle"><i class="fas fa-eye"></i></button>
+                        <button onclick="eliminarOT(${o.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
         });
     }
+
+    async function verDetalle(id) {
+        // En un sistema real, aquí llamarías a un endpoint de detalle. 
+        // Para este ejemplo, buscamos en el objeto local.
+        const orden = todasLasOrdenes.find(o => o.id === id);
+        const contenedor = document.getElementById('contenido-detalle');
+        contenedor.innerHTML = `
+            <div class="space-y-2">
+                <p><strong>Trabajador:</strong> ${orden.esqueletero}</p>
+                <p><strong>N° OT:</strong> ${orden.ot}</p>
+                <p><strong>Fecha:</strong> ${orden.fecha}</p>
+                <div class="border-t pt-2 mt-2">
+                    <p class="font-bold mb-2">Modelos:</p>
+                    <ul class="text-sm bg-slate-50 p-3 rounded-lg">${orden.modelos.split(',').map(m => `<li>• ${m}</li>`).join('')}</ul>
+                </div>
+                <p class="text-xl font-bold text-green-600 pt-2 text-right">Total: ${new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(orden.total_orden)}</p>
+            </div>`;
+        document.getElementById('modalDetalle').classList.remove('hidden');
+    }
+
+    function cerrarModalDetalle() { document.getElementById('modalDetalle').classList.add('hidden'); }
 
     function abrirModalOT() {
         document.getElementById('formOT').reset();
@@ -167,13 +228,10 @@
         document.getElementById('modalOT').classList.remove('hidden');
     }
 
-    function cerrarModalOT() {
-        document.getElementById('modalOT').classList.add('hidden');
-    }
+    function cerrarModalOT() { document.getElementById('modalOT').classList.add('hidden'); }
 
     async function guardarOrden(e) {
         e.preventDefault();
-
         const items = [];
         document.querySelectorAll('.item-row').forEach(row => {
             items.push({
@@ -195,12 +253,53 @@
             body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
-            cerrarModalOT();
-            listarOrdenes();
-        } else {
-            alert("Error al guardar la orden");
-        }
+        if (res.ok) { cerrarModalOT(); listarOrdenes(); }
+    }
+
+    function imprimirResumen() {
+        const esqueletero = document.getElementById('filtro_esqueletero').options[document.getElementById('filtro_esqueletero').selectedIndex].text;
+        const idEsqueletero = document.getElementById('filtro_esqueletero').value;
+        if (!idEsqueletero) { alert("Por favor seleccione un esqueletero para imprimir su resumen."); return; }
+
+        const filtradas = todasLasOrdenes.filter(o => {
+            const matchE = o.esqueletero_id == idEsqueletero;
+            const fechaO = o.fecha.split('-').reverse().join('-');
+            const matchDesde = document.getElementById('filtro_desde').value === "" || fechaO >= document.getElementById('filtro_desde').value;
+            const matchHasta = document.getElementById('filtro_hasta').value === "" || fechaO <= document.getElementById('filtro_hasta').value;
+            return matchE && matchDesde && matchHasta;
+        });
+
+        let totalGral = 0;
+        let filas = filtradas.map(o => {
+            totalGral += parseFloat(o.total_orden);
+            return `<tr><td>${o.fecha}</td><td>OT-${o.ot}</td><td>${o.modelos}</td><td align="right">${new Intl.NumberFormat('es-CL').format(o.total_orden)}</td></tr>`;
+        }).join('');
+
+        const win = window.open('', '_blank');
+        win.document.write(`
+            <html><head><title>Resumen Producción</title>
+            <style>
+                body { font-family: sans-serif; padding: 40px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 14px; }
+                th { bg-color: #f8f9fa; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .total { font-size: 20px; font-bold; text-align: right; margin-top: 20px; color: #059669; }
+            </style>
+            </head><body>
+            <div class="header">
+                <h1>Resumen de Producción - Esqueletería</h1>
+                <p><strong>Trabajador:</strong> ${esqueletero}</p>
+                <p>Periodo: ${document.getElementById('filtro_desde').value || 'Inicio'} hasta ${document.getElementById('filtro_hasta').value || 'Hoy'}</p>
+            </div>
+            <table>
+                <thead><tr><th>Fecha</th><th>OT</th><th>Modelos y Cantidades</th><th>Subtotal ($)</th></tr></thead>
+                <tbody>${filas}</tbody>
+            </table>
+            <div class="total">Total a Pagar: $${new Intl.NumberFormat('es-CL').format(totalGral)}</div>
+            <script>window.print();<\/script>
+            </body></html>
+        `);
     }
 </script>
 {% endblock %}
