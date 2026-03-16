@@ -7,10 +7,11 @@ from db import conectar_mysql
 import mysql.connector
 import os
 
+# Mantenemos el prefijo que usas en el menú de la barra lateral
 router = APIRouter(prefix="/produccion/esqueleteria", tags=["Esqueletería"])
 
-# Configurar templates (subiendo niveles según tu estructura)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# AJUSTE DE BASE_DIR: Al estar en /routers/, solo necesitamos subir 2 niveles para llegar a la raíz
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # --- Esquemas de Datos ---
@@ -27,7 +28,7 @@ class OrdenEsqueleteriaCreate(BaseModel):
 # --- Rutas de Vista ---
 @router.get("/", response_class=HTMLResponse)
 async def pagina_esqueleteria(request: Request):
-    # Se pasa el usuario del state si tu middleware lo requiere
+    # Recuperamos el usuario del state (seteado por tu middleware)
     usuario = getattr(request.state, 'usuario', None)
     return templates.TemplateResponse("produccion/esqueleteria.html", {
         "request": request,
@@ -40,7 +41,7 @@ async def pagina_esqueleteria(request: Request):
 def obtener_esqueleteros():
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
-    # Filtramos por el rol exacto que tienes en tu ENUM de la imagen
+    # Filtro exacto por rol según tu DB: 'Esqueletería'
     cursor.execute("SELECT id, nombre_usuario as nombre FROM users WHERE rol = 'Esqueletería' AND activo = 1")
     res = cursor.fetchall()
     cursor.close()
@@ -61,7 +62,6 @@ def obtener_modelos():
 def listar_ordenes():
     conn = conectar_mysql()
     cursor = conn.cursor(dictionary=True)
-    # Esta consulta une las tablas y calcula el total de modelos por OT
     query = """
         SELECT 
             o.id, 
@@ -99,7 +99,6 @@ def guardar_orden(orden: OrdenEsqueleteriaCreate):
 
         # 2. Insertar cada modelo en el detalle
         for item in orden.items:
-            # Traer el costo actual para que quede registrado históricamente
             cursor.execute("SELECT costo FROM productos_base WHERE id = %s", (item.modelo_id,))
             resultado_costo = cursor.fetchone()
             
@@ -119,11 +118,11 @@ def guardar_orden(orden: OrdenEsqueleteriaCreate):
         cursor.execute("UPDATE esqueleteria_ordenes SET total_orden = %s WHERE id = %s", (total_acumulado, orden_id))
         
         conn.commit()
-        return {"success": True, "message": "Orden de Esqueletería guardada con éxito"}
+        return {"success": True, "message": "Orden guardada con éxito"}
         
     except mysql.connector.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=f"Error de base de datos: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error DB: {str(e)}")
     finally:
         cursor.close()
         conn.close()
