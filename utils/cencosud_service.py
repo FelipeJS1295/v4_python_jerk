@@ -8,7 +8,8 @@ class CencosudService:
     def __init__(self):
         self.api_key = os.getenv("CENCOSUD_API_KEY")
         self.vendor_id = os.getenv("CENCOSUD_VENDOR_ID")
-        self.url = os.getenv("CENCOSUD_URL")
+        # Usamos la URL que confirmamos en el navegador
+        self.url = "https://marketplace.paris.cl/api/seller/sales/orders"
 
     def obtener_ventas(self, page=0, size=50):
         headers = {
@@ -21,11 +22,14 @@ class CencosudService:
         
         try:
             response = requests.get(self.url, headers=headers, params=params)
-            if response.status_code == 200:
-                # Si la respuesta está vacía, retornamos lista vacía
-                return response.json() if response.text else []
+            # LOG PARA DEBUG: Esto lo verás en 'pm2 logs jerkhome-admin'
+            print(f"DEBUG PARIS -> Status: {response.status_code} | Body: {response.text[:200]}")
+            
+            if response.status_code == 200 and response.text:
+                return response.json()
             return []
-        except:
+        except Exception as e:
+            print(f"ERROR CRÍTICO PARIS: {str(e)}")
             return []
 
 cenco_service = CencosudService()
