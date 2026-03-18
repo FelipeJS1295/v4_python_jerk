@@ -105,3 +105,25 @@ def guardar_orden(orden: OrdenEsqueleteriaCreate):
     finally:
         cursor.close()
         conn.close()
+
+@router.delete("/esqueleteria/api/eliminar/{orden_id}", response_class=JSONResponse)
+def eliminar_orden(orden_id: int):
+    conn = conectar_mysql()
+    cursor = conn.cursor()
+    try:
+        # Primero verificamos si existe
+        cursor.execute("SELECT id FROM esqueleteria_ordenes WHERE id = %s", (orden_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="La orden no existe")
+
+        # Eliminamos (el CASCADE se encarga de la tabla esqueleteria_detalle)
+        cursor.execute("DELETE FROM esqueleteria_ordenes WHERE id = %s", (orden_id,))
+        conn.commit()
+        return {"success": True, "message": "Orden eliminada correctamente"}
+        
+    except mysql.connector.Error as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()

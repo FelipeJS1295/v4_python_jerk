@@ -147,6 +147,36 @@
         agregarFilaModelo();
     }
 
+    async function eliminarOT(id) {
+        // Confirmación de seguridad
+        if (!confirm('¿Estás seguro de que deseas eliminar esta orden de trabajo? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/produccion/esqueleteria/api/eliminar/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (res.ok) {
+                // Notificación simple (puedes usar SweetAlert si tienes la librería)
+                console.log("Orden eliminada");
+
+                // Recargamos la lista completa desde el servidor
+                await listarOrdenes();
+            } else {
+                const error = await res.json();
+                alert("Error al eliminar: " + (error.detail || "Error desconocido"));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Error de conexión al intentar eliminar.");
+        }
+    }
+
     function agregarFilaModelo() {
         const contenedor = document.getElementById('contenedor-items');
         const div = document.createElement('div');
