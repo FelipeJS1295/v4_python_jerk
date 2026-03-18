@@ -42,71 +42,58 @@ async def ver_ventas_walmart(request: Request):
                 if not ts: return "N/A"
                 return datetime.datetime.fromtimestamp(ts/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M')
 
+            # --- UBICACIÓN REAL DEL NOMBRE SEGÚN TU JSON ---
+            shipping_info = o.get('shippingInfo', {})
+            postal = shipping_info.get('postalAddress', {})
+            nombre_cliente = postal.get('name', 'N/A')
+
             lineas_raw = o.get('orderLines', {}).get('orderLine', [])
             if isinstance(lineas_raw, dict): lineas_raw = [lineas_raw]
             
-            total_orden = 0
-            subtotal_items = 0
-            envio_monto = 0
+            total_final = 0
             prod_list = []
 
             for l in lineas_raw:
                 qty = int(l.get('orderLineQuantity', {}).get('amount', 1))
-                charges = l.get('charges', {}).get('charge', [])
                 
-                monto_linea_neto = 0
-                for c in charges:
-                    # Walmart Chile envía los montos que deben sumarse y restarse
-                    monto = float(c.get('chargeAmount', {}).get('amount', 0))
-                    c_name = c.get('chargeName', '')
-                    
-                    # Sumamos Items, Envío e Impuestos
-                    if c_name in ['ItemPrice', 'Shipping', 'Tax']:
-                        total_orden += monto
-                        if c_name == 'ItemPrice': subtotal_items += monto
-                        if c_name == 'Shipping': envio_monto += monto
-                    
-                    # RESTAMOS Descuentos (Discount)
-                    if 'Discount' in c_name:
-                        total_orden -= abs(monto)
+                # CÁLCULO DE MONTO (Precio + IVA)
+                cargos = l.get('charges', {}).get('charge', [])
+                monto_linea = 0
+                for c in cargos:
+                    # Sumamos el monto del cargo
+                    monto_linea += float(c.get('chargeAmount', {}).get('amount', 0))
+                    # Sumamos el IVA de ese cargo (taxAmount)
+                    monto_linea += float(c.get('tax', {}).get('taxAmount', {}).get('amount', 0))
+                
+                total_final += monto_linea
 
                 prod_list.append({
                     "nombre": l.get('item', {}).get('productName', 'Producto'),
                     "sku": l.get('item', {}).get('sku', 'N/A'),
                     "cantidad": qty,
-                    "precio": f"${subtotal_items:,.0f}".replace(",", "."),
-                    "estado": l.get('orderLineQuantity', {}).get('status', 'Pendiente')
+                    "estado": l.get('orderLineStatuses', {}).get('orderLineStatus', [{}])[0].get('status', 'N/A')
                 })
 
-            # NOMBRE DEL CLIENTE (Corrección crítica)
-            postal = o.get('postalAddress', {})
-            nombre = postal.get('name')
-            if not nombre or nombre == "N/A":
-                nombre = f"{postal.get('firstName', '')} {postal.get('lastName', '')}".strip()
-            
             ordenes_finales.append({
                 "id_compra": o.get('purchaseOrderId'),
                 "id_orden_largo": o.get('customerOrderId'),
                 "fecha": fmt_date(o.get('orderDate')),
-                "limite_despacho": fmt_date(o.get('shippingInfo', {}).get('estimatedShipDate')),
-                "entrega_estimada": fmt_date(o.get('shippingInfo', {}).get('estimatedDeliveryDate')),
+                "limite_despacho": fmt_date(shipping_info.get('estimatedShipDate')),
+                "entrega_estimada": fmt_date(shipping_info.get('estimatedDeliveryDate')),
                 "cliente": {
-                    "nombre": nombre if nombre else "Cliente Marketplace",
+                    "nombre": nombre_cliente,
                     "email": o.get('customerEmailId', 'N/A'),
-                    "telefono": o.get('shippingInfo', {}).get('phone', 'N/A'),
-                    "rut": o.get('customerRfc', 'Sin RUT')
+                    "telefono": shipping_info.get('phone', 'N/A')
                 },
                 "destino": {
                     "calle": f"{postal.get('address1', '')} {postal.get('address2', '')}".strip(),
                     "ciudad": postal.get('city', 'N/A'),
                     "region": postal.get('state', 'N/A'),
-                    "metodo": o.get('shippingInfo', {}).get('methodCode', 'N/A')
+                    "metodo": shipping_info.get('methodCode', 'N/A')
                 },
                 "productos": prod_list,
-                "total_str": f"${total_orden:,.0f}".replace(",", "."),
-                "subtotal_str": f"${subtotal_items:,.0f}".replace(",", "."),
-                "envio_str": f"${envio_monto:,.0f}".replace(",", "."),
-                "estado_badge": "Lista para enviar" if prod_list[0]['estado'] == 'Created' else prod_list[0]['estado']
+                "total_str": f"${total_final:,.0f}".replace(",", "."),
+                "estado_badge": prod_list[0]['estado'] if prod_list else 'N/A'
             })
 
         return templates.TemplateResponse("api/ventas_walmart.html", {"request": request, "ordenes": ordenes_finales})
