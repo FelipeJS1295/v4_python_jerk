@@ -83,7 +83,7 @@ def procesar_excel_cencosud(ruta_archivo):
                 "telefono": row.get('telefono_contacto', row.iloc[5]),
                 "fecha_compra": convertir_fecha(row.get('fecha_compra', row.iloc[6])),
                 "fecha_entrega": convertir_fecha(row.get('fecha_entrega_comprometida', row.iloc[7])),
-                "producto": row.get('descripcion_producto', row.iloc[9]),
+                "producto": row.get('descripcion_producto', row.iloc[8]),
                 "precio_cliente": limpiar_numero(row.get('precio_unitario', row.iloc[11])),
                 "comuna": row.get('comuna_despacho', row.iloc[13]),
                 "direccion": row.get('direccion_despacho', row.iloc[14]),
