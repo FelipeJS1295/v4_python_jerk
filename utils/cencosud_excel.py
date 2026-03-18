@@ -77,7 +77,7 @@ def procesar_excel_cencosud(ruta_archivo):
             venta = {
                 "cliente_id": 2,
                 "numero_orden": numero_orden,
-                "cliente_final": row.get('nombre_cliente', row.iloc[2]),
+                "cliente_final": row.get('nombre_cliente', row.iloc[1]),
                 "rut_documento": row.get('rut_cliente', row.iloc[3]),
                 "email": row.get('mail_cliente', row.iloc[4]),
                 "telefono": row.get('telefono_contacto', row.iloc[5]),
