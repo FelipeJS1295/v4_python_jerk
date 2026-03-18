@@ -8,19 +8,19 @@ class CencosudService:
     def __init__(self):
         self.api_key = os.getenv("CENCOSUD_API_KEY")
         self.vendor_id = os.getenv("CENCOSUD_VENDOR_ID")
-        # Esta es la URL de la documentación que enviaste (findAll)
+        # URL oficial del endpoint findAll de Marketplace
         self.url = "https://api.ecomm.cencosud.com/v1/orders"
 
     def obtener_ventas(self, page=1, limit=50):
-        # La documentación exige estas cabeceras exactas
+        # Nombres de cabeceras ajustados según el estándar del Gateway de Cencosud
         headers = {
-            "ApiKey": self.api_key,
-            "VendorId": self.vendor_id,
+            "Api-Key": self.api_key,   # Nota el guion
+            "Vendor-Id": self.vendor_id, # Nota el guion
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
         
-        # Parámetros según la documentación OrdersV1Controller_findAll
+        # Parámetros según la documentación que enviaste
         params = {
             "page": page,
             "limit": limit
@@ -29,16 +29,16 @@ class CencosudService:
         try:
             response = requests.get(self.url, headers=headers, params=params, timeout=15)
             
-            # DEBUG: Para ver si ahora sí nos deja pasar
-            print(f"DEBUG OFICIAL -> Status: {response.status_code}")
+            # Veremos el Status en los logs de PM2
+            print(f"CENCOSUD OFICIAL -> Status: {response.status_code}")
             
             if response.status_code == 200:
                 return response.json()
             else:
-                print(f"Error API: {response.status_code} - {response.text}")
+                print(f"DEBUG ERROR: {response.status_code} - {response.text}")
                 return []
         except Exception as e:
-            print(f"Error de conexión: {str(e)}")
+            print(f"Error de red Cencosud: {str(e)}")
             return []
 
 cenco_service = CencosudService()

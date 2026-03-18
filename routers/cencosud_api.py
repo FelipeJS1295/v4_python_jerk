@@ -10,34 +10,40 @@ templates = Jinja2Templates(directory="templates")
 async def ver_ventas_paris(request: Request, search: str = Query(None)):
     data = cenco_service.obtener_ventas()
     
-    # La API oficial devuelve una lista directamente o dentro de 'orders'
-    ordenes_raw = data if isinstance(data, list) else data.get('orders', [])
+    # La API oficial suele devolver un objeto con una lista dentro
+    if isinstance(data, dict):
+        ordenes_raw = data.get('orders', data.get('content', []))
+    else:
+        ordenes_raw = data if isinstance(data, list) else []
     
     ordenes_finales = []
     for o in ordenes_raw:
-        # Siguiendo el JSON oficial:
+        # Extracción según el JSON de la documentación
         num_orden = o.get('originOrderNumber') or o.get('id', 'N/A')
         cliente = o.get('customer', {}).get('name', 'N/A')
         
         sub_orders = o.get('subOrders', [])
-        if not sub_orders: continue
-        
-        so = sub_orders[0]
-        items = so.get('items', [])
-        producto = items[0].get('name', 'Mueble JerkHome') if items else 'N/A'
-        
-        # Estado y Fecha
-        estado = so.get('status', {}).get('description', 'APROBADO').upper()
-        fecha_entrega = so.get('arrivalDate', 'N/A')
+        nombre_producto = "Mueble JerkHome"
+        estado = "PENDIENTE"
+        entrega = "N/A"
 
+        if sub_orders:
+            so = sub_orders[0]
+            estado = so.get('status', {}).get('description', 'APROBADO').upper()
+            entrega = so.get('arrivalDate', 'N/A')
+            items = so.get('items', [])
+            if items:
+                nombre_producto = items[0].get('name', 'Mueble JerkHome')
+
+        # Filtro de búsqueda
         if search and (search.lower() not in str(num_orden).lower() and search.lower() not in cliente.lower()):
             continue
 
         ordenes_finales.append({
             "numero_orden": num_orden,
             "cliente": cliente,
-            "producto": producto,
-            "entrega_comprometida": fecha_entrega,
+            "producto": nombre_producto,
+            "entrega_comprometida": entrega,
             "estado": estado
         })
 
