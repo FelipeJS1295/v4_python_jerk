@@ -1,4 +1,10 @@
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from utils.walmart_service import walmart_api
 import datetime
+import uuid
+import requests
 
 @router.get("/test-orders")
 async def probar_ordenes():
