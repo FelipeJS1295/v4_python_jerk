@@ -38,6 +38,7 @@ from routers import (
     resumen_liquidacion,
     paris,
     walmart_api,
+    cencosud_api,
 )
 
 from routers import camaras
@@ -218,3 +219,4 @@ app.include_router(esqueleteria.router)
 
 # Routers API
 app.include_router(walmart_api.router)
+app.include_router(cencosud_api.router)
