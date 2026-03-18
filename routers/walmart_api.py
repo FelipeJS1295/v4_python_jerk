@@ -10,6 +10,16 @@ import pytz
 router = APIRouter(prefix="/api/marketplace", tags=["Walmart API"])
 templates = Jinja2Templates(directory="templates")
 
+# Diccionario de traducción para Estados
+ESTADOS_LATAM = {
+    "Created": "Creado",
+    "Acknowledged": "Lista para Enviar",
+    "Shipped": "Enviado",
+    "Cancelled": "Cancelado",
+    "Refund": "Reembolsado",
+    "Delivered": "Entregado"
+}
+
 @router.get("/ventas", response_class=HTMLResponse)
 async def ver_ventas_walmart(request: Request):
     token = walmart_api.obtener_token()
@@ -38,27 +48,29 @@ async def ver_ventas_walmart(request: Request):
         tz_cl = pytz.timezone('America/Santiago')
 
         for o in ordenes_raw:
-            # Formateo de fecha límite
             def fmt_date(ts):
                 if not ts: return "N/A"
                 return datetime.datetime.fromtimestamp(ts/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M')
 
-            # Datos del cliente
+            # Datos del cliente (Ubicación real según tu JSON)
             nombre_cliente = o.get('shippingInfo', {}).get('postalAddress', {}).get('name', 'N/A')
 
-            # Datos del producto (tomamos el nombre del primer item)
+            # Datos del producto y estado
             lineas = o.get('orderLines', {}).get('orderLine', [])
             if isinstance(lineas, dict): lineas = [lineas]
             
-            nombre_producto = lineas[0].get('item', {}).get('productName', 'Producto sin nombre') if lineas else 'N/A'
-            estado_orden = lineas[0].get('orderLineStatuses', {}).get('orderLineStatus', [{}])[0].get('status', 'N/A') if lineas else 'N/A'
+            nombre_producto = lineas[0].get('item', {}).get('productName', 'N/A') if lineas else 'N/A'
+            estado_raw = lineas[0].get('orderLineStatuses', {}).get('orderLineStatus', [{}])[0].get('status', 'N/A') if lineas else 'N/A'
+            
+            # Traducir estado a Español Latino
+            estado_latam = ESTADOS_LATAM.get(estado_raw, estado_raw).upper()
 
             ordenes_finales.append({
-                "numero_orden": o.get('customerOrderId'), # El número largo
+                "numero_orden": o.get('customerOrderId'),
                 "limite_despacho": fmt_date(o.get('shippingInfo', {}).get('estimatedShipDate')),
                 "cliente": nombre_cliente,
                 "producto": nombre_producto,
-                "estado": estado_orden
+                "estado": estado_latam
             })
 
         return templates.TemplateResponse("api/ventas_walmart.html", {"request": request, "ordenes": ordenes_finales})

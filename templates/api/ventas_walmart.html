@@ -13,12 +13,12 @@
     <div class="space-y-3">
         {% for o in ordenes %}
         <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:border-blue-300 transition-all">
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center text-center md:text-left">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
 
                 <div>
                     <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">N° de
                         Orden</span>
-                    <span class="text-sm font-bold text-slate-700">{{ o.numero_orden }}</span>
+                    <span class="text-sm font-bold text-slate-700 font-mono">{{ o.numero_orden }}</span>
                 </div>
 
                 <div>
@@ -30,21 +30,23 @@
                 <div>
                     <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nombre
                         Cliente</span>
-                    <span class="text-sm font-bold text-slate-800 uppercase">{{ o.cliente }}</span>
+                    <span class="text-sm font-bold text-slate-800 uppercase leading-tight block">{{ o.cliente }}</span>
                 </div>
 
-                <div class="md:col-span-1">
+                <div>
                     <span
                         class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Producto</span>
-                    <span class="text-xs font-bold text-slate-600 line-clamp-2">{{ o.producto }}</span>
+                    <span class="text-xs font-bold text-slate-600 line-clamp-2 italic">{{ o.producto }}</span>
                 </div>
 
                 <div class="text-right">
                     <span
                         class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 text-center md:text-right">Estado</span>
-                    <span
-                        class="inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter
-                        {% if o.estado == 'Created' %}bg-amber-100 text-amber-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
+                    <span class="inline-block px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter
+                        {% if o.estado == 'CREADO' %}bg-amber-100 text-amber-700
+                        {% elif o.estado == 'RECIBIDO' %}bg-blue-100 text-blue-700
+                        {% elif o.estado == 'ENVIADO' %}bg-emerald-100 text-emerald-700
+                        {% else %}bg-slate-100 text-slate-600{% endif %}">
                         {{ o.estado }}
                     </span>
                 </div>
