@@ -1,16 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto p-6 space-y-6 bg-slate-50 min-h-screen">
-
+<div class="max-w-7xl mx-auto p-6 space-y-6">
     <div class="flex justify-between items-center bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
         <div>
-            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Marketplace <span
+            <h1 class="text-3xl font-black text-slate-900 tracking-tighter">Marketplace <span
                     class="text-blue-600">Walmart Chile</span></h1>
-            <p class="text-sm text-slate-400 font-bold">Gestión de órdenes en tiempo real</p>
+            <p class="text-sm text-slate-400 font-bold italic">Panel de Control de Órdenes</p>
         </div>
         <button onclick="location.reload()"
-            class="p-4 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-100 transition-all">
+            class="w-12 h-12 flex items-center justify-center bg-blue-50 text-blue-600 rounded-2xl hover:rotate-180 transition-all duration-500">
             <i class="fas fa-sync-alt"></i>
         </button>
     </div>
@@ -44,10 +43,10 @@
                 <div class="hidden lg:grid grid-cols-2 gap-12 flex-1 px-16">
                     <div>
                         <p class="text-[10px] font-bold text-slate-300 uppercase italic">Cliente</p>
-                        <p class="text-sm font-black text-slate-700 uppercase">{{ o.cliente.nombre }}</p>
+                        <p class="text-sm font-black text-slate-700 uppercase tracking-tight">{{ o.cliente.nombre }}</p>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-slate-300 uppercase italic">Estado Actual</p>
+                        <p class="text-[10px] font-bold text-slate-300 uppercase italic">Estado</p>
                         <span
                             class="inline-block px-3 py-1 rounded-lg text-[10px] font-black uppercase
                             {% if o.estado_badge == 'Created' %}bg-amber-100 text-amber-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
@@ -58,11 +57,11 @@
 
                 <div class="text-right flex items-center space-x-6">
                     <div>
-                        <p class="text-[10px] font-bold text-slate-300 uppercase italic">Total Venta</p>
+                        <p class="text-[10px] font-bold text-slate-300 uppercase italic">Total Cobrado</p>
                         <p class="text-3xl font-black text-slate-900 leading-none tracking-tighter">{{ o.total_str }}
                         </p>
                     </div>
-                    <i class="fas fa-chevron-down text-slate-200"></i>
+                    <i class="fas fa-chevron-down text-slate-200 transition-transform"></i>
                 </div>
             </div>
 
@@ -73,7 +72,7 @@
                         <div>
                             <h4 class="text-xs font-black text-blue-500 uppercase tracking-widest mb-5 italic"><i
                                     class="fas fa-truck mr-2"></i> Logística</h4>
-                            <div class="bg-white p-6 rounded-3xl border border-slate-100 space-y-3">
+                            <div class="bg-white p-6 rounded-3xl border border-slate-100 space-y-3 shadow-sm">
                                 <p class="text-xs text-slate-500 font-bold uppercase">Límite Despacho: <span
                                         class="text-red-500 font-black ml-2">{{ o.limite_despacho }}</span></p>
                                 <p class="text-xs text-slate-500 font-bold uppercase">Entrega Prometida: <span
@@ -83,50 +82,54 @@
                         <div>
                             <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-5 italic"><i
                                     class="fas fa-map-pin mr-2"></i> Dirección</h4>
-                            <div class="bg-white p-6 rounded-3xl border border-slate-100">
+                            <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                                 <p class="text-sm font-black text-slate-700 italic">{{ o.destino.calle }}</p>
                                 <p class="text-xs font-bold text-slate-400">{{ o.destino.ciudad }}, {{ o.destino.region
                                     }}</p>
+                                <p class="text-[10px] font-black text-blue-600 mt-4 uppercase">Courier: {{
+                                    o.destino.metodo }}</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="lg:col-span-2 space-y-6">
                         <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-5 italic"><i
-                                class="fas fa-shopping-basket mr-2"></i> Productos</h4>
-                        <div class="space-y-3">
-                            {% for p in o.productos %}
-                            <div class="bg-white p-5 rounded-3xl border border-slate-100 flex items-center shadow-sm">
-                                <div
-                                    class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200 mr-5">
-                                    <i class="fas fa-box text-2xl"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-black text-slate-800 uppercase">{{ p.nombre }}</p>
-                                    <p class="text-[10px] text-blue-500 font-mono font-bold italic">SKU: {{ p.sku }}</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-[9px] text-slate-300 font-bold uppercase italic">Cant: {{ p.cantidad
-                                        }}</p>
-                                    <span class="text-[10px] font-black text-slate-400">{{ p.estado }}</span>
-                                </div>
+                                class="fas fa-shopping-basket mr-2"></i> Desglose de Pago</h4>
+
+                        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-400 font-bold">Item(s):</span>
+                                <span class="font-black text-slate-700">{{ o.subtotal_str }}</span>
                             </div>
-                            {% endfor %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-400 font-bold">Envío:</span>
+                                <span class="font-black text-slate-700">{{ o.envio_str }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-400 font-bold">Impuestos (IVA):</span>
+                                <span class="font-black text-slate-700">{{ o.impuestos_str }}</span>
+                            </div>
+                            {% if o.descuento_str != "$0" %}
+                            <div class="flex justify-between text-sm text-red-500">
+                                <span class="font-bold">Descuentos:</span>
+                                <span class="font-black">{{ o.descuento_str }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="pt-4 border-t flex justify-between items-center">
+                                <span class="text-lg font-black text-slate-900 italic uppercase">Total:</span>
+                                <span class="text-3xl font-black text-blue-600 tracking-tighter">{{ o.total_str
+                                    }}</span>
+                            </div>
                         </div>
 
                         <div
                             class="mt-8 bg-slate-900 p-8 rounded-[2.5rem] text-white flex justify-between items-center shadow-2xl">
                             <div>
-                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Contacto
-                                    Directo</p>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Información de
+                                    Contacto</p>
                                 <p class="text-lg font-black text-blue-400 italic">{{ o.cliente.email }}</p>
-                                <p class="text-xs font-bold text-slate-400 mt-1 italic">Tel: {{ o.cliente.telefono }}
-                                </p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-[10px] text-slate-500 font-bold uppercase">Total Cobrado (IVA Incl.)</p>
-                                <p class="text-4xl font-black text-white leading-none tracking-tighter">{{ o.total_str
-                                    }}</p>
+                                <p class="text-xs font-bold text-slate-400 mt-1 italic">RUT: {{ o.cliente.rut }} | Tel:
+                                    {{ o.cliente.telefono }}</p>
                             </div>
                         </div>
                     </div>

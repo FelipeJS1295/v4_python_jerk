@@ -42,7 +42,7 @@ async def ver_ventas_walmart(request: Request):
                 if not ts: return "N/A"
                 return datetime.datetime.fromtimestamp(ts/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M')
 
-            # --- UBICACIÓN REAL DEL NOMBRE SEGÚN TU JSON ---
+            # --- RUTA EXACTA DEL NOMBRE SEGÚN DOCUMENTACIÓN CHILE ---
             shipping_info = o.get('shippingInfo', {})
             postal = shipping_info.get('postalAddress', {})
             nombre_cliente = postal.get('name', 'N/A')
@@ -51,21 +51,32 @@ async def ver_ventas_walmart(request: Request):
             if isinstance(lineas_raw, dict): lineas_raw = [lineas_raw]
             
             total_final = 0
+            subtotal_items = 0
+            total_envio = 0
+            total_impuestos = 0
+            total_descuentos = 0
+            
             prod_list = []
 
             for l in lineas_raw:
                 qty = int(l.get('orderLineQuantity', {}).get('amount', 1))
                 
-                # CÁLCULO DE MONTO (Precio + IVA)
-                cargos = l.get('charges', {}).get('charge', [])
-                monto_linea = 0
-                for c in cargos:
-                    # Sumamos el monto del cargo
-                    monto_linea += float(c.get('chargeAmount', {}).get('amount', 0))
-                    # Sumamos el IVA de ese cargo (taxAmount)
-                    monto_linea += float(c.get('tax', {}).get('taxAmount', {}).get('amount', 0))
-                
-                total_final += monto_linea
+                # --- CÁLCULO FINANCIERO SEGÚN WALMART SELLER CENTER ---
+                charges = l.get('charges', {}).get('charge', [])
+                for c in charges:
+                    monto = float(c.get('chargeAmount', {}).get('amount', 0))
+                    impuesto_monto = float(c.get('tax', {}).get('taxAmount', {}).get('amount', 0))
+                    c_name = c.get('chargeName', '')
+                    
+                    # Sumamos impuestos siempre
+                    total_impuestos += impuesto_monto
+                    
+                    if c_name == 'ItemPrice':
+                        subtotal_items += monto
+                    elif c_name == 'Shipping':
+                        total_envio += monto
+                    elif c_name == 'DISCOUNT' or monto < 0:
+                        total_descuentos += monto # Esto suele ser negativo, ej: -8990
 
                 prod_list.append({
                     "nombre": l.get('item', {}).get('productName', 'Producto'),
@@ -73,6 +84,9 @@ async def ver_ventas_walmart(request: Request):
                     "cantidad": qty,
                     "estado": l.get('orderLineStatuses', {}).get('orderLineStatus', [{}])[0].get('status', 'N/A')
                 })
+
+            # FÓRMULA FINAL: (Items + Envío + Impuestos) + Descuentos(que ya vienen negativos)
+            monto_neto = subtotal_items + total_envio + total_impuestos + total_descuentos
 
             ordenes_finales.append({
                 "id_compra": o.get('purchaseOrderId'),
@@ -83,7 +97,8 @@ async def ver_ventas_walmart(request: Request):
                 "cliente": {
                     "nombre": nombre_cliente,
                     "email": o.get('customerEmailId', 'N/A'),
-                    "telefono": shipping_info.get('phone', 'N/A')
+                    "telefono": shipping_info.get('phone', 'N/A'),
+                    "rut": o.get('customerRfc', 'N/A')
                 },
                 "destino": {
                     "calle": f"{postal.get('address1', '')} {postal.get('address2', '')}".strip(),
@@ -92,7 +107,11 @@ async def ver_ventas_walmart(request: Request):
                     "metodo": shipping_info.get('methodCode', 'N/A')
                 },
                 "productos": prod_list,
-                "total_str": f"${total_final:,.0f}".replace(",", "."),
+                "total_str": f"${monto_neto:,.0f}".replace(",", "."),
+                "subtotal_str": f"${subtotal_items:,.0f}".replace(",", "."),
+                "envio_str": f"${total_envio:,.0f}".replace(",", "."),
+                "impuestos_str": f"${total_impuestos:,.0f}".replace(",", "."),
+                "descuento_str": f"${total_descuentos:,.0f}".replace(",", "."),
                 "estado_badge": prod_list[0]['estado'] if prod_list else 'N/A'
             })
 
