@@ -13,10 +13,8 @@ templates = Jinja2Templates(directory="templates")
 @router.get("/ventas", response_class=HTMLResponse)
 async def ver_ventas_walmart(request: Request):
     token = walmart_api.obtener_token()
-    if not token:
-        return HTMLResponse(content="<h3>Error de Token</h3>", status_code=500)
+    if not token: return HTMLResponse("Error Token", status_code=500)
 
-    # URL necesaria para la petición
     url = "https://marketplace.walmartapis.com/v3/orders"
     hace_30_dias = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
     
@@ -35,48 +33,56 @@ async def ver_ventas_walmart(request: Request):
         ordenes_raw = data.get("list", {}).get("elements", {}).get("order", [])
         if isinstance(ordenes_raw, dict): ordenes_raw = [ordenes_raw]
 
-        ordenes_formateadas = []
-        tz_local = pytz.timezone('America/Santiago')
+        ordenes_completas = []
+        tz_cl = pytz.timezone('America/Santiago')
 
         for o in ordenes_raw:
-            # Fecha legible
-            fecha_dt = datetime.datetime.fromtimestamp(o.get('orderDate', 0) / 1000, tz=pytz.utc)
-            fecha_local = fecha_dt.astimezone(tz_local).strftime('%d/%m/%Y %H:%M')
+            # Función para convertir timestamps de Walmart (ms) a string legible
+            def fmt_date(ts):
+                if not ts: return "N/A"
+                return datetime.datetime.fromtimestamp(ts/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M')
 
-            # Procesar Líneas de Productos
             lineas = o.get('orderLines', {}).get('orderLine', [])
             if isinstance(lineas, dict): lineas = [lineas]
             
-            prod_list = []
-            total_monto = 0
+            # --- DESGLOSE FINANCIERO DETALLADO ---
+            subtotal_items = 0
+            costo_envio = 0
+            
             for l in lineas:
-                qty = int(l.get('orderLineQuantity', {}).get('amount', 1))
-                price = float(l.get('charges', {}).get('charge', [{}])[0].get('chargeAmount', {}).get('amount', 0))
-                total_monto += (price * qty)
-                prod_list.append({
-                    "nombre": l.get('item', {}).get('productName', 'Producto'),
-                    "sku": l.get('item', {}).get('sku', 'N/A'),
-                    "cantidad": qty,
-                    "precio": price,
-                    "estado": l.get('orderLineQuantity', {}).get('status', 'Pendiente')
-                })
+                charges = l.get('charges', {}).get('charge', [])
+                for c in charges:
+                    monto = float(c.get('chargeAmount', {}).get('amount', 0))
+                    if c.get('chargeName') == 'ItemPrice': subtotal_items += monto
+                    if c.get('chargeName') == 'Shipping': costo_envio += monto
 
-            ordenes_formateadas.append({
+            ordenes_completas.append({
                 "id": o.get('purchaseOrderId'),
                 "id_cliente": o.get('customerOrderId'),
-                "fecha": fecha_local,
-                "cliente": o.get('postalAddress', {}).get('name', 'N/A'),
-                "email": o.get('customerEmailId', 'N/A'),
-                "telefono": o.get('shippingInfo', {}).get('phone', 'N/A'),
-                "direccion": f"{o.get('postalAddress', {}).get('address1', '')} {o.get('postalAddress', {}).get('address2', '')}",
-                "ciudad": o.get('postalAddress', {}).get('city', 'N/A'),
-                "region": o.get('postalAddress', {}).get('state', 'N/A'),
-                "total": total_monto,
-                "cant_prod": len(prod_list),
-                "productos": prod_list,
-                "estado_general": prod_list[0]['estado'] if prod_list else 'N/A'
+                "fecha_venta": fmt_date(o.get('orderDate')),
+                "fecha_limite_despacho": fmt_date(o.get('shippingInfo', {}).get('estimatedShipDate')),
+                "fecha_entrega_estimada": fmt_date(o.get('shippingInfo', {}).get('estimatedDeliveryDate')),
+                "cliente": {
+                    "nombre": o.get('postalAddress', {}).get('name'),
+                    "email": o.get('customerEmailId'),
+                    "telefono": o.get('shippingInfo', {}).get('phone'),
+                    "rut": o.get('customerRfc', 'N/A') # Si Walmart lo envía, viene aquí
+                },
+                "logistica": {
+                    "metodo": o.get('shippingInfo', {}).get('methodCode'),
+                    "direccion": f"{o.get('postalAddress', {}).get('address1', '')} {o.get('postalAddress', {}).get('address2', '')}",
+                    "ciudad": o.get('postalAddress', {}).get('city'),
+                    "region": o.get('postalAddress', {}).get('state')
+                },
+                "productos": lineas, # Enviamos las líneas crudas para procesar en HTML
+                "finanzas": {
+                    "subtotal": subtotal_items,
+                    "envio": costo_envio,
+                    "total": subtotal_items + costo_envio
+                },
+                "estado": lineas[0].get('orderLineQuantity', {}).get('status') if lineas else 'N/A'
             })
 
-        return templates.TemplateResponse("api/ventas_walmart.html", {"request": request, "ordenes": ordenes_formateadas})
+        return templates.TemplateResponse("api/ventas_walmart.html", {"request": request, "ordenes": ordenes_completas})
     except Exception as e:
         return HTMLResponse(content=f"Error: {str(e)}", status_code=500)
