@@ -14,7 +14,7 @@ templates = Jinja2Templates(directory="templates")
 async def ver_ventas_walmart(request: Request):
     token = walmart_api.obtener_token()
     if not token:
-        return HTMLResponse(content="<h3>Error: No se pudo obtener el token de Walmart.</h3>", status_code=500)
+        return HTMLResponse(content="<h3>Error: Token de Walmart no disponible.</h3>", status_code=500)
 
     url = "https://marketplace.walmartapis.com/v3/orders"
     hace_30_dias = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -38,68 +38,70 @@ async def ver_ventas_walmart(request: Request):
         tz_cl = pytz.timezone('America/Santiago')
 
         for o in ordenes_raw:
-            # Formateo de fechas seguro
             def fmt_date(ts):
                 if not ts: return "N/A"
                 return datetime.datetime.fromtimestamp(ts/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M')
 
-            # Procesar productos y dineros en Python (Más seguro que en HTML)
             lineas_raw = o.get('orderLines', {}).get('orderLine', [])
             if isinstance(lineas_raw, dict): lineas_raw = [lineas_raw]
             
+            total_orden = 0
+            subtotal_items = 0
+            envio_items = 0
             prod_list = []
-            subtotal = 0
-            envio = 0
 
             for l in lineas_raw:
-                # Cantidad
                 qty = int(l.get('orderLineQuantity', {}).get('amount', 1))
                 
-                # Buscar precios en los cargos
-                item_price = 0
+                # Sumar todos los cargos de la línea para el total real
                 charges = l.get('charges', {}).get('charge', [])
                 for c in charges:
-                    val = float(c.get('chargeAmount', {}).get('amount', 0))
-                    c_name = c.get('chargeName', '')
-                    if c_name == 'ItemPrice': 
-                        item_price = val
-                        subtotal += (val * qty)
-                    elif c_name == 'Shipping': 
-                        envio += val
+                    monto_cargo = float(c.get('chargeAmount', {}).get('amount', 0))
+                    total_orden += monto_cargo
+                    if c.get('chargeName') == 'ItemPrice': subtotal_items += monto_cargo
+                    if c.get('chargeName') == 'Shipping': envio_items += monto_cargo
 
                 prod_list.append({
                     "nombre": l.get('item', {}).get('productName', 'Producto'),
                     "sku": l.get('item', {}).get('sku', 'N/A'),
                     "cantidad": qty,
-                    "precio_unitario": f"${item_price:,.0f}".replace(",", "."),
+                    "precio": f"${float(l.get('charges', {}).get('charge', [{}])[0].get('chargeAmount', {}).get('amount', 0)):,.0f}".replace(",", "."),
                     "estado": l.get('orderLineQuantity', {}).get('status', 'Pendiente')
                 })
 
+            # Extracción robusta del nombre del cliente
+            postal = o.get('postalAddress', {})
+            nombre_cliente = postal.get('name')
+            if not nombre_cliente or nombre_cliente == "N/A":
+                nombre_cliente = f"{postal.get('firstName', '')} {postal.get('lastName', '')}".strip()
+            
+            if not nombre_cliente: nombre_cliente = "Cliente Walmart"
+
             ordenes_finales.append({
-                "id": o.get('purchaseOrderId'),
-                "id_cliente": o.get('customerOrderId'),
+                "id_compra": o.get('purchaseOrderId'), # Ej: P111...
+                "id_orden_largo": o.get('customerOrderId'), # El número de orden largo
                 "fecha": fmt_date(o.get('orderDate')),
                 "limite_despacho": fmt_date(o.get('shippingInfo', {}).get('estimatedShipDate')),
                 "entrega_estimada": fmt_date(o.get('shippingInfo', {}).get('estimatedDeliveryDate')),
                 "cliente": {
-                    "nombre": o.get('postalAddress', {}).get('name', 'N/A'),
+                    "nombre": nombre_cliente,
                     "email": o.get('customerEmailId', 'N/A'),
                     "telefono": o.get('shippingInfo', {}).get('phone', 'N/A'),
                     "rut": o.get('customerRfc', 'Sin RUT')
                 },
                 "destino": {
-                    "calle": f"{o.get('postalAddress', {}).get('address1', '')} {o.get('postalAddress', {}).get('address2', '')}",
-                    "ciudad": o.get('postalAddress', {}).get('city', 'N/A'),
-                    "region": o.get('postalAddress', {}).get('state', 'N/A'),
+                    "calle": f"{postal.get('address1', '')} {postal.get('address2', '')}".strip(),
+                    "ciudad": postal.get('city', 'N/A'),
+                    "region": postal.get('state', 'N/A'),
                     "metodo": o.get('shippingInfo', {}).get('methodCode', 'N/A')
                 },
                 "productos": prod_list,
-                "total_str": f"${(subtotal + envio):,.0f}".replace(",", "."),
-                "subtotal_str": f"${subtotal:,.0f}".replace(",", "."),
-                "envio_str": f"${envio:,.0f}".replace(",", "."),
+                "total_str": f"${total_orden:,.0f}".replace(",", "."),
+                "subtotal_str": f"${subtotal_items:,.0f}".replace(",", "."),
+                "envio_str": f"${envio_items:,.0f}".replace(",", "."),
                 "estado_badge": prod_list[0]['estado'] if prod_list else 'N/A'
             })
 
         return templates.TemplateResponse("api/ventas_walmart.html", {"request": request, "ordenes": ordenes_finales})
     except Exception as e:
-        return HTMLResponse(content=f"Error Crítico: {str(e)}", status_code=500)
+        return HTMLResponse(content=f"Error en servidor: {str(e)}", status_code=500)
