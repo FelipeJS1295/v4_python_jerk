@@ -7,20 +7,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class WalmartAPI:
-    
-    def get_basic_auth(self):
-        auth_str = f"{self.client_id}:{self.client_secret}"
-        return base64.b64encode(auth_str.encode()).decode()
-
     def __init__(self):
+        # Esto se ejecuta primero y prepara las llaves
         self.client_id = os.getenv("WALMART_CLIENT_ID")
         self.client_secret = os.getenv("WALMART_CLIENT_SECRET")
         self.base_url = "https://marketplace.walmartapis.com/v3"
 
+    def get_basic_auth(self):
+        # Ahora que self.client_id existe, esto funcionará perfecto
+        auth_str = f"{self.client_id}:{self.client_secret}"
+        return base64.b64encode(auth_str.encode()).decode()
+
     def obtener_token(self):
         url = f"{self.base_url}/token"
-        auth_str = f"{self.client_id}:{self.client_secret}"
-        auth_b64 = base64.b64encode(auth_str.encode()).decode()
+        auth_b64 = self.get_basic_auth() # Usamos la función de arriba para no repetir código
 
         headers = {
             "Authorization": f"Basic {auth_b64}",
@@ -38,4 +38,5 @@ class WalmartAPI:
         except:
             return None
 
+# Instancia para exportar
 walmart_api = WalmartAPI()
