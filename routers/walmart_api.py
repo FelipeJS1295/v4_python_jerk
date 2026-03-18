@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from utils.walmart_service import walmart_api
-import datetime
+from datetime import datetime, timedelta
 import uuid
 import requests
 import pytz
@@ -10,24 +10,31 @@ import pytz
 router = APIRouter(prefix="/api/marketplace", tags=["Walmart API"])
 templates = Jinja2Templates(directory="templates")
 
-# Diccionario de traducción para Estados
 ESTADOS_LATAM = {
-    "Created": "Creado",
-    "Acknowledged": "Lista para Enviar",
-    "Shipped": "Enviado",
-    "Cancelled": "Cancelado",
-    "Refund": "Reembolsado",
-    "Delivered": "Entregado"
+    "Created": "CREADO",
+    "Acknowledged": "LISTO PARA ENVIAR",
+    "Shipped": "ENVIADO",
+    "Cancelled": "CANCELADO"
 }
 
 @router.get("/ventas", response_class=HTMLResponse)
-async def ver_ventas_walmart(request: Request):
+async def ver_ventas_walmart(
+    request: Request,
+    search: str = Query(None),
+    estado: str = Query(None),
+    desde: str = Query(None),
+    hasta: str = Query(None)
+):
     token = walmart_api.obtener_token()
-    if not token:
-        return HTMLResponse(content="<h3>Error de conexión con Walmart</h3>", status_code=500)
-
     url = "https://marketplace.walmartapis.com/v3/orders"
-    hace_30_dias = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    
+    # Rango de fechas por defecto (30 días) si no vienen filtros
+    if not desde:
+        desde_dt = (datetime.now() - timedelta(days=30))
+    else:
+        desde_dt = datetime.strptime(desde, "%Y-%m-%d")
+        
+    desde_str = desde_dt.strftime('%Y-%m-%dT00:00:00Z')
     
     headers = {
         "WM_SEC.ACCESS_TOKEN": token,
@@ -39,40 +46,46 @@ async def ver_ventas_walmart(request: Request):
     }
     
     try:
-        response = requests.get(url, headers=headers, params={"createdStartDate": hace_30_dias, "limit": 100})
+        response = requests.get(url, headers=headers, params={"createdStartDate": desde_str, "limit": 100})
         data = response.json()
         ordenes_raw = data.get("list", {}).get("elements", {}).get("order", [])
         if isinstance(ordenes_raw, dict): ordenes_raw = [ordenes_raw]
 
-        ordenes_finales = []
+        ordenes_filtradas = []
         tz_cl = pytz.timezone('America/Santiago')
 
         for o in ordenes_raw:
-            def fmt_date(ts):
-                if not ts: return "N/A"
-                return datetime.datetime.fromtimestamp(ts/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M')
-
-            # Datos del cliente (Ubicación real según tu JSON)
-            nombre_cliente = o.get('shippingInfo', {}).get('postalAddress', {}).get('name', 'N/A')
-
-            # Datos del producto y estado
+            num_orden = o.get('customerOrderId', '')
+            shipping_info = o.get('shippingInfo', {})
+            nombre_cliente = shipping_info.get('postalAddress', {}).get('name', 'N/A')
+            
             lineas = o.get('orderLines', {}).get('orderLine', [])
             if isinstance(lineas, dict): lineas = [lineas]
             
-            nombre_producto = lineas[0].get('item', {}).get('productName', 'N/A') if lineas else 'N/A'
-            estado_raw = lineas[0].get('orderLineStatuses', {}).get('orderLineStatus', [{}])[0].get('status', 'N/A') if lineas else 'N/A'
-            
-            # Traducir estado a Español Latino
-            estado_latam = ESTADOS_LATAM.get(estado_raw, estado_raw).upper()
+            nombre_prod = lineas[0].get('item', {}).get('productName', '') if lineas else ''
+            est_raw = lineas[0].get('orderLineStatuses', {}).get('orderLineStatus', [{}])[0].get('status', 'N/A') if lineas else 'N/A'
+            est_latam = ESTADOS_LATAM.get(est_raw, est_raw).upper()
 
-            ordenes_finales.append({
-                "numero_orden": o.get('customerOrderId'),
-                "limite_despacho": fmt_date(o.get('shippingInfo', {}).get('estimatedShipDate')),
+            # Lógica de Filtros Manuales (Search y Estado)
+            if search and (search.lower() not in num_orden.lower() and search.lower() not in nombre_cliente.lower()):
+                continue
+            if estado and estado != est_raw:
+                continue
+
+            ordenes_filtradas.append({
+                "numero_orden": num_orden,
+                "fecha_orden": datetime.fromtimestamp(o.get('orderDate', 0)/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y'),
+                "limite_despacho": datetime.fromtimestamp(shipping_info.get('estimatedShipDate', 0)/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M'),
                 "cliente": nombre_cliente,
-                "producto": nombre_producto,
-                "estado": estado_latam
+                "producto": nombre_prod,
+                "estado": est_latam,
+                "estado_raw": est_raw
             })
 
-        return templates.TemplateResponse("api/ventas_walmart.html", {"request": request, "ordenes": ordenes_finales})
+        return templates.TemplateResponse("api/ventas_walmart.html", {
+            "request": request, 
+            "ordenes": ordenes_filtradas,
+            "filtros": {"search": search, "estado": estado, "desde": desde, "hasta": hasta}
+        })
     except Exception as e:
         return HTMLResponse(content=f"Error: {str(e)}", status_code=500)
