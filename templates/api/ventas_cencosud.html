@@ -40,20 +40,32 @@
             <tbody class="divide-y divide-slate-50">
                 {% for o in ordenes %}
                 <tr class="hover:bg-blue-50/30 transition-all group">
-                    <td class="px-8 py-6 font-bold text-slate-800 font-mono">{{ o.numero_orden }}</td>
-                    <td class="px-8 py-6 font-bold text-slate-700">{{ o.cliente }}</td>
-                    <td class="px-8 py-6 text-xs text-slate-500 max-w-xs line-clamp-1">{{ o.producto }}</td>
-                    <td class="px-8 py-6 text-sm font-black text-blue-600">{{ o.limite_despacho }}</td>
+                    <td class="px-8 py-6">
+                        <span class="text-sm font-bold text-slate-800 font-mono">{{ o.numero_orden }}</span>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Creada: {{ o.fecha }}</div>
+                    </td>
+                    <td class="px-8 py-6 font-bold text-slate-700 uppercase text-xs">{{ o.cliente }}</td>
+                    <td class="px-8 py-6">
+                        <span
+                            class="text-xs font-medium text-slate-500 line-clamp-1 group-hover:line-clamp-none transition-all">
+                            {{ o.producto }}
+                        </span>
+                    </td>
+                    <td class="px-8 py-6">
+                        <div class="flex items-center text-blue-600">
+                            <i class="far fa-calendar-alt mr-2 text-xs"></i>
+                            <span class="text-sm font-black">{{ o.limite_despacho }}</span>
+                        </div>
+                    </td>
                     <td class="px-8 py-6 text-right">
-                        <span class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase bg-blue-100 text-blue-700">
+                        <span class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter
+                            {% if 'PREPARACIÓN' in o.estado %}bg-amber-100 text-amber-700
+                            {% elif 'ENVIADO' in o.estado %}bg-blue-100 text-blue-700
+                            {% elif 'ENTREGADO' in o.estado %}bg-emerald-100 text-emerald-700
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
                             {{ o.estado }}
                         </span>
                     </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="p-20 text-center text-slate-400 font-bold">No hay órdenes de Paris
-                        pendientes.</td>
                 </tr>
                 {% endfor %}
             </tbody>
