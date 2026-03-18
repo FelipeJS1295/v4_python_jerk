@@ -256,6 +256,34 @@
         <span>Dashboard</span>
       </a>
 
+      <div class="nav-item">
+        <button
+          class="flex items-center justify-between w-full px-4 py-3 rounded-xl text-white font-medium transition-colors"
+          onclick="toggleSubmenu('api-submenu', 'api-arrow')">
+          <div class="flex items-center space-x-4">
+            <i class="fas fa-plug nav-icon"></i>
+            <span>API Marketplace</span>
+          </div>
+          <svg class="w-4 h-4 transition-transform duration-300" id="api-arrow" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <div id="api-submenu" class="hidden mt-2 space-y-1">
+          <a href="/api/marketplace/walmart"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-store w-4 h-4"></i>
+            <span>Walmart Chile</span>
+          </a>
+          <a href="/api/configuracion"
+            class="submenu-item flex items-center space-x-4 px-4 py-3 rounded-lg text-slate-200 text-sm font-medium transition-colors">
+            <i class="fas fa-key w-4 h-4"></i>
+            <span>Credenciales</span>
+          </a>
+        </div>
+      </div>
+
       <!-- Menú de Ventas -->
       <div class="nav-item">
         <button

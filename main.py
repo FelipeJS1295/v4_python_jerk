@@ -37,6 +37,7 @@ from routers import (
     falabella,
     resumen_liquidacion,
     paris,
+    walmart_api,
 )
 
 from routers import camaras
@@ -213,3 +214,7 @@ app.include_router(resumen_liquidacion.router)
 
 app.include_router(productos_base.router)
 app.include_router(esqueleteria.router)
+
+
+# Routers API
+app.include_router(walmart_api.router)
