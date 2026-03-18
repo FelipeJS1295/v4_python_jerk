@@ -2,62 +2,58 @@ from fastapi import APIRouter, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from utils.cencosud_service import cenco_service
-from datetime import datetime
 
 router = APIRouter(prefix="/api/cencosud", tags=["Paris Cencosud"])
 templates = Jinja2Templates(directory="templates")
-
-# Traducción de estados basada en el campo 'status' del JSON
-ESTADOS_CENCO = {
-    "READY_TO_PICK": "LISTO PARA RECOLECTAR",
-    "PICKING": "EN PREPARACIÓN",
-    "SHIPPED": "ENVIADO",
-    "DELIVERED": "ENTREGADO",
-    "CANCELLED": "CANCELADO",
-    "APPROVED": "APROBADO"
-}
 
 @router.get("/ventas", response_class=HTMLResponse)
 async def ver_ventas_paris(request: Request, search: str = Query(None)):
     data = cenco_service.obtener_ventas()
     
-    # Cencosud suele devolver una lista de objetos como el que enviaste
-    ordenes_raw = data if isinstance(data, list) else data.get('content', [])
+    # Paris devuelve un objeto. Intentamos sacar la lista de 'orders' o el objeto directo
+    # Si la data es un dict con una llave 'orders' o similar, la extraemos
+    if isinstance(data, dict):
+        ordenes_raw = data.get('orders', data.get('content', []))
+    else:
+        ordenes_raw = data if isinstance(data, list) else []
     
     ordenes_finales = []
 
     for o in ordenes_raw:
-        # Accedemos a la primera sub-orden para los detalles logísticos
-        sub_orders = o.get('subOrders', [])
-        if not sub_orders: continue
+        # 1. Extraer Número de Orden
+        num_orden = o.get('originOrderNumber') or o.get('id', 'N/A')
         
-        primera_sub = sub_orders[0]
-        items = primera_sub.get('items', [])
-        
-        # Datos del Cliente
+        # 2. Extraer Cliente
         customer = o.get('customer', {})
         nombre_cliente = customer.get('name', 'N/A')
         
-        # Datos del Producto
-        nombre_producto = items[0].get('name', 'Mueble JerkHome') if items else 'N/A'
-        
-        # Estado (viene dentro del objeto status de la sub-orden)
-        estado_raw = primera_sub.get('status', {}).get('description', 'PENDIENTE')
-        estado_latam = ESTADOS_CENCO.get(estado_raw.upper(), estado_raw).upper()
+        # 3. Extraer primer producto y estado de la primera subOrder
+        sub_orders = o.get('subOrders', [])
+        nombre_producto = "Producto JerkHome"
+        estado_desc = "PENDIENTE"
+        fecha_entrega = "N/A"
 
-        num_orden = o.get('originOrderNumber', 'N/A') # El número que ve el cliente
+        if sub_orders:
+            so = sub_orders[0]
+            # Estado desde el objeto status
+            estado_desc = so.get('status', {}).get('description', 'PENDIENTE')
+            # Fecha de entrega
+            fecha_entrega = so.get('arrivalDate', 'N/A')
+            # Items
+            items = so.get('items', [])
+            if items:
+                nombre_producto = items[0].get('name', 'N/A')
 
-        # Filtro de búsqueda
-        if search and (search.lower() not in num_orden.lower() and search.lower() not in nombre_cliente.lower()):
+        # Filtro de búsqueda manual
+        if search and (search.lower() not in str(num_orden).lower() and search.lower() not in nombre_cliente.lower()):
             continue
 
         ordenes_finales.append({
             "numero_orden": num_orden,
-            "fecha": o.get('createdAt', 'N/A')[:10], # Tomamos solo la fecha YYYY-MM-DD
-            "limite_despacho": primera_sub.get('arrivalDate', 'N/A'),
             "cliente": nombre_cliente,
             "producto": nombre_producto,
-            "estado": estado_latam
+            "entrega_comprometida": fecha_entrega,
+            "estado": estado_desc.upper()
         })
 
     return templates.TemplateResponse("api/ventas_cencosud.html", {

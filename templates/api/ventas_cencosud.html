@@ -28,13 +28,18 @@
     <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
         <table class="w-full text-left">
             <thead>
-                <tr
-                    class="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-[11px] uppercase font-black tracking-widest">
-                    <th class="px-8 py-5">N° Orden Paris</th>
-                    <th class="px-8 py-5">Cliente</th>
-                    <th class="px-8 py-5">Producto</th>
-                    <th class="px-8 py-5">Entrega Comprometida</th>
-                    <th class="px-8 py-5 text-right">Estado</th>
+                <tr class="hover:bg-blue-50/30 transition-all">
+                    <td class="px-8 py-6 font-bold text-slate-800 font-mono">{{ o.numero_orden }}</td>
+                    <td class="px-8 py-6 font-bold text-slate-700 uppercase text-xs">{{ o.cliente }}</td>
+                    <td class="px-8 py-6 text-xs text-slate-500 max-w-xs">{{ o.producto }}</td>
+                    <td class="px-8 py-6 text-sm font-black text-blue-600">
+                        {{ o.entrega_comprometida }}
+                    </td>
+                    <td class="px-8 py-6 text-right">
+                        <span class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase bg-blue-100 text-blue-700">
+                            {{ o.estado }}
+                        </span>
+                    </td>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
