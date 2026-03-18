@@ -10,46 +10,35 @@ templates = Jinja2Templates(directory="templates")
 async def ver_ventas_paris(request: Request, search: str = Query(None)):
     data = cenco_service.obtener_ventas()
     
-    # Buscamos la lista de órdenes en cualquier lugar del JSON
-    ordenes_raw = []
-    if isinstance(data, list):
-        ordenes_raw = data
-    elif isinstance(data, dict):
-        # Paris suele meter la lista en 'content' o 'orders'
-        ordenes_raw = data.get('content', data.get('orders', data.get('items', [])))
-
+    # La API oficial devuelve una lista directamente o dentro de 'orders'
+    ordenes_raw = data if isinstance(data, list) else data.get('orders', [])
+    
     ordenes_finales = []
-
     for o in ordenes_raw:
-        # Extraemos datos con .get() para evitar errores si falta un campo
-        num_orden = o.get('originOrderNumber') or o.get('orderId') or o.get('id', 'N/A')
-        customer = o.get('customer', {})
-        nombre_cliente = o.get('customerName') or customer.get('name') or "Cliente Paris"
+        # Siguiendo el JSON oficial:
+        num_orden = o.get('originOrderNumber') or o.get('id', 'N/A')
+        cliente = o.get('customer', {}).get('name', 'N/A')
         
-        # Navegamos en subOrders
         sub_orders = o.get('subOrders', [])
-        nombre_producto = "Producto JerkHome"
-        estado_desc = "PENDIENTE"
-        fecha_entrega = "N/A"
+        if not sub_orders: continue
+        
+        so = sub_orders[0]
+        items = so.get('items', [])
+        producto = items[0].get('name', 'Mueble JerkHome') if items else 'N/A'
+        
+        # Estado y Fecha
+        estado = so.get('status', {}).get('description', 'APROBADO').upper()
+        fecha_entrega = so.get('arrivalDate', 'N/A')
 
-        if sub_orders:
-            so = sub_orders[0]
-            estado_desc = so.get('status', {}).get('description') or so.get('statusId', 'PENDIENTE')
-            fecha_entrega = so.get('arrivalDate') or so.get('dispatchDate', 'N/A')
-            items = so.get('items', [])
-            if items:
-                nombre_producto = items[0].get('name', 'Mueble JerkHome')
-
-        # Filtro de búsqueda manual
-        if search and (search.lower() not in str(num_orden).lower() and search.lower() not in nombre_cliente.lower()):
+        if search and (search.lower() not in str(num_orden).lower() and search.lower() not in cliente.lower()):
             continue
 
         ordenes_finales.append({
             "numero_orden": num_orden,
-            "cliente": nombre_cliente,
-            "producto": nombre_producto,
+            "cliente": cliente,
+            "producto": producto,
             "entrega_comprometida": fecha_entrega,
-            "estado": str(estado_desc).upper()
+            "estado": estado
         })
 
     return templates.TemplateResponse("api/ventas_cencosud.html", {
