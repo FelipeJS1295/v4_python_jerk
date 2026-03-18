@@ -4,13 +4,18 @@
 <div class="p-8 bg-slate-50 min-h-screen">
     <div class="mb-8 flex justify-between items-end">
         <div>
-            <nav class="text-sm text-slate-400 mb-2">Marketplace / Paris / Logística</nav>
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight italic">Panel <span
-                    class="text-blue-600">Paris Chile</span></h1>
+            <nav class="text-sm text-slate-400 mb-2 font-bold uppercase tracking-tighter">Marketplace / Paris /
+                Logística</nav>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight italic">Panel <span class="text-blue-600">Paris
+                    Chile</span></h1>
         </div>
+        <button onclick="location.reload()"
+            class="p-3 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm">
+            <i class="fas fa-sync-alt"></i>
+        </button>
     </div>
 
-    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-6">
+    <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 mb-6">
         <form method="get" class="flex gap-4">
             <div class="relative flex-1">
                 <i class="fas fa-search absolute left-4 top-3.5 text-slate-300 text-sm"></i>
@@ -19,62 +24,73 @@
                     class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all">
             </div>
             <button type="submit"
-                class="px-8 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all">
-                Filtrar
+                class="px-8 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                FILTRAR
             </button>
         </form>
     </div>
 
-    <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-        <table class="w-full text-left">
-            <thead>
-                <tr class="hover:bg-blue-50/30 transition-all">
-                    <td class="px-8 py-6 font-bold text-slate-800 font-mono">{{ o.numero_orden }}</td>
-                    <td class="px-8 py-6 font-bold text-slate-700 uppercase text-xs">{{ o.cliente }}</td>
-                    <td class="px-8 py-6 text-xs text-slate-500 max-w-xs">{{ o.producto }}</td>
-                    <td class="px-8 py-6 text-sm font-black text-blue-600">
-                        {{ o.entrega_comprometida }}
-                    </td>
-                    <td class="px-8 py-6 text-right">
-                        <span class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase bg-blue-100 text-blue-700">
-                            {{ o.estado }}
-                        </span>
-                    </td>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-50">
-                {% for o in ordenes %}
-                <tr class="hover:bg-blue-50/30 transition-all group">
-                    <td class="px-8 py-6">
-                        <span class="text-sm font-bold text-slate-800 font-mono">{{ o.numero_orden }}</span>
-                        <div class="text-[10px] text-slate-400 mt-0.5">Creada: {{ o.fecha }}</div>
-                    </td>
-                    <td class="px-8 py-6 font-bold text-slate-700 uppercase text-xs">{{ o.cliente }}</td>
-                    <td class="px-8 py-6">
-                        <span
-                            class="text-xs font-medium text-slate-500 line-clamp-1 group-hover:line-clamp-none transition-all">
-                            {{ o.producto }}
-                        </span>
-                    </td>
-                    <td class="px-8 py-6">
-                        <div class="flex items-center text-blue-600">
-                            <i class="far fa-calendar-alt mr-2 text-xs"></i>
-                            <span class="text-sm font-black">{{ o.limite_despacho }}</span>
-                        </div>
-                    </td>
-                    <td class="px-8 py-6 text-right">
-                        <span class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter
-                            {% if 'PREPARACIÓN' in o.estado %}bg-amber-100 text-amber-700
-                            {% elif 'ENVIADO' in o.estado %}bg-blue-100 text-blue-700
-                            {% elif 'ENTREGADO' in o.estado %}bg-emerald-100 text-emerald-700
-                            {% else %}bg-slate-100 text-slate-600{% endif %}">
-                            {{ o.estado }}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr
+                        class="bg-slate-50/50 border-b border-slate-100 text-slate-400 text-[11px] uppercase font-black tracking-widest">
+                        <th class="px-8 py-5">N° Orden Paris</th>
+                        <th class="px-8 py-5">Cliente</th>
+                        <th class="px-8 py-5">Producto</th>
+                        <th class="px-8 py-5 text-center">Entrega Comprometida</th>
+                        <th class="px-8 py-5 text-right">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% if ordenes and ordenes|length > 0 %}
+                    {% for o in ordenes %}
+                    <tr class="hover:bg-blue-50/30 transition-all group">
+                        <td class="px-8 py-6">
+                            <span class="text-sm font-bold text-slate-800 font-mono">{{ o.numero_orden }}</span>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Creada: {{ o.fecha_creacion }}</div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <span class="text-xs font-black text-slate-700 uppercase block">{{ o.cliente }}</span>
+                        </td>
+                        <td class="px-8 py-6">
+                            <span
+                                class="text-xs font-medium text-slate-500 line-clamp-1 group-hover:line-clamp-none transition-all">
+                                {{ o.producto }}
+                            </span>
+                        </td>
+                        <td class="px-8 py-6 text-center">
+                            <div class="flex items-center justify-center text-blue-600">
+                                <i class="far fa-calendar-check mr-2 text-xs"></i>
+                                <span class="text-sm font-black">{{ o.entrega_comprometida }}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <span class="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter
+                                    {% if 'PREPARACIÓN' in o.estado or 'PICKING' in o.estado %}bg-amber-100 text-amber-700
+                                    {% elif 'ENVIADO' in o.estado %}bg-blue-100 text-blue-700
+                                    {% elif 'ENTREGADO' in o.estado %}bg-emerald-100 text-emerald-700
+                                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ o.estado }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-8 py-20 text-center">
+                            <div class="flex flex-col items-center opacity-40">
+                                <i class="fas fa-box-open text-5xl mb-4 text-slate-300"></i>
+                                <p class="text-slate-500 font-black uppercase tracking-widest text-[10px]">No se
+                                    encontraron órdenes de Paris</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
