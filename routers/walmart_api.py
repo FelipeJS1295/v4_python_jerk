@@ -42,7 +42,7 @@ async def ver_ventas_walmart(request: Request):
                 if not ts: return "N/A"
                 return datetime.datetime.fromtimestamp(ts/1000, tz=pytz.utc).astimezone(tz_cl).strftime('%d/%m/%Y %H:%M')
 
-            # --- RUTA EXACTA DEL NOMBRE SEGÚN DOCUMENTACIÓN CHILE ---
+            # --- RUTA DE DATOS SEGÚN JSON CHILE ---
             shipping_info = o.get('shippingInfo', {})
             postal = shipping_info.get('postalAddress', {})
             nombre_cliente = postal.get('name', 'N/A')
@@ -50,33 +50,35 @@ async def ver_ventas_walmart(request: Request):
             lineas_raw = o.get('orderLines', {}).get('orderLine', [])
             if isinstance(lineas_raw, dict): lineas_raw = [lineas_raw]
             
-            total_final = 0
             subtotal_items = 0
             total_envio = 0
             total_impuestos = 0
             total_descuentos = 0
-            
             prod_list = []
 
             for l in lineas_raw:
                 qty = int(l.get('orderLineQuantity', {}).get('amount', 1))
-                
-                # --- CÁLCULO FINANCIERO SEGÚN WALMART SELLER CENTER ---
                 charges = l.get('charges', {}).get('charge', [])
+                
                 for c in charges:
                     monto = float(c.get('chargeAmount', {}).get('amount', 0))
-                    impuesto_monto = float(c.get('tax', {}).get('taxAmount', {}).get('amount', 0))
-                    c_name = c.get('chargeName', '')
+                    # El IVA suele venir dentro de cada cargo en 'tax'
+                    tax_obj = c.get('tax', {})
+                    impuesto_monto = float(tax_obj.get('taxAmount', {}).get('amount', 0))
                     
-                    # Sumamos impuestos siempre
                     total_impuestos += impuesto_monto
                     
-                    if c_name == 'ItemPrice':
+                    c_name = c.get('chargeName', '')
+                    is_discount = c.get('isDiscount')
+
+                    if is_discount or monto < 0:
+                        total_descuentos += monto
+                    elif c_name == 'ItemPrice':
                         subtotal_items += monto
                     elif c_name == 'Shipping':
                         total_envio += monto
-                    elif c_name == 'DISCOUNT' or monto < 0:
-                        total_descuentos += monto # Esto suele ser negativo, ej: -8990
+                    else:
+                        subtotal_items += monto
 
                 prod_list.append({
                     "nombre": l.get('item', {}).get('productName', 'Producto'),
@@ -85,8 +87,8 @@ async def ver_ventas_walmart(request: Request):
                     "estado": l.get('orderLineStatuses', {}).get('orderLineStatus', [{}])[0].get('status', 'N/A')
                 })
 
-            # FÓRMULA FINAL: (Items + Envío + Impuestos) + Descuentos(que ya vienen negativos)
-            monto_neto = subtotal_items + total_envio + total_impuestos + total_descuentos
+            # FÓRMULA: Suma de todo (los descuentos ya restan por ser negativos)
+            monto_total_real = subtotal_items + total_envio + total_impuestos + total_descuentos
 
             ordenes_finales.append({
                 "id_compra": o.get('purchaseOrderId'),
@@ -107,7 +109,7 @@ async def ver_ventas_walmart(request: Request):
                     "metodo": shipping_info.get('methodCode', 'N/A')
                 },
                 "productos": prod_list,
-                "total_str": f"${monto_neto:,.0f}".replace(",", "."),
+                "total_str": f"${monto_total_real:,.0f}".replace(",", "."),
                 "subtotal_str": f"${subtotal_items:,.0f}".replace(",", "."),
                 "envio_str": f"${total_envio:,.0f}".replace(",", "."),
                 "impuestos_str": f"${total_impuestos:,.0f}".replace(",", "."),
