@@ -7,97 +7,18 @@ import uuid
 import requests
 import pytz
 
-# Definimos el router con el prefijo oficial para tu sistema
 router = APIRouter(prefix="/api/marketplace", tags=["Walmart API"])
-
 templates = Jinja2Templates(directory="templates")
 
 @router.get("/ventas", response_class=HTMLResponse)
 async def ver_ventas_walmart(request: Request):
-    # ... lógica de token ...
     token = walmart_api.obtener_token()
     if not token:
-        # ... error handle ...
-        pass
+        return HTMLResponse(content="<h3>Error de Token</h3>", status_code=500)
 
-    # Fechas (Últimos 30 días)
-    hace_30_dias = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
-    # ... url y headers ...
-    
-    # ... petición ...
-    response = requests.get(url, headers=headers, params={"createdStartDate": hace_30_dias, "limit": 100})
-    data = response.json()
-    
-    ordenes_raw = data.get("list", {}).get("elements", {}).get("order", [])
-    if isinstance(ordenes_raw, dict): ordenes_raw = [ordenes_raw]
-
-    # --- NUEVA LÓGICA DE FORMATEO ---
-    ordenes_formateadas = []
-    tz_local = pytz.timezone('America/Santiago') # Ajusta a tu zona horaria
-
-    for o in ordenes_raw:
-        # Formatear Fecha
-        fecha_dt = datetime.datetime.fromtimestamp(o.get('orderDate', 0) / 1000, tz=pytz.utc)
-        fecha_local = fecha_dt.astimezone(tz_local).strftime('%d %b %Y, %H:%M')
-
-        # Calcular Totales y Productos
-        lineas = o.get('orderLines', {}).get('orderLine', [])
-        if isinstance(lineas, dict): lineas = [lineas]
-        
-        total_monto = 0
-        total_productos = 0
-        productos_list = []
-
-        for line in lineas:
-            # Cantidad
-            qty = line.get('orderLineQuantity', {}).get('amount', '0')
-            total_productos += int(qty)
-            
-            # Precio (asumimos el primer cargo como el precio unitario)
-            charge = line.get('charges', {}).get('charge', [{}])[0]
-            price = float(charge.get('chargeAmount', {}).get('amount', 0))
-            total_monto += (price * int(qty))
-
-            productos_list.append({
-                'sku': line.get('item', {}).get('sku', 'N/A'),
-                'productName': line.get('item', {}).get('productName', 'Producto Sin Nombre'),
-                'cantidad': qty,
-                'precioUnitario': price,
-                'estadoLine': line.get('orderLineQuantity', {}).get('status', 'Pendiente')
-            })
-
-        ordenes_formateadas.append({
-            'purchaseOrderId': o.get('purchaseOrderId'),
-            'customerOrderId': o.get('customerOrderId'),
-            'fechaFormateada': fecha_local,
-            'clienteNombre': o.get('postalAddress', {}).get('name', 'N/A'),
-            'clienteEmail': o.get('customerEmailId', 'N/A'),
-            'clienteTelefono': o.get('shippingInfo', {}).get('phone', 'N/A'),
-            'direccionCompleta': f"{o.get('postalAddress', {}).get('address1', '')}, {o.get('postalAddress', {}).get('address2', '')}".strip(', '),
-            'ciudad': o.get('postalAddress', {}).get('city', 'N/A'),
-            'metodoEnvio': o.get('shippingInfo', {}).get('methodCode', 'N/A'),
-            'estadoMokker': productos_list[0]['estadoLine'] if productos_list else 'N/A', # Estado general basado en la primera linea
-            'totalMonto': total_monto,
-            'totalProductos': total_productos,
-            'productos': productos_list
-        })
-
-    return templates.TemplateResponse("api/ventas_walmart.html", {
-        "request": request,
-        "ordenes": ordenes_formateadas
-    })
-
-@router.get("/test-orders")
-async def probar_ordenes_raw():
-    """
-    Ruta de respaldo para ver el JSON crudo en caso de dudas
-    """
-    token = walmart_api.obtener_token()
-    if not token:
-        return {"error": "Token fallido"}
-
-    hace_7_dias = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    # URL necesaria para la petición
     url = "https://marketplace.walmartapis.com/v3/orders"
+    hace_30_dias = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
     
     headers = {
         "WM_SEC.ACCESS_TOKEN": token,
@@ -108,5 +29,54 @@ async def probar_ordenes_raw():
         "Accept": "application/json"
     }
     
-    response = requests.get(url, headers=headers, params={"createdStartDate": hace_7_dias})
-    return response.json()
+    try:
+        response = requests.get(url, headers=headers, params={"createdStartDate": hace_30_dias, "limit": 100})
+        data = response.json()
+        ordenes_raw = data.get("list", {}).get("elements", {}).get("order", [])
+        if isinstance(ordenes_raw, dict): ordenes_raw = [ordenes_raw]
+
+        ordenes_formateadas = []
+        tz_local = pytz.timezone('America/Santiago')
+
+        for o in ordenes_raw:
+            # Fecha legible
+            fecha_dt = datetime.datetime.fromtimestamp(o.get('orderDate', 0) / 1000, tz=pytz.utc)
+            fecha_local = fecha_dt.astimezone(tz_local).strftime('%d/%m/%Y %H:%M')
+
+            # Procesar Líneas de Productos
+            lineas = o.get('orderLines', {}).get('orderLine', [])
+            if isinstance(lineas, dict): lineas = [lineas]
+            
+            prod_list = []
+            total_monto = 0
+            for l in lineas:
+                qty = int(l.get('orderLineQuantity', {}).get('amount', 1))
+                price = float(l.get('charges', {}).get('charge', [{}])[0].get('chargeAmount', {}).get('amount', 0))
+                total_monto += (price * qty)
+                prod_list.append({
+                    "nombre": l.get('item', {}).get('productName', 'Producto'),
+                    "sku": l.get('item', {}).get('sku', 'N/A'),
+                    "cantidad": qty,
+                    "precio": price,
+                    "estado": l.get('orderLineQuantity', {}).get('status', 'Pendiente')
+                })
+
+            ordenes_formateadas.append({
+                "id": o.get('purchaseOrderId'),
+                "id_cliente": o.get('customerOrderId'),
+                "fecha": fecha_local,
+                "cliente": o.get('postalAddress', {}).get('name', 'N/A'),
+                "email": o.get('customerEmailId', 'N/A'),
+                "telefono": o.get('shippingInfo', {}).get('phone', 'N/A'),
+                "direccion": f"{o.get('postalAddress', {}).get('address1', '')} {o.get('postalAddress', {}).get('address2', '')}",
+                "ciudad": o.get('postalAddress', {}).get('city', 'N/A'),
+                "region": o.get('postalAddress', {}).get('state', 'N/A'),
+                "total": total_monto,
+                "cant_prod": len(prod_list),
+                "productos": prod_list,
+                "estado_general": prod_list[0]['estado'] if prod_list else 'N/A'
+            })
+
+        return templates.TemplateResponse("api/ventas_walmart.html", {"request": request, "ordenes": ordenes_formateadas})
+    except Exception as e:
+        return HTMLResponse(content=f"Error: {str(e)}", status_code=500)
