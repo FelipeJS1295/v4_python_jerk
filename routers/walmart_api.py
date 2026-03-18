@@ -38,3 +38,32 @@ async def probar_ordenes():
         return response.json() 
     except Exception as e:
         return {"error": str(e)}
+
+@router.get("/ventas", response_class=HTMLResponse)
+async def ver_ventas_walmart(request: Request):
+    token = walmart_api.obtener_token()
+    if not token:
+        return "Error: No se pudo conectar con Walmart"
+
+    # Pedimos las órdenes de los últimos 30 días para tener buen volumen
+    hace_30_dias = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    url = "https://marketplace.walmartapis.com/v3/orders"
+    headers = {
+        "WM_SEC.ACCESS_TOKEN": token,
+        "Authorization": f"Basic {walmart_api.get_basic_auth()}",
+        "WM_SVC.NAME": "Walmart Marketplace",
+        "WM_QOS.CORRELATION_ID": str(uuid.uuid4()),
+        "WM_MARKET": "cl",
+        "Accept": "application/json"
+    }
+    
+    response = requests.get(url, headers=headers, params={"createdStartDate": hace_30_dias})
+    data = response.json()
+    
+    # Extraemos la lista de órdenes (manejando si viene vacío)
+    ordenes = data.get("list", {}).get("elements", {}).get("order", [])
+    
+    return templates.TemplateResponse("api/ventas_walmart.html", {
+        "request": request,
+        "ordenes": ordenes
+    })
