@@ -5,6 +5,7 @@ from utils.walmart_service import walmart_api
 import datetime
 import uuid
 import requests
+import pytz
 
 # Definimos el router con el prefijo oficial para tu sistema
 router = APIRouter(prefix="/api/marketplace", tags=["Walmart API"])
@@ -13,51 +14,78 @@ templates = Jinja2Templates(directory="templates")
 
 @router.get("/ventas", response_class=HTMLResponse)
 async def ver_ventas_walmart(request: Request):
-    """
-    Obtiene las ventas de los últimos 30 días directamente de la API de Walmart
-    y las muestra en una tabla sin guardar en base de datos local.
-    """
-    # 1. Obtener Token de acceso
+    # ... lógica de token ...
     token = walmart_api.obtener_token()
     if not token:
-        return HTMLResponse(content="<h3>Error: No se pudo obtener el token de Walmart. Revisa el archivo .env</h3>", status_code=500)
+        # ... error handle ...
+        pass
 
-    # 2. Configurar la fecha de consulta (últimos 30 días)
+    # Fechas (Últimos 30 días)
     hace_30_dias = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    # ... url y headers ...
     
-    # 3. Preparar la petición a Walmart
-    url = "https://marketplace.walmartapis.com/v3/orders"
-    headers = {
-        "WM_SEC.ACCESS_TOKEN": token,
-        "Authorization": f"Basic {walmart_api.get_basic_auth()}",
-        "WM_SVC.NAME": "Walmart Marketplace",
-        "WM_QOS.CORRELATION_ID": str(uuid.uuid4()),
-        "WM_MARKET": "cl",
-        "Accept": "application/json"
-    }
+    # ... petición ...
+    response = requests.get(url, headers=headers, params={"createdStartDate": hace_30_dias, "limit": 100})
+    data = response.json()
     
-    params = {
-        "createdStartDate": hace_30_dias,
-        "limit": 100  # Ajustamos el límite para ver más órdenes de una vez
-    }
+    ordenes_raw = data.get("list", {}).get("elements", {}).get("order", [])
+    if isinstance(ordenes_raw, dict): ordenes_raw = [ordenes_raw]
 
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        data = response.json()
+    # --- NUEVA LÓGICA DE FORMATEO ---
+    ordenes_formateadas = []
+    tz_local = pytz.timezone('America/Santiago') # Ajusta a tu zona horaria
+
+    for o in ordenes_raw:
+        # Formatear Fecha
+        fecha_dt = datetime.datetime.fromtimestamp(o.get('orderDate', 0) / 1000, tz=pytz.utc)
+        fecha_local = fecha_dt.astimezone(tz_local).strftime('%d %b %Y, %H:%M')
+
+        # Calcular Totales y Productos
+        lineas = o.get('orderLines', {}).get('orderLine', [])
+        if isinstance(lineas, dict): lineas = [lineas]
         
-        # 4. Navegar por el JSON de Walmart para llegar a la lista de órdenes
-        # Estructura: data -> list -> elements -> order (lista)
-        ordenes = data.get("list", {}).get("elements", {}).get("order", [])
-        
-        # 5. Retornar la vista con los datos
-        return templates.TemplateResponse("api/ventas_walmart.html", {
-            "request": request,
-            "ordenes": ordenes
+        total_monto = 0
+        total_productos = 0
+        productos_list = []
+
+        for line in lineas:
+            # Cantidad
+            qty = line.get('orderLineQuantity', {}).get('amount', '0')
+            total_productos += int(qty)
+            
+            # Precio (asumimos el primer cargo como el precio unitario)
+            charge = line.get('charges', {}).get('charge', [{}])[0]
+            price = float(charge.get('chargeAmount', {}).get('amount', 0))
+            total_monto += (price * int(qty))
+
+            productos_list.append({
+                'sku': line.get('item', {}).get('sku', 'N/A'),
+                'productName': line.get('item', {}).get('productName', 'Producto Sin Nombre'),
+                'cantidad': qty,
+                'precioUnitario': price,
+                'estadoLine': line.get('orderLineQuantity', {}).get('status', 'Pendiente')
+            })
+
+        ordenes_formateadas.append({
+            'purchaseOrderId': o.get('purchaseOrderId'),
+            'customerOrderId': o.get('customerOrderId'),
+            'fechaFormateada': fecha_local,
+            'clienteNombre': o.get('postalAddress', {}).get('name', 'N/A'),
+            'clienteEmail': o.get('customerEmailId', 'N/A'),
+            'clienteTelefono': o.get('shippingInfo', {}).get('phone', 'N/A'),
+            'direccionCompleta': f"{o.get('postalAddress', {}).get('address1', '')}, {o.get('postalAddress', {}).get('address2', '')}".strip(', '),
+            'ciudad': o.get('postalAddress', {}).get('city', 'N/A'),
+            'metodoEnvio': o.get('shippingInfo', {}).get('methodCode', 'N/A'),
+            'estadoMokker': productos_list[0]['estadoLine'] if productos_list else 'N/A', # Estado general basado en la primera linea
+            'totalMonto': total_monto,
+            'totalProductos': total_productos,
+            'productos': productos_list
         })
 
-    except Exception as e:
-        return HTMLResponse(content=f"<h3>Error al conectar con la API de Walmart: {str(e)}</h3>", status_code=500)
+    return templates.TemplateResponse("api/ventas_walmart.html", {
+        "request": request,
+        "ordenes": ordenes_formateadas
+    })
 
 @router.get("/test-orders")
 async def probar_ordenes_raw():

@@ -5,66 +5,202 @@
 {% block breadcrumb %}API / Ventas Walmart{% endblock %}
 
 {% block content %}
-<div class="content-card rounded-2xl overflow-hidden">
-    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-        <h3 class="font-bold text-slate-800 text-lg">Órdenes Recientes (Últimos 30 días)</h3>
-        <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-wider">
-            Walmart Live API
-        </span>
+<div class="space-y-6">
+    <div class="flex justify-between items-center bg-white p-6 rounded-2xl content-card">
+        <div>
+            <h3 class="font-bold text-slate-800 text-xl">Panel de Órdenes Marketplace</h3>
+            <p class="text-sm text-slate-500 mt-1">Visualización en tiempo real de los últimos 30 días.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span
+                class="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider flex items-center">
+                <span class="relative flex h-2 w-2 mr-2">
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                Walmart Live API
+            </span>
+        </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
-                <tr>
-                    <th class="px-6 py-4">ID Orden</th>
-                    <th class="px-6 py-4">Cliente</th>
-                    <th class="px-6 py-4">Ciudad</th>
-                    <th class="px-6 py-4">Monto</th>
-                    <th class="px-6 py-4 text-center">Acciones</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                {% for orden in ordenes %}
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 font-medium text-blue-600">
-                        #{{ orden.get('purchaseOrderId', 'N/A') }}
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex flex-col">
-                            <span class="text-sm font-semibold text-slate-700">
-                                {{ orden.get('postalAddress', {}).get('name', 'Sin Nombre') }}
-                            </span>
-                            <span class="text-xs text-slate-400">
-                                {{ orden.get('customerEmailId', 'Sin Email') }}
-                            </span>
+    <div class="space-y-4">
+        {% for orden in ordenes %}
+        <div class="bg-white rounded-2xl content-card border border-slate-100 overflow-hidden accordion-item">
+
+            # --- CABECERA DE LA TARJETA (Siempre visible) ---
+            <div class="p-6 cursor-pointer flex items-center justify-between group accordion-header"
+                onclick="toggleAccordion(this)">
+                <div class="flex items-center space-x-6 flex-1">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox"
+                            class="form-checkbox h-5 w-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                        <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-blue-600">
+                            <i class="fas fa-shopping-bag"></i>
                         </div>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-slate-600">
-                        {{ orden.get('postalAddress', {}).get('city', 'N/A') }}
-                    </td>
-                    <td class="px-6 py-4 font-bold text-slate-800">
-                        {# Intentamos buscar el precio en la primera línea de la orden #}
-                        {% set precio = orden.get('orderLines', {}).get('orderLine', [{}])[0].get('charges',
-                        {}).get('charge', [{}])[0].get('chargeAmount', {}).get('amount', 0) %}
-                        ${{ "{:,.0f}".format(precio|float).replace(',', '.') }}
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <button class="p-2 text-slate-400 hover:text-blue-500 transition-colors" title="Ver Detalles">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                        <i class="fas fa-box-open text-4xl mb-4 block opacity-20"></i>
-                        No se encontraron órdenes en este periodo.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </div>
+
+                    # --- COLUMNA 1: Info Básica ---
+                    <div class="flex-1 grid grid-cols-5 gap-4 items-center">
+                        <div class="col-span-1">
+                            <p class="text-xs text-slate-400 font-medium">Orden de compra</p>
+                            <p class="text-sm font-bold text-slate-800 mt-1">N° {{ orden.purchaseOrderId }}</p>
+                            <p class="text-xs text-slate-500 mt-1">Ref: {{ orden.customerOrderId }}</p>
+                        </div>
+
+                        <div class="col-span-1">
+                            <p class="text-xs text-slate-400 font-medium">Fecha Venta</p>
+                            <p class="text-sm text-slate-700 font-medium mt-1">{{ orden.fechaFormateada }}</p>
+                        </div>
+
+                        <div class="col-span-1">
+                            <p class="text-xs text-slate-400 font-medium">Cliente</p>
+                            <p class="text-sm text-slate-800 font-semibold mt-1">{{ orden.clienteNombre }}</p>
+                            <p class="text-xs text-slate-500 mt-1">{{ orden.ciudad }}</p>
+                        </div>
+
+                        <div class="col-span-1 text-center">
+                            <p class="text-xs text-slate-400 font-medium">Productos</p>
+                            <p class="text-sm text-slate-700 font-medium mt-1">{{ orden.totalProductos }} un.</p>
+                        </div>
+
+                        <div class="col-span-1 text-right">
+                            <p class="text-xs text-slate-400 font-medium">Total</p>
+                            <p class="text-lg font-bold text-slate-900 mt-1">${{
+                                "{:,.0f}".format(orden.totalMonto).replace(',', '.') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 ml-6">
+                    <span class="px-3 py-1.5 rounded-lg text-xs font-bold 
+                        {% if orden.estadoMokker == 'Created' %}bg-amber-100 text-amber-800
+                        {% elif orden.estadoMokker == 'Shipped' %}bg-emerald-100 text-emerald-800
+                        {% else %}bg-slate-100 text-slate-700{% endif %}">
+                        {{ orden.estadoMokker }}
+                    </span>
+                    <button
+                        class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors accordion-icon">
+                        <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                    </button>
+                </div>
+            </div>
+
+            # --- DETALLE EXPANDIBLE (Oculto por defecto) ---
+            <div class="accordion-content hidden border-t border-slate-100 bg-slate-50/50">
+                <div class="p-8 grid grid-cols-3 gap-8">
+
+                    # --- PANEL IZQUIERDO: Datos de Envío ---
+                    <div class="col-span-1 space-y-6">
+                        <h4 class="font-bold text-slate-800 border-b border-slate-200 pb-3 flex items-center">
+                            <i class="fas fa-truck mr-2 text-blue-500"></i> Información de Entrega
+                        </h4>
+                        <div class="bg-white p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
+                            <p class="text-sm"><span class="font-semibold text-slate-600">Dirección:</span> {{
+                                orden.direccionCompleta }}</p>
+                            <p class="text-sm"><span class="font-semibold text-slate-600">Ciudad/Región:</span> {{
+                                orden.ciudad }}</p>
+                            <p class="text-sm"><span class="font-semibold text-slate-600">Método Envío:</span> {{
+                                orden.metodoEnvio }}</p>
+                        </div>
+
+                        <h4 class="font-bold text-slate-800 border-b border-slate-200 pb-3 flex items-center pt-2">
+                            <i class="fas fa-user-circle mr-2 text-blue-500"></i> Contacto Cliente
+                        </h4>
+                        <div class="bg-white p-5 rounded-xl border border-slate-100 space-y-3 shadow-sm">
+                            <p class="text-sm"><span class="font-semibold text-slate-600">Email:</span> {{
+                                orden.clienteEmail }}</p>
+                            <p class="text-sm"><span class="font-semibold text-slate-600">Teléfono:</span> {{
+                                orden.clienteTelefono }}</p>
+                        </div>
+                    </div>
+
+                    # --- PANEL DERECHO: Lista de Productos ---
+                    <div class="col-span-2 space-y-6">
+                        <h4 class="font-bold text-slate-800 border-b border-slate-200 pb-3 flex items-center">
+                            <i class="fas fa-box mr-2 text-blue-500"></i> Detalle de Productos ({{ orden.totalProductos
+                            }} artículos)
+                        </h4>
+
+                        <div class="space-y-3">
+                            {% for prod in orden.productos %}
+                            <div
+                                class="bg-white p-5 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm hover:border-blue-100 transition-colors">
+                                <div class="flex items-center space-x-4 flex-1">
+                                    <div
+                                        class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 flex-shrink-0">
+                                        <i class="fas fa-image text-xl"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-slate-800">{{ prod.productName }}</p>
+                                        <p class="text-xs text-slate-500 mt-1">SKU: <span
+                                                class="font-mono text-blue-600">{{ prod.sku }}</span></p>
+                                    </div>
+                                </div>
+                                <div class="text-right flex items-center space-x-6 ml-6">
+                                    <div class="text-center">
+                                        <p class="text-xs text-slate-400">Cant.</p>
+                                        <p class="text-sm font-bold text-slate-800">{{ prod.cantidad }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-slate-400">P. Unitario</p>
+                                        <p class="text-sm font-bold text-slate-800">${{
+                                            "{:,.0f}".format(prod.precioUnitario).replace(',', '.') }}</p>
+                                    </div>
+                                    <span class="px-2 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-600">
+                                        {{ prod.estadoLine }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-2xl content-card p-16 text-center text-slate-500 border border-slate-100">
+            <i class="fas fa-box-open text-6xl mb-6 block opacity-20"></i>
+            <h3 class="text-xl font-bold text-slate-700">No hay órdenes recientes</h3>
+            <p class="mt-2 max-w-md mx-auto">No se encontraron ventas en Walmart Chile durante los últimos 30 días. Si
+                acabas de realizar una venta, puede tardar unos minutos en aparecer.</p>
+        </div>
+        {% endfor %}
     </div>
 </div>
+
+# --- JAVASCRIPT PARA ACORDEÓN ---
+<script>
+    function toggleAccordion(header) {
+        const item = header.closest('.accordion-item');
+        const content = item.querySelector('.accordion-content');
+        const icon = header.querySelector('.accordion-icon i');
+
+        // Cerrar otros acordeones abiertos (opcional, estilo Falabella lo permite múltiples abiertos)
+        // document.querySelectorAll('.accordion-content').forEach(c => {
+        //     if (c !== content) {
+        #         c.classList.add('hidden');
+        #         c.closest('.accordion-item').querySelector('.accordion-icon i').classList.remove('rotate-180');
+        //     }
+        // });
+
+        // Toggle actual
+        content.classList.toggle('hidden');
+        icon.classList.toggle('rotate-180');
+
+        // Efecto visual en la cabecera al estar abierto
+        if (!content.classList.contains('hidden')) {
+            header.classList.add('bg-slate-50');
+        } else {
+            header.classList.remove('bg-slate-50');
+        }
+    }
+</script>
+
+<style>
+    /* Rotación suave para el icono */
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+</style>
 {% endblock %}
