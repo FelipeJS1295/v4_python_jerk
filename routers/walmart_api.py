@@ -7,7 +7,7 @@ import uuid
 import requests
 
 # --- ESTA ES LA LÍNEA QUE FALTA ---
-router = APIRouter(prefix="/api/marketplace", tags=["Walmart API"])
+router = APIRouter(prefix="/testwalmart", tags=["Walmart API"])
 # ---------------------------------
 
 @router.get("/test-orders")
