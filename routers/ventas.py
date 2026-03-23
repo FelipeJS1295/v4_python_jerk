@@ -12,6 +12,9 @@ from datetime import datetime, timedelta
 from fastapi.responses import StreamingResponse
 from collections import defaultdict
 from schemas.venta_schema import VentaManualRequest, VentaManualResponse
+from fastapi import Response, HTTPException
+import csv
+
 
 router = APIRouter(prefix="/ventas", tags=["Ventas"])
 
@@ -953,7 +956,8 @@ async def descargar_nubox_cliente(
     """Descargar CSV formato Nubox para cliente específico"""
     
     conn = conectar_mysql()
-    cursor = conn.cursor(dictionary=True)
+    # Usamos buffered=True para evitar errores de conexión en consultas seguidas
+    cursor = conn.cursor(dictionary=True, buffered=True) 
     
     try:
         # Construir filtros
@@ -978,7 +982,7 @@ async def descargar_nubox_cliente(
 
         where_clause = "WHERE " + " AND ".join(filtros)
 
-        # Query principal con todos los campos necesarios
+        # Query principal
         query = f"""
             SELECT 
                 vr.documento,
@@ -1012,7 +1016,7 @@ async def descargar_nubox_cliente(
         # Procesar datos para Nubox
         datos_nubox = procesar_datos_nubox(datos)
         
-        # Crear CSV
+        # Crear CSV en memoria
         output = io.StringIO()
         
         # Headers Nubox
@@ -1024,28 +1028,35 @@ async def descargar_nubox_cliente(
             "FECHAVENCIMIENTO"
         ]
         
-        # Escribir CSV
-        import csv
-        writer = csv.writer(output, delimiter=';')
+        # Usamos delimiter ';' que es el estándar de Nubox en Chile
+        writer = csv.writer(output, delimiter=';', lineterminator='\n')
         writer.writerow(headers)
         
         for row in datos_nubox:
             writer.writerow(row)
         
-        output.seek(0)
+        # Obtener el contenido y cerrar el objeto StringIO
+        contenido_csv = output.getvalue()
+        output.close()
         
-        # Obtener nombre del cliente para el archivo
+        # Nombre del archivo
         cliente_nombre = datos[0]['cliente_nombre'] if datos else 'cliente'
         fecha_actual = datetime.now().strftime('%Y%m%d')
         nombre_archivo = f"nubox_{cliente_nombre.lower().replace(' ', '_')}_{fecha_actual}.csv"
         
-        return StreamingResponse(
-            io.StringIO(output.getvalue()),
+        # Retornamos Response directo en lugar de StreamingResponse
+        # Esto soluciona el error "El sitio no estaba disponible"
+        return Response(
+            content=contenido_csv,
             media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
+            headers={
+                "Content-Disposition": f"attachment; filename={nombre_archivo}",
+                "Content-Type": "text/csv; charset=utf-8"
+            }
         )
         
     except Exception as e:
+        print(f"Error en descargar_nubox: {e}")
         raise HTTPException(status_code=500, detail=f"Error al generar archivo Nubox: {str(e)}")
     finally:
         cursor.close()
