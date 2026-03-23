@@ -956,11 +956,11 @@ async def descargar_nubox_cliente(
     """Descargar CSV formato Nubox para cliente específico"""
     
     conn = conectar_mysql()
-    # Usamos buffered=True para evitar errores de conexión en consultas seguidas
+    # Usamos buffered=True para asegurar que la lectura de datos sea completa
     cursor = conn.cursor(dictionary=True, buffered=True) 
     
     try:
-        # Construir filtros
+        # 1. Construir filtros (Excluimos canceladas por defecto para Nubox)
         filtros = ["vr.cliente_id = %s", "vr.estado != 'cancelada'"]
         params = [cliente_id]
 
@@ -982,7 +982,7 @@ async def descargar_nubox_cliente(
 
         where_clause = "WHERE " + " AND ".join(filtros)
 
-        # Query principal
+        # 2. Query principal
         query = f"""
             SELECT 
                 vr.documento,
@@ -1013,13 +1013,12 @@ async def descargar_nubox_cliente(
         if not datos:
             raise HTTPException(status_code=404, detail="No se encontraron datos para exportar")
         
-        # Procesar datos para Nubox
+        # 3. Procesar datos para Nubox (Llama a tu función procesar_datos_nubox)
         datos_nubox = procesar_datos_nubox(datos)
         
-        # Crear CSV en memoria
+        # 4. Crear CSV en memoria (StringIO)
         output = io.StringIO()
         
-        # Headers Nubox
         headers = [
             "TIPO", "FOLIO", "SECUENCIA", "FECHA", "RUT", "RAZONSOCIAL", 
             "GIRO", "COMUNA", "DIRECCION", "AFECTO", "PRODUCTO", 
@@ -1028,24 +1027,26 @@ async def descargar_nubox_cliente(
             "FECHAVENCIMIENTO"
         ]
         
-        # Usamos delimiter ';' que es el estándar de Nubox en Chile
+        # Nubox requiere punto y coma (;) y saltos de línea estándar
         writer = csv.writer(output, delimiter=';', lineterminator='\n')
         writer.writerow(headers)
         
         for row in datos_nubox:
             writer.writerow(row)
         
-        # Obtener el contenido y cerrar el objeto StringIO
+        # 5. Generar nombre de archivo SEGURO (Aquí estaba tu error de NoneType)
+        # Usamos .get() y un fallback 'cliente' para evitar el error si el nombre es NULL
+        nombre_raw = datos[0].get('cliente_nombre') or "cliente"
+        cliente_nombre_limpio = str(nombre_raw).lower().replace(' ', '_')
+        
+        fecha_actual = datetime.now().strftime('%Y%m%d')
+        nombre_archivo = f"nubox_{cliente_nombre_limpio}_{fecha_actual}.csv"
+        
+        # 6. Obtener el valor final y cerrar el buffer
         contenido_csv = output.getvalue()
         output.close()
         
-        # Nombre del archivo
-        cliente_nombre = datos[0]['cliente_nombre'] if datos else 'cliente'
-        fecha_actual = datetime.now().strftime('%Y%m%d')
-        nombre_archivo = f"nubox_{cliente_nombre.lower().replace(' ', '_')}_{fecha_actual}.csv"
-        
-        # Retornamos Response directo en lugar de StreamingResponse
-        # Esto soluciona el error "El sitio no estaba disponible"
+        # 7. Retornar Response directo (Mucho más estable que StreamingResponse)
         return Response(
             content=contenido_csv,
             media_type="text/csv",
@@ -1056,7 +1057,8 @@ async def descargar_nubox_cliente(
         )
         
     except Exception as e:
-        print(f"Error en descargar_nubox: {e}")
+        print(f"❌ Error crítico en descargar_nubox: {str(e)}")
+        # Enviamos el error detallado para saber si falla en otra parte
         raise HTTPException(status_code=500, detail=f"Error al generar archivo Nubox: {str(e)}")
     finally:
         cursor.close()
