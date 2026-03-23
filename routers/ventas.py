@@ -1122,91 +1122,91 @@ def formatear_rut(rut):
     return f"{numero}-{dv}"
 
 def procesar_datos_nubox(datos):
-    """Procesa los datos según la lógica especificada para Nubox"""
+    """Procesa los datos según la lógica especificada para Nubox con protección anti-errores"""
     
     resultado = []
-    
-    # Mapear folios por numero_orden (mismo número de orden = mismo folio)
     folios_por_orden = {}
     folio_counter = 1
     
-    # Agrupar y organizar por numero_orden para mantener el mismo folio
     from collections import defaultdict
     ordenes = defaultdict(list)
     
     # Agrupar datos por numero_orden
     for row in datos:
-        ordenes[row['numero_orden']].append(row)
+        # Usamos .get por seguridad
+        num_orden = row.get('numero_orden') or "SIN_ORDEN"
+        ordenes[num_orden].append(row)
     
     # Procesar cada orden
     for numero_orden, items in ordenes.items():
-        # Asignar folio para esta orden
         if numero_orden not in folios_por_orden:
             folios_por_orden[numero_orden] = folio_counter
             folio_counter += 1
         
         folio_orden = folios_por_orden[numero_orden]
-        
-        # Calcular secuencias dentro de esta orden
         secuencia_actual = defaultdict(int)
         
         for row in items:
-            # Campos base
-            producto = row['producto']
-            documento = row['documento'].lower()
+            # 1. Validar producto (evita None)
+            producto = row.get('producto') or "Producto"
             
-            # Calcular secuencia para este producto en esta orden
+            # 2. ✅ SOLUCIÓN AL ERROR: Validar documento antes de lower()
+            doc_raw = row.get('documento')
+            documento = str(doc_raw).lower() if doc_raw else "boleta"
+            
+            # Calcular secuencia
             secuencia_actual[producto] += 1
             secuencia = secuencia_actual[producto]
             
             # TIPO según documento
-            tipo = "39" if documento == "boleta" else "33"  # 39=Boleta, 33=Factura
+            tipo = "39" if documento == "boleta" else "33"
             
-            # RUT y RAZONSOCIAL según tipo de documento
+            # 3. RUT y RAZONSOCIAL con protecciones or ""
             if documento == "boleta":
-                rut = formatear_rut(row['rut_documento'])
-                razon_social = limpiar_caracteres_especiales(row['cliente_final'] or "")
+                rut = formatear_rut(row.get('rut_documento'))
+                razon_social = limpiar_caracteres_especiales(row.get('cliente_final') or "")
                 giro = "Particular"
-            else:  # factura
-                rut = formatear_rut(row['rut'])
-                razon_social = limpiar_caracteres_especiales(row['razon_social'] or "")
-                giro = limpiar_caracteres_especiales(row['giro'] or "Particular")
+            else:
+                rut = formatear_rut(row.get('rut'))
+                razon_social = limpiar_caracteres_especiales(row.get('razon_social') or "")
+                giro = limpiar_caracteres_especiales(row.get('giro') or "Particular")
             
-            # Truncar giro a máximo 40 caracteres
-            giro = giro[:40] if len(giro) > 40 else giro
+            giro = giro[:40]
             
-            # PRECIO = precio_cliente + costo_despacho
-            precio = (row['precio_cliente'] or 0) + (row['costo_despacho'] or 0)
+            # 4. Asegurar que los precios sean números (evita errores de suma con None)
+            precio_cli = row.get('precio_cliente') or 0
+            costo_desp = row.get('costo_despacho') or 0
+            precio = precio_cli + costo_desp
             
-            # Formatear fecha
-            fecha = row['fecha_compra'].strftime('%d/%m/%Y') if row['fecha_compra'] else ""
+            # 5. Formatear fecha de forma segura
+            f_compra = row.get('fecha_compra')
+            fecha = f_compra.strftime('%d/%m/%Y') if f_compra else ""
             
-            # Limpiar y truncar dirección a máximo 60 caracteres
-            direccion_limpia = limpiar_caracteres_especiales(row['direccion'] or "")
-            direccion_truncada = direccion_limpia[:60] if len(direccion_limpia) > 60 else direccion_limpia
+            # 6. Dirección segura
+            dir_raw = row.get('direccion') or ""
+            direccion_limpia = limpiar_caracteres_especiales(dir_raw)
+            direccion_truncada = direccion_limpia[:60]
             
             # Construir fila
             fila_nubox = [
-                tipo,                                                    # TIPO
-                folio_orden,                                            # FOLIO (mismo para toda la orden)
-                secuencia,                                              # SECUENCIA (1,2,3... dentro de la orden)
-                fecha,                                                  # FECHA
-                rut,                                                   # RUT
-                razon_social,                                          # RAZONSOCIAL
-                giro,                                                  # GIRO (máx 40 caracteres)
-                limpiar_caracteres_especiales(row['comuna'] or ""),    # COMUNA
-                direccion_truncada,                                     # DIRECCION (máx 60 caracteres)
-                "SI",                                                  # AFECTO
-                limpiar_caracteres_especiales(producto),               # PRODUCTO
-                numero_orden,                                          # DESCRIPCION
-                row['unidades'] or 1,                                  # CANTIDAD
-                precio,                                                # PRECIO
-                "0",                                                   # PORCENTDSCTO (0 por defecto)
-                limpiar_caracteres_especiales(row['email'] or ""),     # EMAIL
-                "3",                                                   # TIPOSERVICIO
-                "",                                                    # PERIODODESDE
-                "",                                                    # PERIODOHASTA
-                ""                                                     # FECHAVENCIMIENTO
+                tipo,
+                folio_orden,
+                secuencia,
+                fecha,
+                rut,
+                razon_social,
+                giro,
+                limpiar_caracteres_especiales(row.get('comuna') or ""),
+                direccion_truncada,
+                "SI",
+                limpiar_caracteres_especiales(producto),
+                numero_orden,
+                row.get('unidades') or 1,
+                precio,
+                "0",
+                limpiar_caracteres_especiales(row.get('email') or ""),
+                "3",
+                "", "", ""
             ]
             
             resultado.append(fila_nubox)
