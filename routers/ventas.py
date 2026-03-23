@@ -987,7 +987,7 @@ async def descargar_nubox_cliente(
             SELECT 
                 vr.documento,
                 vr.numero_orden,
-                vr.fecha_compra,
+                vr.fecha_entrega,
                 vr.rut_documento,
                 vr.rut,
                 vr.cliente_final,
