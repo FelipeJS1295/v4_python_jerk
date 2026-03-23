@@ -524,36 +524,27 @@
 
   // Función para descargar archivo Nubox
   function descargarNubox(clienteId, clienteNombre) {
-    // Obtener los valores de los filtros del formulario
     const form = document.getElementById('filtros-form');
     const formData = new FormData(form);
-
-    // Construir URL con parámetros
     const params = new URLSearchParams();
 
-    // Agregar filtros si tienen valores
+    // Recogemos los filtros actuales
     if (formData.get('cliente')) params.append('cliente', formData.get('cliente'));
     if (formData.get('orden')) params.append('orden', formData.get('orden'));
     if (formData.get('desde')) params.append('desde', formData.get('desde'));
     if (formData.get('hasta')) params.append('hasta', formData.get('hasta'));
     if (formData.get('estado')) params.append('estado', formData.get('estado'));
 
-    // Crear URL de descarga
+    // IMPORTANTE: Al usar Response directo en el backend, 
+    // simplemente navegar a la URL iniciará la descarga sin errores de red.
     const url = `/ventas/descargar/nubox/${clienteId}?${params.toString()}`;
 
-    // Crear enlace temporal y hacer clic para descargar
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nubox_${clienteNombre.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Opción más segura para descargas de archivos generados:
+    window.location.href = url;
 
-    // Cerrar menú
+    // Cerrar el menú
     const submenu = document.getElementById('nubox-submenu');
-    if (submenu) {
-      submenu.classList.add('hidden');
-    }
+    if (submenu) submenu.classList.add('hidden');
   }
 
   // Función para inicializar menú Nubox
