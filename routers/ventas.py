@@ -1133,7 +1133,6 @@ def procesar_datos_nubox(datos):
     
     # Agrupar datos por numero_orden
     for row in datos:
-        # Usamos .get por seguridad
         num_orden = row.get('numero_orden') or "SIN_ORDEN"
         ordenes[num_orden].append(row)
     
@@ -1147,21 +1146,16 @@ def procesar_datos_nubox(datos):
         secuencia_actual = defaultdict(int)
         
         for row in items:
-            # 1. Validar producto (evita None)
             producto = row.get('producto') or "Producto"
             
-            # 2. ✅ SOLUCIÓN AL ERROR: Validar documento antes de lower()
             doc_raw = row.get('documento')
             documento = str(doc_raw).lower() if doc_raw else "boleta"
             
-            # Calcular secuencia
             secuencia_actual[producto] += 1
             secuencia = secuencia_actual[producto]
             
-            # TIPO según documento
             tipo = "39" if documento == "boleta" else "33"
             
-            # 3. RUT y RAZONSOCIAL con protecciones or ""
             if documento == "boleta":
                 rut = formatear_rut(row.get('rut_documento'))
                 razon_social = limpiar_caracteres_especiales(row.get('cliente_final') or "")
@@ -1173,26 +1167,25 @@ def procesar_datos_nubox(datos):
             
             giro = giro[:40]
             
-            # 4. Asegurar que los precios sean números (evita errores de suma con None)
             precio_cli = row.get('precio_cliente') or 0
             costo_desp = row.get('costo_despacho') or 0
             precio = precio_cli + costo_desp
             
-            # 5. Formatear fecha de forma segura
-            f_compra = row.get('fecha_compra')
-            fecha = f_compra.strftime('%d/%m/%Y') if f_compra else ""
+            # --- CAMBIO IMPORTANTE AQUÍ ---
+            # Intentamos sacar fecha_entrega, si no existe, usamos fecha_compra como respaldo
+            f_obj = row.get('fecha_entrega') or row.get('fecha_compra')
+            fecha = f_obj.strftime('%d/%m/%Y') if f_obj else ""
+            # ------------------------------
             
-            # 6. Dirección segura
             dir_raw = row.get('direccion') or ""
             direccion_limpia = limpiar_caracteres_especiales(dir_raw)
             direccion_truncada = direccion_limpia[:60]
             
-            # Construir fila
             fila_nubox = [
                 tipo,
                 folio_orden,
                 secuencia,
-                fecha,
+                fecha, # Ahora sí trae la fecha correcta
                 rut,
                 razon_social,
                 giro,
