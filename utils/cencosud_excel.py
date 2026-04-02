@@ -29,11 +29,19 @@ def procesar_excel_cencosud(ruta_archivo):
         try:
             if pd.isna(valor) or str(valor).strip() == "": 
                 return 0
-            # Eliminamos símbolos de moneda y separadores de miles comunes
-            limpio = str(valor).replace("$", "").replace(".", "").replace(",", "").strip()
-            # Convertimos a float primero por si trae ".00" y luego a int para eliminar el decimal
+            
+            # 1. Limpiamos solo símbolos de moneda y espacios
+            limpio = str(valor).replace("$", "").strip()
+            
+            # 2. Manejo de separadores de miles vs decimales
+            # Si el string tiene puntos y comas (ej: 1.500,00), estandarizamos a formato inglés
+            if "." in limpio and "," in limpio:
+                limpio = limpio.replace(".", "").replace(",", ".")
+            
+            # 3. Convertimos a float primero (esto entiende el .00 correctamente)
+            # y luego a int (esto elimina los decimales sin agregar ceros)
             return int(float(limpio))
-        except (ValueError, TypeError):
+        except:
             return 0
 
     def convertir_fecha(valor):
