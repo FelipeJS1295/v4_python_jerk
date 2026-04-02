@@ -67,12 +67,17 @@ def procesar_excel_cencosud(ruta_archivo):
             numero_orden = str(row.get('nro_orden', row.iloc[0])).strip()
             if not numero_orden or numero_orden == 'nan': continue
 
-            # Lógica FF
+            # 1. Obtener el RUT (Buscamos el nombre exacto normalizado: numero_de_documento)
+            # También añadimos 'número_documento' por si acaso
+            rut_raw = row.get('numero_de_documento', row.get('número_documento', ""))
+            rut_formateado = formatear_rut_chileno(rut_raw)
+
+            # 2. Lógica de nombre con FF
             nombre_base = str(row.get('nombre_producto', "")).strip()
             es_fulfillment = str(row.get('fulfillment', "")).strip().lower()
             nombre_final = f"{nombre_base} FF" if es_fulfillment == "si" else nombre_base
 
-            # Cálculos de dinero (Ya no agregan ceros extra)
+            # 3. Precios (Ya corregidos)
             pago_cliente = limpiar_a_entero(row.get('precio_pago_cliente', 0))
             costo_despacho = limpiar_a_entero(row.get('costo_despacho', 0))
             total_final = pago_cliente + costo_despacho
@@ -81,8 +86,7 @@ def procesar_excel_cencosud(ruta_archivo):
                 "cliente_id": 2,
                 "numero_orden": numero_orden,
                 "cliente_final": row.get('nombre_cliente', "Sin Nombre"),
-                # --- APLICAMOS EL FORMATO DE RUT AQUÍ ---
-                "rut_documento": formatear_rut_chileno(row.get('número_documento', "")),
+                "rut_documento": rut_formateado, # <--- AHORA SÍ GUARDARÁ EL RUT
                 "email": row.get('email_cliente', ""),
                 "telefono": row.get('telefono_cliente', ""),
                 "fecha_compra": convertir_fecha(row.get('fecha_de_compra')),
