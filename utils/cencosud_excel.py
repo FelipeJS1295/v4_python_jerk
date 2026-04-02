@@ -6,13 +6,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 def procesar_excel_cencosud(ruta_archivo):
-    # 1. Cargar y normalizar nombres de columnas
     df = pd.read_excel(ruta_archivo, header=0)
     df.columns = [str(col).strip().lower().replace(" ", "_") for col in df.columns]
     
     ventas = []
 
-    # 2. Obtener órdenes existentes
+    # 1. Obtener órdenes existentes
     try:
         conn = conectar_mysql()
         cursor = conn.cursor()
@@ -24,22 +23,29 @@ def procesar_excel_cencosud(ruta_archivo):
         logger.error(f"Error consultando BD: {e}")
         ordenes_existentes = set()
 
-    # --- FUNCIÓN DE LIMPIEZA PARA NÚMEROS ENTEROS ---
+    # --- NUEVA FUNCIÓN PARA FORMATEAR RUT ---
+    def formatear_rut_chileno(valor):
+        if pd.isna(valor) or str(valor).strip() == "":
+            return ""
+        # Limpiamos espacios, puntos y guiones previos para normalizar
+        rut_limpio = str(valor).replace(".", "").replace("-", "").strip().upper()
+        
+        if len(rut_limpio) < 2:
+            return rut_limpio
+        
+        # Separamos el cuerpo del dígito verificador y ponemos el guion
+        cuerpo = rut_limpio[:-1]
+        dv = rut_limpio[-1]
+        return f"{cuerpo}-{dv}"
+
+    # --- LIMPIEZA DE NÚMEROS CORREGIDA (EVITA EL CERO EXTRA) ---
     def limpiar_a_entero(valor):
         try:
             if pd.isna(valor) or str(valor).strip() == "": 
                 return 0
-            
-            # 1. Limpiamos solo símbolos de moneda y espacios
+            # Solo quitamos el signo $, NO los puntos decimales todavía
             limpio = str(valor).replace("$", "").strip()
-            
-            # 2. Manejo de separadores de miles vs decimales
-            # Si el string tiene puntos y comas (ej: 1.500,00), estandarizamos a formato inglés
-            if "." in limpio and "," in limpio:
-                limpio = limpio.replace(".", "").replace(",", ".")
-            
-            # 3. Convertimos a float primero (esto entiende el .00 correctamente)
-            # y luego a int (esto elimina los decimales sin agregar ceros)
+            # Convertir a float (entiende el .00) y luego a int (lo elimina)
             return int(float(limpio))
         except:
             return 0
@@ -53,7 +59,7 @@ def procesar_excel_cencosud(ruta_archivo):
             except: continue
         return None
 
-    # 3. Procesar filas
+    # 2. Procesar filas
     for index, row in df.iterrows():
         if row.isnull().all(): continue
 
@@ -61,32 +67,29 @@ def procesar_excel_cencosud(ruta_archivo):
             numero_orden = str(row.get('nro_orden', row.iloc[0])).strip()
             if not numero_orden or numero_orden == 'nan': continue
 
-            # Lógica FF para el nombre del producto
+            # Lógica FF
             nombre_base = str(row.get('nombre_producto', "")).strip()
             es_fulfillment = str(row.get('fulfillment', "")).strip().lower()
             nombre_final = f"{nombre_base} FF" if es_fulfillment == "si" else nombre_base
 
-            # --- LIMPIEZA DE NÚMEROS SOLICITADA ---
-            # Aplicamos la limpieza a las 3 columnas específicas
-            precio_unitario = limpiar_a_entero(row.get('precio', 0))
-            pago_cliente    = limpiar_a_entero(row.get('precio_pago_cliente', 0))
-            costo_despacho  = limpiar_a_entero(row.get('costo_despacho', 0))
-            
-            # El total que va a la base de datos es la suma de pago + despacho
+            # Cálculos de dinero (Ya no agregan ceros extra)
+            pago_cliente = limpiar_a_entero(row.get('precio_pago_cliente', 0))
+            costo_despacho = limpiar_a_entero(row.get('costo_despacho', 0))
             total_final = pago_cliente + costo_despacho
 
             venta = {
                 "cliente_id": 2,
                 "numero_orden": numero_orden,
                 "cliente_final": row.get('nombre_cliente', "Sin Nombre"),
-                "rut_documento": row.get('número_documento', ""),
+                # --- APLICAMOS EL FORMATO DE RUT AQUÍ ---
+                "rut_documento": formatear_rut_chileno(row.get('número_documento', "")),
                 "email": row.get('email_cliente', ""),
                 "telefono": row.get('telefono_cliente', ""),
                 "fecha_compra": convertir_fecha(row.get('fecha_de_compra')),
                 "fecha_entrega": convertir_fecha(row.get('fecha_de_entrega_prometida_al_cliente')),
                 "producto": nombre_final,
                 "sku": row.get('sku_seller', row.get('sku_marketplace', "")),
-                "precio_cliente": total_final, # Suma como entero
+                "precio_cliente": total_final,
                 "comuna": row.get('comuna', ""),
                 "direccion": row.get('dirección_de_envío', ""),
                 "estado": "nueva",
@@ -95,7 +98,6 @@ def procesar_excel_cencosud(ruta_archivo):
             }
             
             ventas.append(venta)
-            
         except Exception as e:
             logger.error(f"Error en fila {index}: {e}")
             continue
