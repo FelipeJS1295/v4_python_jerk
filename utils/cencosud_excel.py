@@ -3,15 +3,17 @@ from datetime import datetime
 from db import conectar_mysql
 import logging
 
+# Configuramos el logger para que sea visible
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def procesar_excel_cencosud(ruta_archivo):
     df = pd.read_excel(ruta_archivo, header=0)
+    # Normalizamos: "Número de documento" -> "numero_de_documento"
     df.columns = [str(col).strip().lower().replace(" ", "_") for col in df.columns]
     
     ventas = []
 
-    # 1. Obtener órdenes existentes
     try:
         conn = conectar_mysql()
         cursor = conn.cursor()
@@ -23,32 +25,21 @@ def procesar_excel_cencosud(ruta_archivo):
         logger.error(f"Error consultando BD: {e}")
         ordenes_existentes = set()
 
-    # --- NUEVA FUNCIÓN PARA FORMATEAR RUT ---
     def formatear_rut_chileno(valor):
         if pd.isna(valor) or str(valor).strip() == "":
             return ""
-        # Limpiamos espacios, puntos y guiones previos para normalizar
         rut_limpio = str(valor).replace(".", "").replace("-", "").strip().upper()
-        
-        if len(rut_limpio) < 2:
-            return rut_limpio
-        
-        # Separamos el cuerpo del dígito verificador y ponemos el guion
+        if len(rut_limpio) < 2: return rut_limpio
         cuerpo = rut_limpio[:-1]
         dv = rut_limpio[-1]
         return f"{cuerpo}-{dv}"
 
-    # --- LIMPIEZA DE NÚMEROS CORREGIDA (EVITA EL CERO EXTRA) ---
     def limpiar_a_entero(valor):
         try:
-            if pd.isna(valor) or str(valor).strip() == "": 
-                return 0
-            # Solo quitamos el signo $, NO los puntos decimales todavía
+            if pd.isna(valor) or str(valor).strip() == "": return 0
             limpio = str(valor).replace("$", "").strip()
-            # Convertir a float (entiende el .00) y luego a int (lo elimina)
             return int(float(limpio))
-        except:
-            return 0
+        except: return 0
 
     def convertir_fecha(valor):
         if pd.isna(valor) or str(valor).strip() == "": return None
@@ -59,7 +50,7 @@ def procesar_excel_cencosud(ruta_archivo):
             except: continue
         return None
 
-    # 2. Procesar filas
+    # 3. Procesar filas
     for index, row in df.iterrows():
         if row.isnull().all(): continue
 
@@ -67,26 +58,26 @@ def procesar_excel_cencosud(ruta_archivo):
             numero_orden = str(row.get('nro_orden', row.iloc[0])).strip()
             if not numero_orden or numero_orden == 'nan': continue
 
-            # 1. Obtener el RUT (Buscamos el nombre exacto normalizado: numero_de_documento)
-            # También añadimos 'número_documento' por si acaso
-            rut_raw = row.get('numero_de_documento', row.get('número_documento', ""))
-            rut_formateado = formatear_rut_chileno(rut_raw)
+            # --- LOG DE DEPURACIÓN PARA EL RUT ---
+            # Intentamos obtener el valor por nombre normalizado o por posición (columna 2)
+            rut_original = row.get('numero_de_documento', row.iloc[2])
+            rut_procesado = formatear_rut_chileno(rut_original)
+            
+            # Este mensaje aparecerá en tu terminal/consola
+            logger.info(f"DEBUG RUT - Orden {numero_orden}: Original='{rut_original}' -> Procesado='{rut_procesado}'")
 
-            # 2. Lógica de nombre con FF
+            # Lógica FF
             nombre_base = str(row.get('nombre_producto', "")).strip()
             es_fulfillment = str(row.get('fulfillment', "")).strip().lower()
             nombre_final = f"{nombre_base} FF" if es_fulfillment == "si" else nombre_base
 
-            # 3. Precios (Ya corregidos)
-            pago_cliente = limpiar_a_entero(row.get('precio_pago_cliente', 0))
-            costo_despacho = limpiar_a_entero(row.get('costo_despacho', 0))
-            total_final = pago_cliente + costo_despacho
+            total_final = limpiar_a_entero(row.get('precio_pago_cliente', 0)) + limpiar_a_entero(row.get('costo_despacho', 0))
 
             venta = {
                 "cliente_id": 2,
                 "numero_orden": numero_orden,
                 "cliente_final": row.get('nombre_cliente', "Sin Nombre"),
-                "rut_documento": rut_formateado, # <--- AHORA SÍ GUARDARÁ EL RUT
+                "rut_documento": rut_procesado, # Se asigna el valor procesado
                 "email": row.get('email_cliente', ""),
                 "telefono": row.get('telefono_cliente', ""),
                 "fecha_compra": convertir_fecha(row.get('fecha_de_compra')),
@@ -102,8 +93,9 @@ def procesar_excel_cencosud(ruta_archivo):
             }
             
             ventas.append(venta)
+            
         except Exception as e:
-            logger.error(f"Error en fila {index}: {e}")
+            logger.error(f"Error crítico en fila {index}: {e}")
             continue
 
     return ventas
