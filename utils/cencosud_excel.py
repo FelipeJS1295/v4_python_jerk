@@ -12,7 +12,7 @@ def procesar_excel_cencosud(ruta_archivo):
     
     ventas = []
 
-    # 2. Obtener órdenes existentes para evitar duplicados
+    # 2. Obtener órdenes existentes
     try:
         conn = conectar_mysql()
         cursor = conn.cursor()
@@ -24,7 +24,18 @@ def procesar_excel_cencosud(ruta_archivo):
         logger.error(f"Error consultando BD: {e}")
         ordenes_existentes = set()
 
-    # Helpers de limpieza
+    # --- FUNCIÓN DE LIMPIEZA PARA NÚMEROS ENTEROS ---
+    def limpiar_a_entero(valor):
+        try:
+            if pd.isna(valor) or str(valor).strip() == "": 
+                return 0
+            # Eliminamos símbolos de moneda y separadores de miles comunes
+            limpio = str(valor).replace("$", "").replace(".", "").replace(",", "").strip()
+            # Convertimos a float primero por si trae ".00" y luego a int para eliminar el decimal
+            return int(float(limpio))
+        except (ValueError, TypeError):
+            return 0
+
     def convertir_fecha(valor):
         if pd.isna(valor) or str(valor).strip() == "": return None
         if isinstance(valor, pd.Timestamp): return valor.strftime("%Y-%m-%d")
@@ -34,13 +45,6 @@ def procesar_excel_cencosud(ruta_archivo):
             except: continue
         return None
 
-    def limpiar_numero(valor):
-        try:
-            if pd.isna(valor): return 0
-            limpio = str(valor).replace("$", "").replace(".", "").replace(",", "").strip()
-            return int(float(limpio))
-        except: return 0
-
     # 3. Procesar filas
     for index, row in df.iterrows():
         if row.isnull().all(): continue
@@ -49,33 +53,32 @@ def procesar_excel_cencosud(ruta_archivo):
             numero_orden = str(row.get('nro_orden', row.iloc[0])).strip()
             if not numero_orden or numero_orden == 'nan': continue
 
-            # --- LÓGICA DE NOMBRE DE PRODUCTO (FF) ---
+            # Lógica FF para el nombre del producto
             nombre_base = str(row.get('nombre_producto', "")).strip()
             es_fulfillment = str(row.get('fulfillment', "")).strip().lower()
-            
-            # Si dice "si", agregamos el sufijo FF
-            if es_fulfillment == "si":
-                nombre_final = f"{nombre_base} FF"
-            else:
-                nombre_final = nombre_base
+            nombre_final = f"{nombre_base} FF" if es_fulfillment == "si" else nombre_base
 
-            # --- CÁLCULO DEL TOTAL (Precio + Despacho) ---
-            pago_cliente = limpiar_numero(row.get('precio_pago_cliente', 0))
-            despacho = limpiar_numero(row.get('costo_despacho', 0))
-            total_venta = pago_cliente + despacho
+            # --- LIMPIEZA DE NÚMEROS SOLICITADA ---
+            # Aplicamos la limpieza a las 3 columnas específicas
+            precio_unitario = limpiar_a_entero(row.get('precio', 0))
+            pago_cliente    = limpiar_a_entero(row.get('precio_pago_cliente', 0))
+            costo_despacho  = limpiar_a_entero(row.get('costo_despacho', 0))
+            
+            # El total que va a la base de datos es la suma de pago + despacho
+            total_final = pago_cliente + costo_despacho
 
             venta = {
                 "cliente_id": 2,
                 "numero_orden": numero_orden,
                 "cliente_final": row.get('nombre_cliente', "Sin Nombre"),
-                "rut_documento": row.get('número_documento', row.get('rut_cliente', "")),
+                "rut_documento": row.get('número_documento', ""),
                 "email": row.get('email_cliente', ""),
                 "telefono": row.get('telefono_cliente', ""),
                 "fecha_compra": convertir_fecha(row.get('fecha_de_compra')),
                 "fecha_entrega": convertir_fecha(row.get('fecha_de_entrega_prometida_al_cliente')),
-                "producto": nombre_final, # Nombre con o sin FF
+                "producto": nombre_final,
                 "sku": row.get('sku_seller', row.get('sku_marketplace', "")),
-                "precio_cliente": total_venta,
+                "precio_cliente": total_final, # Suma como entero
                 "comuna": row.get('comuna', ""),
                 "direccion": row.get('dirección_de_envío', ""),
                 "estado": "nueva",
