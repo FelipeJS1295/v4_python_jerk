@@ -898,6 +898,7 @@
     document.getElementById('filtro-tipo').value = '';
     document.getElementById('filtro-desde').value = '';
     document.getElementById('filtro-hasta').value = '';
+    document.getElementById('btn-excel-global').addEventListener('click', descargarProduccionGlobalExcel);
     cargarOrdenes();
   }
 
@@ -975,67 +976,6 @@
     document.getElementById('modal-precios').classList.add('hidden');
   }
 
-  async function descargarResumenExcel() {
-    const trabajadorId = document.getElementById('trabajador-resumen').value;
-    const fechaDesde = document.getElementById('resumen-desde').value || null;
-    const fechaHasta = document.getElementById('resumen-hasta').value || null;
-    const btnExcel = document.getElementById('btn-excel-resumen');
-
-    if (!trabajadorId) {
-        alert('Por favor, seleccione un trabajador primero.');
-        return;
-    }
-
-    // Feedback visual: deshabilitar botón mientras descarga
-    const originalContent = btnExcel.innerHTML;
-    btnExcel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Generando...</span>';
-    btnExcel.disabled = true;
-
-    try {
-        const res = await fetch('/produccion/resumen-detallado/excel', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                trabajador_id: parseInt(trabajadorId),
-                fecha_desde: fechaDesde,
-                fecha_hasta: fechaHasta
-            })
-        });
-
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || 'No se encontraron datos para exportar.');
-        }
-
-        // Obtener el nombre del archivo desde el header del backend
-        const contentDisposition = res.headers.get('Content-Disposition') || '';
-        const match = /filename\*?=(?:UTF-8'')?([^;]+)/i.exec(contentDisposition);
-        const fileName = match ? decodeURIComponent(match[1].replace(/"/g, '')) : 'resumen_produccion.xlsx';
-
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        
-        // Limpieza
-        setTimeout(() => {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 100);
-
-    } catch (e) {
-        alert('Error: ' + e.message);
-    } finally {
-        // Restaurar botón
-        btnExcel.innerHTML = originalContent;
-        btnExcel.disabled = false;
-    }
-}
-
   function imprimirTabla() {
     const contenido = document.getElementById('contenido-imprimir').innerHTML;
     const ventana = window.open('', '', 'width=800,height=600');
@@ -1060,6 +1000,62 @@
     ventana.print();
     ventana.close();
   }
+
+  async function descargarProduccionGlobalExcel() {
+    // Capturamos los filtros actuales de la pantalla principal
+    const trabajadorId = document.getElementById('filtro-trabajador').value;
+    const fechaDesde = document.getElementById('filtro-desde').value;
+    const fechaHasta = document.getElementById('filtro-hasta').value;
+
+    // Si no hay trabajador seleccionado, podrías avisar o permitir descarga general
+    // (Depende de si tu backend _obtener_resumen_trabajador requiere ID obligatorio)
+    if (!trabajadorId) {
+        alert('Por favor, selecciona un trabajador en el filtro para generar su reporte de producción.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-excel-global');
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Generando...</span>';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/produccion/resumen-detallado/excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                trabajador_id: parseInt(trabajadorId),
+                fecha_desde: fechaDesde || null,
+                fecha_hasta: fechaHasta || null
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'No hay datos para exportar.');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        // Nombre del archivo basado en el trabajador y fechas
+        const nombreTrabajador = document.getElementById('filtro-trabajador').options[document.getElementById('filtro-trabajador').selectedIndex].text;
+        a.href = url;
+        a.download = `Produccion_${nombreTrabajador.replace(/ /g, '_')}.xlsx`;
+        
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        alert(error.message);
+    } finally {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+    }
+}
 </script>
 
 <style>
