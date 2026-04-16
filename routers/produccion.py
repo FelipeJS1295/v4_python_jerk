@@ -1,5 +1,6 @@
 # app/routers/produccion.py
 from fastapi import APIRouter, HTTPException, Request
+from openpyxl.styles import Font, Alignment, PatternFill
 from fastapi.responses import JSONResponse, HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -7,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from io import BytesIO
 from datetime import datetime
 import pandas as pd
+
 
 from db import conectar_mysql
 
@@ -704,5 +706,93 @@ def resumen_detallado_excel(filtro: FiltroResumen):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al generar Excel: {str(e)}")
+    finally:
+        conn.close()
+
+@router.post("/exportar-excel")
+def exportar_produccion_excel(filtro: FiltroResumen):
+    conn = conectar_mysql()
+    try:
+        # Reutilizamos la lógica de obtención de datos detallados
+        data = _obtener_resumen_trabajador(conn, filtro)
+        detalle = data.get("detalle", [])
+        
+        if not detalle:
+            raise HTTPException(status_code=404, detail="No se encontraron registros para exportar.")
+
+        # Crear DataFrame
+        df = pd.DataFrame(detalle)
+        
+        # Renombrar columnas para el usuario final
+        columnas_map = {
+            "fecha": "Fecha",
+            "numero_orden_trabajo": "N° Orden",
+            "producto": "Producto / Modelo",
+            "tipo": "Tipo",
+            "descripcion": "Descripción/Observación",
+            "costo": "Costo Unitario ($)"
+        }
+        df = df.rename(columns=columnas_map)
+        
+        # Asegurar que el costo sea numérico
+        df["Costo Unitario ($)"] = pd.to_numeric(df["Costo Unitario ($)"], errors="coerce").fillna(0)
+
+        # Crear el archivo Excel en memoria
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Detalle de Producción")
+            
+            # --- Formato Estético ---
+            workbook = writer.book
+            worksheet = writer.sheets["Detalle de Producción"]
+            
+            # Estilo para el encabezado
+            header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
+            header_font = Font(color="FFFFFF", bold=True)
+            
+            for cell in worksheet[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal="center")
+
+            # Ajustar ancho de columnas automáticamente
+            for col in worksheet.columns:
+                max_length = 0
+                column = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except: pass
+                worksheet.column_dimensions[column].width = max_length + 5
+
+            # Hoja de Resumen Totales
+            resumen_data = [
+                ["Reporte de Producción - Jamaroff"],
+                ["Trabajador:", data.get("trabajador")],
+                ["Rol:", data.get("rol")],
+                ["Desde:", filtro.fecha_desde or "Inicio"],
+                ["Hasta:", filtro.fecha_hasta or "Hoy"],
+                [""],
+                ["TOTAL ÓRDENES:", len(df)],
+                ["TOTAL A PAGAR:", df["Costo Unitario ($)"].sum()]
+            ]
+            df_resumen = pd.DataFrame(resumen_data)
+            df_resumen.to_excel(writer, index=False, header=False, sheet_name="Resumen")
+
+        output.seek(0)
+        
+        # Nombre del archivo dinámico
+        nombre_archivo = f"Produccion_{data.get('trabajador').replace(' ', '_')}_{datetime.now().strftime('%d-%m-%Y')}.xlsx"
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={nombre_archivo}"}
+        )
+
+    except Exception as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
